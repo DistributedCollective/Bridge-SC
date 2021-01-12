@@ -1,0 +1,11 @@
+infura.key
+mnemonic.key
+build
+.openzeppelin/.session
+.openzeppelin/dev-*.json
+.openzeppelin/kovan.json
+.openzeppelin/mainnet.json
+coverage/
+coverage.json
+.coverage_contracts
+.coverage_artifacts

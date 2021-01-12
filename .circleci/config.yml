@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:lts
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/mongo:3.4.4
+      - image: trufflesuite/ganache-cli
+        command: ganache-cli -i 5777 -l 6700000
+    steps:
+      - checkout
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "bridge/package.json" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+      - run: cd bridge && npm ci
+      - save_cache:
+          paths:
+            - bridge/node_modules
+          key: v1-dependencies-{{ checksum "bridge/package.json" }}
+      - run:
+          name: contracts lint
+          command: |
+            cd bridge
+            npm run lint
+      - run:
+          name: contracts migrate
+          command: |
+            cd bridge
+            npm run migrate
+      - run:
+          name: contracts test
+          command: |
+            cd bridge
+            npm test
