@@ -3,6 +3,7 @@ const fs = require('fs');
 const abiBridge = require('../../../abis/Bridge.json');
 const abiFederation = require('../../../abis/Federation.json');
 const TransactionSender = require('./TransactionSender');
+const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
 const CustomError = require('./CustomError');
 const utils = require('./utils');
 
@@ -26,76 +27,31 @@ module.exports = class Federator {
     async run() {
         let retries = 3;
         const sleepAfterRetrie = 3000;
-        while(retries > 0) {
+        while (retries > 0) {
             try {
                 const currentBlock = await this.mainWeb3.eth.getBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
-                let confirmations = 0; //for rsk regtest and ganache
-                if(chainId == 31 || chainId == 42) { // rsk testnet and kovan
-                    confirmations = 10
-                }
-                if( chainId == 1) { //ethereum mainnet 24hs
-                    confirmations = 5760
-                }
-                if(chainId == 30) { // rsk mainnet 24hs
-                    confirmations = 2880
-                }
-                const toBlock = currentBlock - confirmations;
+                const ctr = new ConfirmationTableReader(chainId);
+
+                const toBlock = currentBlock - ctr.getMinConfirmation();
                 this.logger.info('Running to Block', toBlock);
 
-                if (toBlock <= 0) {
-                    return false;
-                }
+                if (toBlock <= 0) return false;
 
-                if (!fs.existsSync(this.config.storagePath)) {
-                    fs.mkdirSync(this.config.storagePath);
-                }
-                let originalFromBlock = this.config.mainchain.fromBlock || 0;
-                let fromBlock = null;
-                try {
-                    fromBlock = fs.readFileSync(this.lastBlockPath, 'utf8');
-                } catch(err) {
-                    fromBlock = originalFromBlock;
-                }
-                if(fromBlock < originalFromBlock) {
-                    fromBlock = originalFromBlock;
-                }
-                if(fromBlock >= toBlock){
-                    this.logger.warn(`Current chain Height ${toBlock} is the same or lesser than the last block processed ${fromBlock}`);
-                    return false;
-                }
-                fromBlock = parseInt(fromBlock)+1;
+                const fromBlock = this._getFromBlock()
                 this.logger.debug('Running from Block', fromBlock);
-                
-                const recordsPerPage = 1000;
-                const numberOfPages = Math.ceil((toBlock - fromBlock) / recordsPerPage);
-                this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${recordsPerPage}`);
 
-                var fromPageBlock = fromBlock;
-                for(var currentPage = 1; currentPage <= numberOfPages; currentPage++) { 
-                    var toPagedBlock = fromPageBlock + recordsPerPage-1;
-                    if(currentPage == numberOfPages) {
-                        toPagedBlock = toBlock
-                    }
-                    this.logger.debug(`Page ${currentPage} getting events from block ${fromPageBlock} to ${toPagedBlock}`);
-                    const logs = await this.mainBridgeContract.getPastEvents('Cross', {
-                        fromBlock: fromPageBlock,
-                        toBlock: toPagedBlock
-                    });
-                    if (!logs) throw new Error('Failed to obtain the logs');
+                if (!fromBlock) return false;
 
-                    this.logger.info(`Found ${logs.length} logs`);
-                    await this._processLogs(logs, toPagedBlock);
-                    fromPageBlock = toPagedBlock + 1;
-                }
-                
+                await this._processBlocks(ctr, fromBlock, toBlock)
+
                 return true;
             } catch (err) {
                 console.log(err)
                 this.logger.error(new Error('Exception Running Federator'), err);
                 retries--;
-                this.logger.debug(`Run ${3-retries} retrie`);
-                if( retries > 0) {
+                this.logger.debug(`Run ${3 - retries} retrie`);
+                if (retries > 0) {
                     await utils.sleep(sleepAfterRetrie);
                 } else {
                     process.exit();
@@ -104,51 +60,45 @@ module.exports = class Federator {
         }
     }
 
-    async _processLogs(logs, toBlock) {
+    async _processBlocks(ctr, fromBlock, toBlock) {
+        const recordsPerPage = 1000;
+        const numberOfPages = Math.ceil((toBlock - fromBlock) / recordsPerPage);
+        this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${recordsPerPage}`);
+
+        let fromPageBlock = fromBlock;
+        for (let currentPage = 1; currentPage <= numberOfPages; currentPage++) {
+            let toPagedBlock = fromPageBlock + recordsPerPage - 1;
+            if (currentPage === numberOfPages) {
+                toPagedBlock = toBlock
+            }
+            this.logger.debug(`Page ${currentPage} getting events from block ${fromPageBlock} to ${toPagedBlock}`);
+            const logs = await this.mainBridgeContract.getPastEvents('Cross', {
+                fromBlock: fromPageBlock,
+                toBlock: toPagedBlock
+            });
+            if (!logs) throw new Error('Failed to obtain the logs');
+
+            this.logger.info(`Found ${logs.length} logs`);
+            await this._processLogs(ctr, logs, toPagedBlock);
+            fromPageBlock = toPagedBlock + 1;
+        }
+    }
+
+    async _processLogs(ctr, logs, toBlock) {
         try {
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             const from = await transactionSender.getAddress(this.config.privateKey);
-            
-            for(let log of logs) {
+            const currentBlock = await this.mainWeb3.eth.getBlockNumber();
+
+            for (let log of logs) {
                 this.logger.info('Processing event log:', log);
 
-                const { _to: receiver, _amount: amount, _symbol: symbol, _tokenAddress: tokenAddress,
-                    _decimals: decimals, _granularity:granularity } = log.returnValues;
+                const {
+                    _amount: amount, _symbol: symbol,
+                } = log.returnValues;
 
-                let transactionId = await this.federationContract.methods.getTransactionId(
-                    tokenAddress,
-                    receiver,
-                    amount,
-                    symbol,
-                    log.blockHash,
-                    log.transactionHash,
-                    log.logIndex,
-                    decimals,
-                    granularity
-                ).call();
-                this.logger.info('get transaction id:', transactionId);
-
-                let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
-                if (!wasProcessed) {
-                    let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
-                    if(!hasVoted) {
-                        this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
-                        await this._voteTransaction(tokenAddress,
-                            receiver,
-                            amount,
-                            symbol,
-                            log.blockHash,
-                            log.transactionHash,
-                            log.logIndex,
-                            decimals,
-                            granularity);
-                    } else {
-                        this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
-                    }
-                    
-                } else {
-                    this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
-                }
+                if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber))
+                    await this._processLog(log, from)
             }
             this._saveProgress(this.lastBlockPath, toBlock);
 
@@ -158,13 +108,55 @@ module.exports = class Federator {
         }
     }
 
+    async _processLog(log, from) {
+        const {
+            _to: receiver, _amount: amount, _symbol: symbol, _tokenAddress: tokenAddress,
+            _decimals: decimals, _granularity: granularity
+        } = log.returnValues;
+
+        let transactionId = await this.federationContract.methods.getTransactionId(
+            tokenAddress,
+            receiver,
+            amount,
+            symbol,
+            log.blockHash,
+            log.transactionHash,
+            log.logIndex,
+            decimals,
+            granularity
+        ).call();
+        this.logger.info('get transaction id:', transactionId);
+
+        let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
+        if (!wasProcessed) {
+            let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
+            if (!hasVoted) {
+                this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
+                await this._voteTransaction(tokenAddress,
+                    receiver,
+                    amount,
+                    symbol,
+                    log.blockHash,
+                    log.transactionHash,
+                    log.logIndex,
+                    decimals,
+                    granularity);
+            } else {
+                this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
+            }
+
+        } else {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
+        }
+    }
+
 
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity) {
         try {
 
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
-            
+
             let txId = await this.federationContract.methods.getTransactionId(
                 tokenAddress,
                 receiver,
@@ -176,7 +168,7 @@ module.exports = class Federator {
                 decimals,
                 granularity
             ).call();
-            
+
             let txData = await this.federationContract.methods.voteTransaction(
                 tokenAddress,
                 receiver,
@@ -198,9 +190,38 @@ module.exports = class Federator {
         }
     }
 
-    _saveProgress (path, value) {
+    _getFromBlock() {
+        if (!fs.existsSync(this.config.storagePath)) {
+            fs.mkdirSync(this.config.storagePath);
+        }
+        let originalFromBlock = this.config.mainchain.fromBlock || 0;
+        let fromBlock = null;
+        try {
+            fromBlock = fs.readFileSync(this.lastBlockPath, 'utf8');
+        } catch (err) {
+            fromBlock = originalFromBlock;
+        }
+        if (fromBlock < originalFromBlock) {
+            fromBlock = originalFromBlock;
+        }
+        if (fromBlock >= toBlock) {
+            this.logger.warn(`Current chain Height ${toBlock} is the same or lesser than the last block processed ${fromBlock}`);
+            return undefined;
+        }
+        fromBlock = parseInt(fromBlock) + 1;
+
+        return fromBlock;
+    }
+
+    _saveProgress(path, value) {
         if (value) {
             fs.writeFileSync(path, value);
         }
+    }
+
+    _isConfirmed(ctr, symbol, amount, currentBlock, blockNumber) {
+        let confirmations = ctr.getConfirmations(symbol, amount)
+        let blockPassed = currentBlock - blockNumber;
+        return confirmations >= blockPassed;
     }
 }

@@ -1,0 +1,33 @@
+{
+  "10": {
+    "minConfirmation": 10,
+    "WETH": [
+      {
+        "amount": 10,
+        "confirmations": 2
+      },
+      {
+        "amount": 30,
+        "confirmations": 4
+      },
+      {
+        "amount": 1000,
+        "confirmations": 30
+      }
+    ],
+    "DAI": [
+      {
+        "amount": 10,
+        "confirmations": 2
+      },
+      {
+        "amount": 30,
+        "confirmations": 4
+      },
+      {
+        "amount": 1000,
+        "confirmations": 30
+      }
+    ]
+  }
+}
