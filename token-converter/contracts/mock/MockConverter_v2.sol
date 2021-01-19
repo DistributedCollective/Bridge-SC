@@ -4,10 +4,13 @@ pragma solidity >=0.6.0 <0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable  {
+contract MockConverter_v2 is Initializable, OwnableUpgradeable, PausableUpgradeable  {
+    using SafeMathUpgradeable for uint256;
     uint256 public conversionFee;
     uint256 public testPauseVar; // Borrar esto sirve solo para testear el pause ahora;
+
 
     event ConversionFeeChanged(uint256 _previousValue, uint256 _currentValue);
 
@@ -16,7 +19,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable  {
         conversionFee = _conversionFee;
         testPauseVar = 1;       // Borrar esto sirve solo para testear el pause ahora;
         __Ownable_init();
-        __Pausable_init();
+        __Pausable_init();        
     }
 
     function setConversionFee(uint256 _newConversionFee) public onlyOwner {
@@ -37,7 +40,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable  {
     }
 
     // Borrar esto sirve solo para testear el pause ahora;
-    function testPause(uint256 _newValueTest) public whenNotPaused {
-        testPauseVar = _newValueTest;
+    function incrementValueByTen(uint256 _newValueTest) public whenNotPaused {
+        testPauseVar = _newValueTest.add(10);   // modified to test upgradability
     }
 }
