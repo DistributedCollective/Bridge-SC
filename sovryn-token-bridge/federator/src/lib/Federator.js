@@ -22,6 +22,8 @@ module.exports = class Federator {
         this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
 
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
+
+        this.confirmationTable = config.confirmationTable;
     }
 
     async run() {
@@ -31,14 +33,14 @@ module.exports = class Federator {
             try {
                 const currentBlock = await this.mainWeb3.eth.getBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
-                const ctr = new ConfirmationTableReader(chainId);
+                const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
 
                 const toBlock = currentBlock - ctr.getMinConfirmation();
                 this.logger.info('Running to Block', toBlock);
 
                 if (toBlock <= 0) return false;
 
-                const fromBlock = this._getFromBlock()
+                const fromBlock = this._getFromBlock(toBlock)
                 this.logger.debug('Running from Block', fromBlock);
 
                 if (!fromBlock) return false;
@@ -190,12 +192,12 @@ module.exports = class Federator {
         }
     }
 
-    _getFromBlock() {
+    _getFromBlock(toBlock) {
         if (!fs.existsSync(this.config.storagePath)) {
             fs.mkdirSync(this.config.storagePath);
         }
         let originalFromBlock = this.config.mainchain.fromBlock || 0;
-        let fromBlock = null;
+        let fromBlock;
         try {
             fromBlock = fs.readFileSync(this.lastBlockPath, 'utf8');
         } catch (err) {
@@ -222,6 +224,6 @@ module.exports = class Federator {
     _isConfirmed(ctr, symbol, amount, currentBlock, blockNumber) {
         let confirmations = ctr.getConfirmations(symbol, amount)
         let blockPassed = currentBlock - blockNumber;
-        return confirmations >= blockPassed;
+        return confirmations <= blockPassed;
     }
 }

@@ -4,6 +4,8 @@ const path = require('path');
 const Federator = require('../src/lib/Federator');
 const eth = require('./web3Mock/eth.js');
 const web3Mock = require('./web3Mock');
+const {ConfirmationTableReader} = require('../src/helpers/ConfirmationTableReader');
+
 
 const configFile = fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8');
 const config = JSON.parse(configFile);
@@ -163,8 +165,9 @@ describe('Federator module tests', () => {
                 ]
             }
         }]
+        const ctr = new ConfirmationTableReader(3, testConfig.confirmationTable);
 
-        let result = await federator._processLogs(logs);
+        let result = await federator._processLogs(ctr, logs);
         expect(result).toBeTruthy();
     });
 })
