@@ -15,7 +15,9 @@
     "start": "node ./src/main.js",
     "test": "jest --detectOpenHandles test/",
     "integrationTest": "rm -rf ./db/* && node ./integrationTest/integrationTest.js",
-    "clean": "rm -rf ./db/*"
+    "clean": "rm -rf ./db/*",
+    "mainChain": "js integrationTest/runGanacheMainchain.js",
+    "sideChain": "js integrationTest/runGanacheSidechain.js"
   },
   "dependencies": {
     "ethereumjs-tx": "^1.3.7",
