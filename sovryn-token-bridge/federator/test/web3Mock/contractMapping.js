@@ -3,7 +3,7 @@ const Bridge = require('./contracts/Bridge');
 const fs = require('fs');
 const path = require('path');
 
-const configFile = fs.readFileSync(path.join(__dirname,'../config.js'), 'utf8');
+const configFile = fs.readFileSync(path.join(__dirname,'../config.json'), 'utf8');
 const config = JSON.parse(configFile);
 
 const mappings = {

@@ -1,5 +1,5 @@
 {
-  "blockNumber": 350,
+  "blockNumber": 2683829,
   "transactionCount": 10,
   "accounts": [
     "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
@@ -16,6 +16,7 @@
   "ethTransactionCount": 10,
   "netId": 3,
   "gasPrice": 20000,
+  "estimatedGas": 300000,
   "receipt": {
     "transactionHash": "0xa636cbd79d6c94cd0c68ad90b6a90df0dbe610f0ad1fe643c8f07a12f332137d",
     "transactionIndex": 0,

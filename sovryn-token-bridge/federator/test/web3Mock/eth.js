@@ -8,15 +8,16 @@ eth.getBlockNumber = () => defaults.data.blockNumber;
 eth.getAccounts = () => defaults.data.accounts;
 eth.getTransactionCount = () => defaults.data.ethTransactionCount;
 eth.getGasPrice = () => defaults.data.gasPrice;
+eth.estimateGas = () => defaults.data.estimatedGas;
 
 let promiseSend = function(){
     var promiEvent = Web3PromiEvent();
-    
+
     setTimeout(function() {
         promiEvent.eventEmitter.emit('transactionHash', defaults.data.receipt.transactionHash);
         promiEvent.resolve(defaults.data.receipt);
     }, 10);
-    
+
     return promiEvent.eventEmitter;
 };
 eth.sendSignedTransaction = promiseSend;

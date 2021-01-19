@@ -5,7 +5,7 @@ const Federator = require('../src/lib/Federator');
 const eth = require('./web3Mock/eth.js');
 const web3Mock = require('./web3Mock');
 
-const configFile = fs.readFileSync(path.join(__dirname,'config.js'), 'utf8');
+const configFile = fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8');
 const config = JSON.parse(configFile);
 
 const logger = {
@@ -35,7 +35,7 @@ describe('Federator module tests', () => {
     });
 
     it('Runs the main federator process with pagination', async () => {
-        let currentBlock = testConfig.mainchain.fromBlock + 2002 + 120;
+        let currentBlock = testConfig.mainchain.fromBlock + 2002 + 5760;
         let federator = new Federator(testConfig, logger, web3Mock);
         federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
         federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
@@ -45,12 +45,12 @@ describe('Federator module tests', () => {
 
         expect(result).toBeTruthy();
         let value = fs.readFileSync(testPath, 'utf8');
-        expect(parseInt(value)).toEqual(currentBlock-120);
+        expect(parseInt(value)).toEqual(currentBlock-5760);
         expect(_processLogsSpy).toHaveBeenCalledTimes(3);
     });
 
     it('Runs the main federator process with pagination limit', async () => {
-        let currentBlock = testConfig.mainchain.fromBlock + 1001 + 120; // The +1 one is because it starts with fromBlock +1 
+        let currentBlock = testConfig.mainchain.fromBlock + 1001 + 5760; // The +1 one is because it starts with fromBlock +1
         let federator = new Federator(testConfig, logger, web3Mock);
         federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
         federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
@@ -60,7 +60,7 @@ describe('Federator module tests', () => {
 
         expect(result).toBeTruthy();
         let value = fs.readFileSync(testPath, 'utf8');
-        expect(parseInt(value)).toEqual(currentBlock-120);
+        expect(parseInt(value)).toEqual(currentBlock-5760);
         expect(_processLogsSpy).toHaveBeenCalledTimes(1);
     });
 

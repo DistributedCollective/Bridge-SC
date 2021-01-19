@@ -6,7 +6,7 @@
         "allowTokens": "0x73ec81da0c72dd112e06c09a6ec03b5544d26f05",
         "testToken": "0x20804b7317d2f4d0d2123f30c2d3a6b0e33dfb37",
         "host": "http://127.0.0.1:4444",
-        "fromBlock": 44
+        "fromBlock": 2600000
     },
     "sidechain": {
         "bridge": "0x6e169e30fcc54bf8dc01282eba4109442a0e8417",
