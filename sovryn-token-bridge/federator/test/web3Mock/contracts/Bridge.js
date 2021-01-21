@@ -17,8 +17,15 @@ class Bridge extends Contract {
         this.methods = methods;
     }
 
-    getPastEvents() {
-        return Promise.resolve(defaults.data.pastEvent);
+    getPastEvents(type, options) {
+        let pastEvents = defaults.data.pastEvent;
+        if (options.fromBlock)
+            pastEvents = pastEvents.filter(log => options.fromBlock <= log.blockNumber);
+
+        if (options.toBlock)
+            pastEvents = pastEvents.filter(log => log.blockNumber < options.toBlock);
+
+        return Promise.resolve(pastEvents);
     }
 }
 

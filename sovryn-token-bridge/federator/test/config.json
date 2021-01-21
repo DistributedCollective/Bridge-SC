@@ -6,7 +6,7 @@
         "allowTokens": "0x73ec81da0c72dd112e06c09a6ec03b5544d26f05",
         "testToken": "0x20804b7317d2f4d0d2123f30c2d3a6b0e33dfb37",
         "host": "http://127.0.0.1:4444",
-        "fromBlock": 2600000
+        "fromBlock": 5000
     },
     "sidechain": {
         "bridge": "0x6e169e30fcc54bf8dc01282eba4109442a0e8417",
@@ -15,7 +15,7 @@
         "allowTokens": "0x5335256e5a1fd61e857f20e2bf61d27418484604",
         "testToken": "0xa77c1d4c0bdef5b90b33d9ea5c48cf19edd2f831",
         "host": "http://127.0.0.1:8545",
-        "fromBlock": 46
+        "fromBlock": 50000
     },
     "runEvery": 1,
     "confirmations": 0,
@@ -47,40 +47,6 @@
                 {
                     "amount": 30,
                     "confirmations": 10000
-                },
-                {
-                    "amount": 100,
-                    "confirmations": 20000
-                }
-            ]
-        },
-        "30": {
-            "minConfirmation": 2880,
-            "MAIN": [
-                {
-                    "amount": 0,
-                    "confirmations": 2880
-                },
-                {
-                    "amount": 30,
-                    "confirmations": 5000
-                },
-                {
-                    "amount": 100,
-                    "confirmations": 10000
-                }
-            ]
-        },
-        "31": {
-            "minConfirmation": 5760,
-            "MAIN": [
-                {
-                    "amount": 0,
-                    "confirmations": 5760
-                },
-                {
-                    "amount": 30,
-                    "confirmations": 11000
                 },
                 {
                     "amount": 100,

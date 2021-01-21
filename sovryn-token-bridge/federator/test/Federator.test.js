@@ -21,6 +21,10 @@ const storagePath = `${__dirname}`;
 const testPath = `${storagePath}/lastBlock.txt`;
 let testConfig = { ...config, storagePath };
 
+function mockFederatorMethods(federator, methods) {
+    federator.mainWeb3.eth = federator.mainWeb3.eth.mockMethods(methods);
+}
+
 describe('Federator module tests', () => {
     beforeEach(async function () {
         jest.clearAllMocks();
@@ -39,8 +43,10 @@ describe('Federator module tests', () => {
     it('Runs the main federator process with pagination', async () => {
         let currentBlock = testConfig.mainchain.fromBlock + 2002 + 5760;
         let federator = new Federator(testConfig, logger, web3Mock);
-        federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
-        federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
+        mockFederatorMethods(federator, {
+            getBlockNumber: () => Promise.resolve(currentBlock),
+            getId: () => Promise.resolve(1)
+        });
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
 
         let result = await federator.run();
@@ -54,8 +60,11 @@ describe('Federator module tests', () => {
     it('Runs the main federator process with pagination limit', async () => {
         let currentBlock = testConfig.mainchain.fromBlock + 1001 + 5760; // The +1 one is because it starts with fromBlock +1
         let federator = new Federator(testConfig, logger, web3Mock);
-        federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
-        federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
+        mockFederatorMethods(federator, {
+            getBlockNumber: () => Promise.resolve(currentBlock),
+            getId: () => Promise.resolve(1)
+        });
+
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
 
         let result = await federator.run();
@@ -130,11 +139,53 @@ describe('Federator module tests', () => {
         expect(result).toBeTruthy();
     });
 
-    it('Should process a list of logs', async () => {
+    it('Should return undefined for a list of 1 confirmed log', async () => {
         let federator = new Federator(testConfig, logger, web3Mock);
         let logs = [{
             logIndex: 2,
-            blockNumber: 2557,
+            blockNumber: 10000,
+            blockHash:
+                '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash:
+                '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_a755a817',
+            returnValues:{
+                '0': '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                '1': '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                '2': '1000000000000000000',
+                '3': 'MAIN',
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '50',
+                _symbol: 'MAIN'
+            },
+            event: 'Cross',
+            signature:
+                '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data:
+                    '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics:[
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+                ]
+            }
+        }]
+        const ctr = new ConfirmationTableReader(3, testConfig.confirmationTable);
+
+        let result = await federator._processLogs(ctr, logs);
+        expect(result).toBeUndefined();
+    });
+
+    it('Should return the logBlockNumber for a list of 1 unconfirmed log', async () => {
+        let federator = new Federator(testConfig, logger, web3Mock);
+        const logBlockNumber = 2683000;
+        let logs = [{
+            logIndex: 2,
+            blockNumber: logBlockNumber,
             blockHash:
                 '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
             transactionHash:
@@ -168,6 +219,84 @@ describe('Federator module tests', () => {
         const ctr = new ConfirmationTableReader(3, testConfig.confirmationTable);
 
         let result = await federator._processLogs(ctr, logs);
-        expect(result).toBeTruthy();
+        expect(result).toEqual(logBlockNumber - 1);
+    });
+
+
+    it('Should return the second logBlockNumber for a list of 2 log, only first confirmed', async () => {
+        let federator = new Federator(testConfig, logger, web3Mock);
+        const firstLogBlockNumber = 15000;
+        const currentBlockNumber = 42000;
+        const ctr = new ConfirmationTableReader(3, testConfig.confirmationTable);
+        const secondLogBlockNumber = currentBlockNumber-ctr.getMinConfirmation();
+
+        let logs = [{
+            logIndex: 2,
+            blockNumber: firstLogBlockNumber,
+            blockHash:
+                '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash:
+                '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_a755a817',
+            returnValues:{
+                '0': '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                '1': '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                '2': '1000000000000000000',
+                '3': 'MAIN',
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '1000',
+                _symbol: 'MAIN'
+            },
+            event: 'Cross',
+            signature:
+                '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data:
+                    '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics:[
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+                ]
+            }
+        }, {
+            logIndex: 3,
+            blockNumber: secondLogBlockNumber,
+            blockHash:
+                '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash:
+                '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_a755a817',
+            returnValues:{
+                '0': '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                '1': '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                '2': '1000000000000000000',
+                '3': 'MAIN',
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '1000',
+                _symbol: 'MAIN'
+            },
+            event: 'Cross',
+            signature:
+                '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data:
+                    '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics:[
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+                ]
+            }
+        }]
+
+        let result = await federator._processLogs(ctr, logs);
+        expect(result).toEqual(secondLogBlockNumber - 1);
     });
 })

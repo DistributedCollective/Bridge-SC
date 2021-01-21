@@ -29,4 +29,11 @@ eth.net = {
     getId: () => defaults.data.netId
 }
 
+eth.mockMethods = (methods) => {
+    return {
+        ...eth,
+        ...methods
+    };
+}
+
 module.exports = eth;
