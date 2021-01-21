@@ -67,6 +67,7 @@ module.exports = class Federator {
         const numberOfPages = Math.ceil((toBlock - fromBlock) / recordsPerPage);
         this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${recordsPerPage}`);
 
+        let allConfirmed = true;
         let fromPageBlock = fromBlock;
         for (let currentPage = 1; currentPage <= numberOfPages; currentPage++) {
             let toPagedBlock = fromPageBlock + recordsPerPage - 1;
@@ -81,17 +82,30 @@ module.exports = class Federator {
             if (!logs) throw new Error('Failed to obtain the logs');
 
             this.logger.info(`Found ${logs.length} logs`);
-            await this._processLogs(ctr, logs, toPagedBlock);
+            const lastBlockAllConfirmed = await this._processLogs(ctr, logs); // undefined meaning all blocks were confirmed
+
+            if (allConfirmed) {
+                // only save the progress when all before blocks were confirmed
+                if (lastBlockAllConfirmed) allConfirmed = false;
+                const newFromBlock = lastBlockAllConfirmed || toPagedBlock;
+                this._saveProgress(this.lastBlockPath, newFromBlock);
+                this.logger.info(`Progress saved, newFromBlock: ${newFromBlock}`);
+            }
+
+            this.logger.info(`Logs processed successfully until block ${toPagedBlock}`);
+
             fromPageBlock = toPagedBlock + 1;
         }
     }
 
-    async _processLogs(ctr, logs, toBlock) {
+    async _processLogs(ctr, logs) {
         try {
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             const from = await transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this.mainWeb3.eth.getBlockNumber();
 
+            let newLastBlockNumber;
+            let allConfirmed = true;
             for (let log of logs) {
                 this.logger.info('Processing event log:', log);
 
@@ -99,12 +113,15 @@ module.exports = class Federator {
                     _amount: amount, _symbol: symbol,
                 } = log.returnValues;
 
-                if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber))
+                if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
                     await this._processLog(log, from)
+                } else if (allConfirmed) {
+                    newLastBlockNumber = log.blockNumber
+                    allConfirmed = false;
+                }
             }
-            this._saveProgress(this.lastBlockPath, toBlock);
 
-            return true;
+            return newLastBlockNumber;
         } catch (err) {
             throw new CustomError(`Exception processing logs`, err);
         }
