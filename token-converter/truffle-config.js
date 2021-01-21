@@ -18,11 +18,13 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+const fs = require('fs');
+
+const MNEMONIC = fs.readFileSync("./mnemonic.key").toString().trim();
+if (!MNEMONIC || MNEMONIC.split(' ').length !== 12) {
+  throw new Error('unable to retrieve mnemonic from .secret');
+}
 
 module.exports = {
   /**
@@ -46,6 +48,15 @@ module.exports = {
       host: "127.0.0.1", // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
       network_id: "*", // Any network (default: none)
+    },
+    rsktestnet: {
+      provider: () =>
+        new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
+      network_id: 31,
+      gas: 6300000,
+      gasPrice: 70000000, // 0.07 gwei
+      skipDryRun: true,
+      timeoutBlocks: 200
     },
     // kovan: {
     //   provider: new HDWalletProvider(

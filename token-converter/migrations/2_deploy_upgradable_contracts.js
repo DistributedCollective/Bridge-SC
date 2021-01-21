@@ -8,6 +8,5 @@ module.exports = async (deployer) => {
     ConverterContract,
     [initialDeploymentFee],
     { deployer }
-  );
-  console.log("\nDeployed Converter Contract in ==> ", instance.address);  
+  );  
 };
