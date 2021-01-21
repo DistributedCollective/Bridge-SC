@@ -116,7 +116,7 @@ module.exports = class Federator {
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
                     await this._processLog(log, from)
                 } else if (allConfirmed) {
-                    newLastBlockNumber = log.blockNumber
+                    newLastBlockNumber = log.blockNumber - 1;
                     allConfirmed = false;
                 }
             }
