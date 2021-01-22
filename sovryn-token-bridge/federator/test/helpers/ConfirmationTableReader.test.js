@@ -40,6 +40,17 @@ describe("ConfirmationTableReader module tests", () => {
                 new ConfirmationTableReader(validChainId, malformedTable)
             }).toThrow();
         });
+
+        it("should fail if the table doesn't have a default attribute", () => {
+            const validChainId = 1;
+
+            const malformedTable = JSON.parse(JSON.stringify(testConfig.confirmationTable));
+            delete malformedTable[validChainId]["default"];
+
+            expect(() => {
+                new ConfirmationTableReader(validChainId, malformedTable)
+            }).toThrow();
+        });
     });
 
     describe("getMinConfirmation tests", () => {
@@ -108,12 +119,12 @@ describe("ConfirmationTableReader module tests", () => {
             expect(confirmations).toEqual(expectedConfirmation);
         });
 
-        it("should throw error if the symbol is not in the table", () => {
-            expect(() => {
-                const amount = 20;
-                const invalidSymbol = "NOTEST";
-                ctr.getConfirmations(invalidSymbol, amount);
-            }).toThrow("Invalid token");
+        it("should return the default attribute if the symbol is not in the table", () => {
+            const amount = 20;
+            const invalidSymbol = "NOTEST";
+            const expectedDefaultConfirmation = testConfig.confirmationTable[chainId].default;
+            const confirmations = ctr.getConfirmations(invalidSymbol, amount);
+            expect(confirmations).toEqual(expectedDefaultConfirmation);
         });
     });
 });

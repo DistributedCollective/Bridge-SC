@@ -21,6 +21,7 @@
     "confirmations": 0,
     "confirmationTable": {
         "1": {
+            "default": 5760,
             "minConfirmation": 5760,
             "MAIN": [
                 {
@@ -38,6 +39,7 @@
             ]
         },
         "3": {
+            "default": 5760,
             "minConfirmation": 5760,
             "MAIN": [
                 {
@@ -54,7 +56,44 @@
                 }
             ]
         },
+        "30": {
+            "default": 2880,
+            "minConfirmation": 2880,
+            "MAIN": [
+                {
+                    "amount": 0,
+                    "confirmations": 2880
+                },
+                {
+                    "amount": 30,
+                    "confirmations": 5000
+                },
+                {
+                    "amount": 100,
+                    "confirmations": 10000
+                }
+            ]
+        },
+        "31": {
+            "default": 10,
+            "minConfirmation": 5760,
+            "MAIN": [
+                {
+                    "amount": 0,
+                    "confirmations": 5760
+                },
+                {
+                    "amount": 30,
+                    "confirmations": 11000
+                },
+                {
+                    "amount": 100,
+                    "confirmations": 20000
+                }
+            ]
+        },
         "42": {
+            "default": 10,
             "minConfirmation": 10,
             "MAIN": [
                 {
