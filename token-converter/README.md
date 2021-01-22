@@ -1,6 +1,13 @@
 # Token Converter
 
 ## Base Contract
+In order to deploy this contract into RSK testnet network you should have a mnemonic phrase and some rBTC in such address.
+The mnemonic must be saved in this file 
+`token-converter/mnemonic.key`
+
+With this format:
+`cat ring own bus mere surf value blind space asfalt elder fun`
+
 
 **Tests**:
 <br>
