@@ -63,14 +63,14 @@ module.exports = class Federator {
     }
 
     async _processBlocks(ctr, fromBlock, toBlock) {
-        const recordsPerPage = 1000;
-        const numberOfPages = Math.ceil((toBlock - fromBlock) / recordsPerPage);
-        this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${recordsPerPage}`);
+        const blocksPerPage = 1000;
+        const numberOfPages = Math.ceil((toBlock - fromBlock) / blocksPerPage);
+        this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${blocksPerPage}`);
 
-        let allConfirmed = true;
+        let allLogsFromPagesConfirmed = true;
         let fromPageBlock = fromBlock;
         for (let currentPage = 1; currentPage <= numberOfPages; currentPage++) {
-            let toPagedBlock = fromPageBlock + recordsPerPage - 1;
+            let toPagedBlock = fromPageBlock + blocksPerPage - 1;
             if (currentPage === numberOfPages) {
                 toPagedBlock = toBlock
             }
@@ -84,9 +84,9 @@ module.exports = class Federator {
             this.logger.info(`Found ${logs.length} logs`);
             const lastBlockAllConfirmed = await this._processLogs(ctr, logs); // undefined meaning all blocks were confirmed
 
-            if (allConfirmed) {
+            if (allLogsFromPagesConfirmed) {
                 // only save the progress when all before blocks were confirmed
-                if (lastBlockAllConfirmed) allConfirmed = false;
+                if (lastBlockAllConfirmed) allLogsFromPagesConfirmed = false;
                 const newFromBlock = lastBlockAllConfirmed || toPagedBlock;
                 this._saveProgress(this.lastBlockPath, newFromBlock);
                 this.logger.info(`Progress saved, newFromBlock: ${newFromBlock}`);
@@ -105,7 +105,7 @@ module.exports = class Federator {
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
-            let allConfirmed = true;
+            let allLogsConfirmed = true;
             for (let log of logs) {
                 this.logger.info('Processing event log:', log);
 
@@ -115,9 +115,9 @@ module.exports = class Federator {
 
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
                     await this._processLog(log, from)
-                } else if (allConfirmed) {
+                } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
-                    allConfirmed = false;
+                    allLogsConfirmed = false;
                 }
             }
 
