@@ -31,7 +31,7 @@ module.exports = class Federator {
         const sleepAfterRetrie = 3000;
         while (retries > 0) {
             try {
-                const currentBlock = await this.mainWeb3.eth.getBlockNumber();
+                const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
                 const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
 
@@ -90,7 +90,7 @@ module.exports = class Federator {
         try {
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             const from = await transactionSender.getAddress(this.config.privateKey);
-            const currentBlock = await this.mainWeb3.eth.getBlockNumber();
+            const currentBlock = await this._getCurrentBlockNumber();
 
             for (let log of logs) {
                 this.logger.info('Processing event log:', log);
@@ -225,5 +225,12 @@ module.exports = class Federator {
         let confirmations = ctr.getConfirmations(symbol, amount)
         let blockPassed = currentBlock - blockNumber;
         return confirmations <= blockPassed;
+    }
+
+    async _getCurrentBlockNumber() {
+        if (!this._currentBlockNumber) {
+            this._currentBlockNumber = await this.mainWeb3.eth.getBlockNumber();
+        }
+        return this._currentBlockNumber
     }
 }
