@@ -21,6 +21,7 @@
     "confirmations": 0,
     "confirmationTable": {
         "1": {
+            "default": 5760,
             "minConfirmation": 5760,
             "MAIN": [
                 {
@@ -38,6 +39,7 @@
             ]
         },
         "3": {
+            "default": 5760,
             "minConfirmation": 5760,
             "MAIN": [
                 {
@@ -55,6 +57,7 @@
             ]
         },
         "30": {
+            "default": 2880,
             "minConfirmation": 2880,
             "MAIN": [
                 {
@@ -72,6 +75,7 @@
             ]
         },
         "31": {
+            "default": 10,
             "minConfirmation": 5760,
             "MAIN": [
                 {
@@ -89,6 +93,7 @@
             ]
         },
         "42": {
+            "default": 10,
             "minConfirmation": 10,
             "MAIN": [
                 {

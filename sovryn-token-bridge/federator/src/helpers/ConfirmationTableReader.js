@@ -16,7 +16,7 @@ class ConfirmationTableReader {
         const confirmationArray = this.confirmationTable[token];
 
         if (!confirmationArray)
-            throw Error("Invalid token");
+            return this.confirmationTable.default;
 
         confirmationArray.sort((a, b) => a.amount - b.amount)
 
@@ -38,6 +38,9 @@ class ConfirmationTableReader {
         for (const [chainId, table] of Object.entries(confirmationTable)) {
             if (parseInt(chainId) < 0)
                 throw new Error(`ChainId (${chainId}) must be positive`);
+
+            if (!table.default)
+                throw new Error("The table must have a default value");
 
             const minConfirmation = table.minConfirmation;
             if (!minConfirmation)

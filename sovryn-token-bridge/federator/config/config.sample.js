@@ -7,7 +7,188 @@ module.exports = {
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8'),
     storagePath: './db',
     confirmationTable: {
+        "1": {
+            "default": 5760,
+            "minConfirmation": 10,
+            "WETH": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "WBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "DAI": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "renBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+        },
+        "3": {
+            "default": 5760,
+            "minConfirmation": 10,
+            "WETH": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "WBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "DAI": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "renBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+        },
+        "30": {
+            "default": 2880,
+            "minConfirmation": 10,
+            "WETH": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "WBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "DAI": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "renBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+        },
         "31": {
+            "default": 10,
             "minConfirmation": 10,
             "WETH": [
                 {
@@ -67,6 +248,7 @@ module.exports = {
             ],
         },
         "42": {
+            "default": 10,
             "minConfirmation": 10,
             "WETH": [
                 {
