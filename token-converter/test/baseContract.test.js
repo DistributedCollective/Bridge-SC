@@ -1,4 +1,4 @@
-const Converter = artifacts.require("Converter");
+const ConverterContract = artifacts.require("Converter");
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
 
@@ -9,7 +9,7 @@ const fakeAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559"; // put a fake 
 contract("Converter", (accounts) => {
   let converterContract;
   before(async function () {
-    converterContract = await Converter.new(initialDeploymentFee);
+    converterContract = await ConverterContract.deployed();
   });
 
   describe("Converter Contract should:", async () => {
@@ -17,7 +17,11 @@ contract("Converter", (accounts) => {
       const conversionFeeBN = await converterContract.conversionFee();
       const conversionFee = conversionFeeBN.toNumber();
 
-      assert.equal(conversionFee, initialDeploymentFee, "Wrong initialization fee");
+      assert.strictEqual(
+        conversionFee,
+        initialDeploymentFee,
+        "Wrong initialization fee"
+      );
     });
 
     it("REJECT conversionFee update when its value is zero", async () => {
@@ -32,7 +36,7 @@ contract("Converter", (accounts) => {
       const conversionFeeBN = await converterContract.conversionFee();
       const conversionFee = conversionFeeBN.toNumber();
 
-      assert.equal(
+      assert.strictEqual(
         conversionFee,
         updatedFee,
         "Transaction error when updating fee"
@@ -56,23 +60,25 @@ contract("Converter", (accounts) => {
     it("ACCEPT transaction when contract is NOT PAUSED", async () => {
       // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
       // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      const testPauseVarChangeTo = 2;
+      const numberToAdd = 200;
       const testPauseVarPrevious = (
         await converterContract.testPauseVar()
       ).toNumber();
+      const testPauseVarChangeTo = testPauseVarPrevious + numberToAdd;
+
       await converterContract.testPause(testPauseVarChangeTo);
       const testPauseVarCurrent = (
         await converterContract.testPauseVar()
       ).toNumber();
 
-      assert.notEqual(testPauseVarCurrent, testPauseVarPrevious);
-      assert.equal(testPauseVarChangeTo, testPauseVarCurrent);
+      assert.notStrictEqual(testPauseVarCurrent, testPauseVarPrevious);
+      assert.strictEqual(testPauseVarChangeTo, testPauseVarCurrent);
     });
 
     it("PAUSE the contract when sender is owner and contract is UNPAUSED", async () => {
       await converterContract.pauseContract();
       const contractIsPaused = await converterContract.paused();
-      assert.equal(contractIsPaused, true);
+      assert.strictEqual(contractIsPaused, true);
     });
 
     it("REJECT any transaction (except update conversionFee by owner) when contract is PAUSED", async () => {
@@ -94,7 +100,7 @@ contract("Converter", (accounts) => {
     it("UNPAUSE the contract when sender is owner", async () => {
       await converterContract.unpauseContract();
       const contractIsPaused = await converterContract.paused();
-      assert.equal(contractIsPaused, false);
+      assert.strictEqual(contractIsPaused, false);
     });
 
     it("REJECT UNPAUSE contract when contract is already UNPAUSED", async () => {
