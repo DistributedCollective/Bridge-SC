@@ -1,4 +1,4 @@
-const defaultConfirmationTable = require('../../config/confirmation_table.json')
+const { confirmationTable: defaultConfirmationTable } = require('../../config/config')
 
 class ConfirmationTableReader {
 
