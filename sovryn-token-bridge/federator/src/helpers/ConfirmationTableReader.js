@@ -46,7 +46,8 @@ class ConfirmationTableReader {
             if (!minConfirmation)
                 throw new Error(`minConfirmation is not defined for chainId ${chainId}`);
 
-            delete table.minConfirmation
+            delete table.minConfirmation;
+            delete table.default;
 
             for (const [, confirmationArray] of Object.entries(table)) {
                 const arrayMin = confirmationArray
