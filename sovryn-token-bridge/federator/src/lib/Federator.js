@@ -221,10 +221,10 @@ module.exports = class Federator {
         }
     }
 
-    _isConfirmed(ctr, symbol, amount, currentBlock, blockNumber) {
+    _isConfirmed(ctr, symbol, amount, currentBlock, logBlockNumber) {
         let confirmations = ctr.getConfirmations(symbol, amount)
-        let blockPassed = currentBlock - blockNumber;
-        return confirmations <= blockPassed;
+        let blockConfirmations = currentBlock - logBlockNumber;
+        return confirmations <= blockConfirmations;
     }
 
     async _getCurrentBlockNumber() {
