@@ -37,8 +37,10 @@ describe('Federator module tests', () => {
     });
 
     it('Runs the main federator process with pagination', async () => {
-        let currentBlock = testConfig.mainchain.fromBlock + 2002 + 5760;
-        let federator = new Federator(testConfig, logger, web3Mock);
+        const expectedConfirmations = 5760;
+        const twoPages = 2002;
+        const currentBlock = testConfig.mainchain.fromBlock + twoPages + expectedConfirmations;
+        const federator = new Federator(testConfig, logger, web3Mock);
         federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
         federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
@@ -47,13 +49,15 @@ describe('Federator module tests', () => {
 
         expect(result).toBeTruthy();
         let value = fs.readFileSync(testPath, 'utf8');
-        expect(parseInt(value)).toEqual(currentBlock-5760);
+        expect(parseInt(value)).toEqual(currentBlock-expectedConfirmations);
         expect(_processLogsSpy).toHaveBeenCalledTimes(3);
     });
 
     it('Runs the main federator process with pagination limit', async () => {
-        let currentBlock = testConfig.mainchain.fromBlock + 1001 + 5760; // The +1 one is because it starts with fromBlock +1
-        let federator = new Federator(testConfig, logger, web3Mock);
+        const expectedConfirmations = 5760;
+        const onePage = 1001;
+        const currentBlock = testConfig.mainchain.fromBlock + onePage + expectedConfirmations;
+        const federator = new Federator(testConfig, logger, web3Mock);
         federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
         federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
@@ -62,7 +66,7 @@ describe('Federator module tests', () => {
 
         expect(result).toBeTruthy();
         let value = fs.readFileSync(testPath, 'utf8');
-        expect(parseInt(value)).toEqual(currentBlock-5760);
+        expect(parseInt(value)).toEqual(currentBlock-expectedConfirmations);
         expect(_processLogsSpy).toHaveBeenCalledTimes(1);
     });
 
