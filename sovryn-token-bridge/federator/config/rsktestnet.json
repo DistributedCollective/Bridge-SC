@@ -1,0 +1,8 @@
+{
+    "bridge": "0xd7a11ca86a6b5365a431f11e2ad8d4e10aaf45ee",
+    "federation": "0x79a1b1ddaf83d32bc4c1ae4c532b469d7c1deea1",
+    "multiSig": "0x4de2dc115a556c39f8895d7ed3df040b4fd21351",
+    "allowTokens": "0xdf68bd983525113049282950c0b8afb539e7bd1e",
+    "host": "http://45.79.214.38",
+    "fromBlock": 1544723
+}

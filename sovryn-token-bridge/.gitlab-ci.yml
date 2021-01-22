@@ -1,0 +1,60 @@
+variables:
+  # Common variables to be able to build and push docker images
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-disabled
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_REPOSITORY: "docker.atixlabs.com/sovryn-token-bridge-converter/"
+
+#cache:
+#  paths:
+#    - ship-id-backend/.m2/repository/
+#    - ship-id-backend/target/
+
+stages:
+  - package
+
+package-federator:
+  image: node:10.23.1-stretch-slim
+  services:
+    - docker:19.03.1-dind
+  stage: package
+  script:
+    - apt-get update; apt-get install curl jq -y;
+    - curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
+    - cd ./sovryn-token-bridge
+    - docker login -u gitlabci -p $CI_JOB_TOKEN $CI_REGISTRY
+    # Tests are skipped as we just executed them in `backend` job
+    - pwd
+    - ./deploy.sh 2 $(pwd)
+  only:
+    refs:
+      # Only run on develop, release/x.y.x and hotfix/xxxx
+      - develop
+      - /^release.*$/
+      - /^hotfix.*$/
+    changes:
+      - "sovryn-token-bridge/federator/**/*"
+      - "sovryn-token-bridge/abis/**/*"
+  except:
+    - schedules
+
+package-ui:
+  image: docker:20.10-git
+  services:
+    - docker:19.03.1-dind
+  stage: package
+  script:
+    - cd ./sovryn-token-bridge/ui
+    - docker login -u gitlabci -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t ${DOCKER_REPOSITORY}federation-ui:$CI_COMMIT_SHORT_SHA .
+    - docker push ${DOCKER_REPOSITORY}federation-ui:$CI_COMMIT_SHORT_SHA
+  only:
+    refs:
+      # Only run on develop, release/x.y.x and hotfix/xxxx
+      - develop
+      - /^release.*$/
+      - /^hotfix.*$/
+    changes:
+      - "sovryn-token-bridge/ui/**/*"
+  except:
+    - schedules

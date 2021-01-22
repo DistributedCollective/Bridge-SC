@@ -1,0 +1,73 @@
+# If ops and the project are hosted on the same repo
+include:
+  - local: "/projectChangeMe-backend/.gitlab-ci.yml"
+  - local: "/projectChangeMe-frontend/.gitlab-ci.yml"
+
+# https://gitlab.com/gitlab-com/support-forum/issues/4416#note_216039772
+variables:
+  DOCKER_TLS_CERTDIR: ""
+
+stages:
+  - test
+  - package
+  - deploy
+
+# https://docs.gitlab.com/ee/ci/yaml/#yaml-anchors-for-script
+.deploy: &deploy 
+  stage: deploy
+  image: docker.atixlabs.com/docker:19.03.1-compose
+  when: manual
+  services:
+    - docker:19.03.1-dind
+  only:
+    refs:
+      # Only run on develop, release/x.y.x and hotfix/xxxx
+      - develop
+      - /^release.*$/
+      - /^hotfix.*$/
+  except:
+    - schedules
+
+# https://docs.gitlab.com/ee/ci/yaml/#yaml-anchors-for-script
+.deploy-script: &deploy-script
+  # Setup ssh
+  - apk add --update curl openssh bash 
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+ # Deploy
+  - docker login -u gitlabci -p $CI_JOB_TOKEN $CI_REGISTRY
+
+deploy-staging:
+  <<: *deploy
+  environment:
+    name: staging
+    url: https://frontend.staging.projectChangeMe.atixlabs.com
+  script:
+    - *deploy-script 
+    - ssh-keyscan projectChangeMe-staging.atixlabs.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - cd ./ops && bash ./ops.sh --deploy "staging"
+
+deploy-uat:
+  <<: *deploy
+  environment:
+    name: uat
+    url: https://frontend.uat.projectchangeMe.atixlabs.com
+  script:
+    - *deploy-script 
+    - ssh-keyscan projectchangeMe-uat.atixlabs.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - cd ./ops && bash ./ops.sh --deploy "uat"
+
+deploy-production:
+  <<: *deploy
+  environment:
+    name: production
+    url: https://projectChangeMe.com
+  script:
+    - *deploy-script 
+    - ssh-keyscan projectChangeMe-production.atixlabs.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - cd ./ops && bash ./ops.sh --deploy "production"

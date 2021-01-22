@@ -1,0 +1,38 @@
+# my global config
+global:
+  # scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  # evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+  external_labels:
+    origin_prometheus: projectChangeMe-production
+
+scrape_configs:
+  - job_name: "projectChangeMe_production_cadvisor"
+    static_configs:
+      - targets:
+          - cadvisor:8080
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(container_last_seen.+|container_cpu_user_seconds_total|container_cpu_user_seconds_total|container_memory_usage_bytes|container_network_transmit_bytes_total|container_network_receive_bytes_total)"
+        action: keep
+  - job_name: "projectChangeMe_production_node_exporter"
+    static_configs:
+      - targets:
+          - node-exporter:9100
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(node_memory_MemTotal.+|node_memory_MemFree.+|node_memory_Buffers.+|node_memory_Cached.+|node_memory_MemTotal.+|node_filesystem.+)"
+        action: keep
+  # Spring Boot job example
+  - job_name: "projectChangeMe_production_api"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - backend:8080 
+    bearer_token: hgSrUEofLJxA8EJh9YX7mwzVMAaJXELjiVVxKC3F
+
+remote_write:
+  - url: https://prometheus-us-central1.grafana.net/api/prom/push
+    basic_auth:
+      username: xxxxxx
+      password: xxxxxx

@@ -1,0 +1,16 @@
+# Users Helper
+- src: grog.management-user
+  version: v1.2.9
+ # `grog.management-user` deps: See https://github.com/ansible/ansible/issues/20537
+- src: GROG.user
+  version: v1.3.0
+- src: GROG.sudo
+  version: v1.3.2
+- src: GROG.authorized-key
+  version: v1.1.5
+# Docker Helper
+- src: nickjj.docker
+  version: v1.9.1
+# UFW - Iptables firewall
+- src: weareinteractive.ufw
+  version: 1.10.0

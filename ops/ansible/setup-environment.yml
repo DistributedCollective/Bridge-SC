@@ -1,0 +1,30 @@
+---
+- hosts: all
+  roles:
+    - role: grog.management-user
+      management_user_key: ""
+      management_user_settings:
+        name: app
+        comment: User to run the apps
+        shell: "/bin/bash"
+        authorized_keys: "{{ authorized_keys }}"
+    - role: "nickjj.docker"
+      docker__edition: "ce"
+      docker__channel: ["stable"]
+      docker__compose_version: "1.24.1"
+      docker__users: ["app"]
+    - role: "weareinteractive.ufw"
+      ufw_rules:
+        [
+          { port: 22, rule: allow },
+          { port: 80, rule: allow },
+          { port: 443, rule: allow },
+        ]
+  tasks:
+    - name: Copy Secrets
+      copy:
+        src: ../{{lookup('env', 'ENVIRONMENT')}}/configs
+        dest: /
+        owner: app
+        group: app
+        mode: '0644'

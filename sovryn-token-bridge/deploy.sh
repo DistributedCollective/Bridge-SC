@@ -9,7 +9,7 @@ MAIN_BLOCK=""
 SIDE_BLOCK=""
 ETH_HOST=""
 RSK_HOST=""
-PROGRAMS="docker npm nodejs jq"
+PROGRAMS="docker npm jq"
 
 quit() {
     if [ $1 -eq 1 ]; then
@@ -112,8 +112,12 @@ block() {
 }
 
 build() {
+    VERSION=${CI_COMMIT_SHORT_SHA:=latest}
+    REPOSITORY=${DOCKER_REPOSITORY}
+    echo "Destination dir: ${DEST_DIR}"
     cd $DEST_DIR
-    docker build -t fed-tokenbridge . &&
+    pwd
+    docker build -t ${REPOSITORY}fed-tokenbridge:${VERSION} . &&
         echo "Docker image created suscessfully" &&
         return 0
     quit 1 "There was a problem creating the docker image"
@@ -136,10 +140,17 @@ setup() {
         quit 0 "$RUN_MESSAGE"
 }
 
+build-docker-image-from-ci() {
+    VERSION=${CI_COMMIT_SHORT_SHA:=latest}
+    REPOSITORY=${DOCKER_REPOSITORY}
+    dependencies && build &&
+        docker push ${REPOSITORY}fed-tokenbridge:${VERSION}
+}
+
 if [ ! -z $1 ]; then
     UPDATE=$1
 else
-    quit 1 "Undefinied parameter. 0 for install, 1 to update."
+    quit 1 "Undefinied parameter. 0 for install, 1 to update, 2 to build docker image."
 fi
 
 if [ ! -z $2 ]; then
@@ -167,6 +178,10 @@ elif [ $UPDATE -eq 0 ]; then
     setup &&
         quit 0
     quit 1 "Error updating the token bridge federate node"
+elif [ $UPDATE -eq 2 ]; then
+    echo "Building docker image"
+    build-docker-image-from-ci &&
+        quit 0
 else
     quit 1 "The valid values for the script are 0 to install and 1 to update"
 fi

@@ -1,0 +1,60 @@
+variables:
+  # Common variables to be able to build and push docker images
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-disabled
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  # Backend Props
+  # =============
+  MAVEN_CLI_OPTS: ""
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  # https://hub.docker.com/_/postgres
+  POSTGRES_PASSWORD: "radb_ci"
+  POSTGRES_USER: "radb_ci"
+  POSTGRES_DB: "risk_assessment_db_ci"
+  spring_profiles_active: "ci"
+  
+cache:
+  paths:
+    - raa-backend/.m2/repository/
+    - raa-backend/target/
+
+stages:
+  - test
+  - package
+
+backend:
+  image: openjdk:11-jdk-slim
+  services:
+  - name: postgres:9.3 # FIXME: Check what version is going to be used here
+    alias: db
+  stage: test
+  script:
+    - cd ./raa-backend
+    - ./mvnw $MAVEN_CLI_OPTS test
+  only:
+    changes: 
+      - "raa-backend/**/*"
+
+package-backend:
+  image: openjdk:11-jdk-slim
+  services:
+    - docker:19.03.1-dind
+  stage: package
+  script:
+    - apt-get update; apt-get install curl -y
+    - curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
+    - cd ./raa-backend
+    - docker login -u gitlabci -p $CI_JOB_TOKEN $CI_REGISTRY
+    # Tests are skipped as we just executed them in `backend` job
+    - ./mvnw clean -Dmaven.test.skip=true $MAVEN_CLI_OPTS package dockerfile:build dockerfile:push
+
+  only:
+    refs:
+      - ABI-65-cd-configuration 
+      # Only run on develop, release/x.y.x and hotfix/xxxx
+      - develop
+      - /^release.*$/
+      - /^hotfix.*$/
+    changes:
+        - "raa-backend/**/*"
+

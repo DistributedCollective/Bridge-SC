@@ -1,0 +1,19 @@
+{
+  "authorized_keys": [
+    {
+      "key": "{{ lookup('file', '../staging/ansible/ssh-keys/alan-verbner.pub') }}"
+    },
+    {
+      "key": "{{ lookup('file', '../staging/ansible/ssh-keys/alexis-wolfsdorf.pub') }}"
+    },
+    {
+      "key": "{{ lookup('file', '../staging/ansible/ssh-keys/diego-bale.pub') }}"
+    },
+    {
+      "key": "{{ lookup('file', '../staging/ansible/ssh-keys/tomas-najun.pub') }}"
+    },
+    {
+      "key": "{{ lookup('file', './gitlabci.pub') }}"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+version: "3"
+services:
+  federation:
+    image: docker.atixlabs.com/projectChangeMe-backend:0.0.1-SNAPSHOT-822f8e52
+    volumes:
+      - /configs/config:/app/federator/config
+      - /configs/db:/app/federator/db
+  frontend:
+    image: docker.atixlabs.com/projectChangeMe-frontend:0.1.0-5742bc3b
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`bridge.staging.sovryn.atixlabs.xyz`)"
+      - "traefik.http.routers.frontend.entrypoints=web-secure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=le"
+  proxy:
+    image: traefik:v2.2.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web-secure.address=:443"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=web-secure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesResolvers.le.acme.email=info@atixlabs.com"
+      - "--certificatesResolvers.le.acme.storage=/certs/acme.json"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"  
+    ports:
+      - "80:80"
+      - "443:443"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Uncomment if you want to use a file instead of labels
+      # - ./trafeik-${ENVIRONMENT}.toml:/etc/traefik/traefik.toml
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/home/app/certs/:/certs"
+    depends_on:
+      - frontend
+  monitoring:
+    image: google/cadvisor:latest
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:rw"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+    ports:
+      - "127.0.0.1:9000:8080"
+    

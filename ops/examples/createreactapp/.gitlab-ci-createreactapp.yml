@@ -1,0 +1,60 @@
+variables:
+  # Common variables to be able to build and push docker images
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-disabled
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  
+  # To make npm test to not to start in watch mode
+  # https://create-react-app.dev/docs/running-tests/#continuous-integration
+  CI: "true"
+
+cache:
+  paths:
+    - raa_frontend/node_modules/
+    - raa_frontend/build/
+
+stages:
+  - test
+  - package
+
+frontend:
+  image: node:12-alpine
+  stage: test
+  script:
+    - apk add git
+    - cd ./raa-frontend
+    - npm install
+    - npm test
+  only:
+    changes:
+      - raa-frontend/**/*
+
+package-frontend:
+  image: node:12-alpine
+  services:
+  - docker:19.03.1-dind
+  stage: package
+  variables:
+    # FIXME: eslint is failing so we need to unset this here to avoid
+    # Treating warnings as errors because process.env.CI = true.
+    CI: "false"
+  script:
+    - apk add docker git
+    - cd ./raa-frontend
+    - docker login -u gitlabci -p $CI_JOB_TOKEN $CI_REGISTRY
+    - npm install 
+    - npm run build
+    - npm run docker:build
+    - npm run docker:push
+
+  only:
+    refs:
+      - ABI-65-cd-configuration 
+      # Only run on develop, release/x.y.x and hotfix/xxxx
+      - develop
+      - /^release.*$/
+      - /^hotfix.*$/
+    changes:
+      - raa-frontend/**/*
+  
+  

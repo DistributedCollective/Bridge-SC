@@ -1,0 +1,45 @@
+{
+  "name": "atix-ops",
+  "version": "3.0.0",
+  "description": "This repository proposes a standard base setup that can be used to launch and deploy dev, staging, uat and even production environments. It might be obvious but it's worth mentioning that it will depend on the architecture of the system to be deployed and the non-functional requirements the project has (amount of concurrent users that need to be served, the amount of data that needs to be processed or stored, etc).",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "check-doc-links": "find . -path ./node_modules -prune -o -path ./.gitlab -prune -o -name \"*.md\" -exec markdown-link-check {} \\;",
+    "update-toc": "markdown-toc  README.md -i",
+    "release": "standard-version"
+  },
+  "standard-version": {
+    "types": [
+      {
+        "type": "feat",
+        "section": "Features"
+      },
+      {
+        "type": "fix",
+        "section": "Bug Fixes"
+      },
+      {
+        "type": "docs",
+        "section": "Docs"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/atixlabs/atix-ops.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/atixlabs/atix-ops/issues"
+  },
+  "homepage": "https://gitlab.com/atixlabs/atix-ops#readme",
+  "devDependencies": {
+    "markdown-link-check": "3.8.1",
+    "markdown-toc": "1.2.0",
+    "standard-version": "7.1.0"
+  }
+}
