@@ -13,19 +13,17 @@ import "./zeppelin/token/ERC20/IERC20.sol";
 import "./zeppelin/token/ERC20/SafeERC20.sol";
 import "./zeppelin/utils/Address.sol";
 import "./zeppelin/math/SafeMath.sol";
-import "./zeppelin/cryptography/ECDSA.sol";
 
-import "./IBridge.sol";
+import "./IBridge_v1.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
 
-contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
+contract Bridge_v1 is Initializable, IBridge_v1, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
-    using ECDSA for bytes32;
 
     address constant private NULL_ADDRESS = address(0);
     bytes32 constant private NULL_HASH = bytes32(0);
@@ -142,60 +140,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     /**
-    * ERC-20 tokens approve and transferFrom pattern
-    * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
-    */
-    function receiveTokens(
-        address tokenToUse,
-        uint256 amount,
-        address receiver,
-        bytes calldata signature
-    ) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, receiver, signature);
-    }
-
-    /**
-    * ERC-20 tokens approve and transferFrom pattern
-    * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
-    */
-    function receiveTokens(address tokenToUse, uint256 amount) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, _msgSender(), "");
-    }
-
-    /**
      * ERC-20 tokens approve and transferFrom pattern
      * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
      */
-    function _receiveTokens(
-        address tokenToUse,
-        uint256 amount,
-        address receiver,
-        bytes memory signature
-    ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
+    function receiveTokens(address tokenToUse, uint256 amount) external whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
         address sender = _msgSender();
         require(!sender.isContract(), "Bridge: Sender can't be a contract");
-
-        if (sender != receiver) {
-            bytes memory blob = abi.encodePacked(
-                tokenToUse,
-                amount,
-                receiver
-            );
-            _verifySignature(sender, blob, signature);
-        }
-
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
-        crossTokens(tokenToUse, receiver, amount, "");
+        crossTokens(tokenToUse, sender, amount, "");
         return true;
-    }
-
-    /**
-     * Verify that msgHash is signed by signerAddr
-     */
-    function _verifySignature(address signerAddr, bytes memory msgHash, bytes memory signature) private pure {
-        address retAddr = keccak256(msgHash).toEthSignedMessageHash().recover(signature);
-        require(retAddr == signerAddr, "Bridge: The signature is not valid!");
     }
 
     /**
@@ -218,7 +172,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         crossTokens(tokenToUse, from, amount, userData);
     }
 
-    function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
+    function crossTokens(address tokenToUse, address from, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
         //Send the payment to the MultiSig of the Federation
         uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
@@ -236,7 +190,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             //Side Token Crossing
             ISideToken(tokenToUse).burn(amountMinusFees, userData);
             // solium-disable-next-line max-len
-            emit Cross(originalTokens[tokenToUse], receiver, amountMinusFees, ISideToken(tokenToUse).symbol(), userData, ISideToken(tokenToUse).decimals(), ISideToken(tokenToUse).granularity());
+            emit Cross(originalTokens[tokenToUse], from, amountMinusFees, ISideToken(tokenToUse).symbol(), userData, ISideToken(tokenToUse).decimals(), ISideToken(tokenToUse).granularity());
         } else {
             //Main Token Crossing
             knownTokens[tokenToUse] = true;
@@ -247,7 +201,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             }
             //We consider the amount before fees converted to 18 decimals to check the limits
             verifyWithAllowTokens(tokenToUse, formattedAmount, isASideToken);
-            emit Cross(tokenToUse, receiver, amountMinusFees, symbol, userData, decimals, granularity);
+            emit Cross(tokenToUse, from, amountMinusFees, symbol, userData, decimals, granularity);
         }
     }
 

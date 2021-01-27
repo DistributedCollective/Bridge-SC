@@ -1,6 +1,6 @@
 //We are actually gona use Bridge_v1 but truffle only knows the address of the proxy by using Bridge_v0
 const Bridge = artifacts.require("Bridge_v0");
-const BridgeImpl = artifacts.require("Bridge");
+const BridgeImpl = artifacts.require("Bridge_v1");
 const Federation = artifacts.require('Federation');
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 
