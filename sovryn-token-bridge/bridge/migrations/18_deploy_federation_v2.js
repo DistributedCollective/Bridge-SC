@@ -1,5 +1,5 @@
 const Federation = artifacts.require("Federation");
-const Bridge = artifacts.require("Bridge_v0");
+const Bridge = artifacts.require("Bridge");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 
 module.exports = function(deployer, networkName, accounts) {
