@@ -1,7 +1,16 @@
+const { TestHelper } = require('@openzeppelin/cli');
+const { Contracts, ZWeb3 } = require('@openzeppelin/upgrades');
+
+ZWeb3.initialize(web3.currentProvider);
+
+//Upgradable Contracts
+const Bridge_v1 = Contracts.getFromLocal('Bridge_v1');
+const Bridge = Contracts.getFromLocal('Bridge');
+
 const Federation = artifacts.require('./Federation');
 const MultiSigWallet = artifacts.require('./MultiSigWallet');
 const AllowTokens = artifacts.require('./AllowTokens');
-const Bridge = artifacts.require('./Bridge');
+const BridgeArtifact = artifacts.require('./Bridge');
 const SideTokenFactory = artifacts.require('./SideTokenFactory');
 const UtilsContract = artifacts.require('./Utils');
 
@@ -273,10 +282,15 @@ contract('Federation', async function (accounts) {
             await this.allowTokens.addAllowedToken(originalTokenAddress);
             this.sideTokenFactory = await SideTokenFactory.new();
             this.utilsContract = await UtilsContract.deployed();
-            await Bridge.link(UtilsContract, this.utilsContract.address);
-            this.bridge = await Bridge.new();
-            await this.bridge.methods['initialize(address,address,address,address,string)'](deployer, this.federation.address,
-                this.allowTokens.address, this.sideTokenFactory.address, 'e');
+            this.project = await TestHelper();
+
+            Bridge_v1.link({ "Utils": this.utilsContract.address });
+            Bridge.link({ "Utils": this.utilsContract.address });
+            this.proxy = await this.project.createProxy(Bridge_v1,
+                { initMethod: 'initialize', initArgs: [deployer, this.federation.address, this.allowTokens.address, this.sideTokenFactory.address, 'e'] });
+            this.proxy = await this.project.upgradeProxy(this.proxy.address, Bridge);
+            this.bridge = await BridgeArtifact.at(this.proxy.address);
+
             await this.sideTokenFactory.transferPrimary(this.bridge.address);
             await this.federation.setBridge(this.bridge.address);
         });
