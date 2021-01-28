@@ -20,7 +20,7 @@ import "./ISideTokenFactory.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
 
-contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
+contract Bridge_v1 is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
@@ -143,21 +143,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
      * ERC-20 tokens approve and transferFrom pattern
      * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
      */
-     function receiveTokens(address tokenToUse, uint256 amount) external whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
+    function receiveTokens(address tokenToUse, uint256 amount) external whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
         address sender = _msgSender();
         require(!sender.isContract(), "Bridge: Sender can't be a contract");
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, sender, amount, "");
-        return true;
-    }
-
-    function receiveTokens(address tokenToUse, uint256 amount, bytes calldata extraData) external whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
-        address sender = _msgSender();
-        require(!sender.isContract(), "Bridge: Sender can't be a contract");
-        //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
-        IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
-        crossTokens(tokenToUse, sender, amount, extraData);
         return true;
     }
 
