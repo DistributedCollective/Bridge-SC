@@ -13,19 +13,18 @@ import "./zeppelin/token/ERC20/IERC20.sol";
 import "./zeppelin/token/ERC20/SafeERC20.sol";
 import "./zeppelin/utils/Address.sol";
 import "./zeppelin/math/SafeMath.sol";
-import "./zeppelin/cryptography/ECDSA.sol";
 
 import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
+import "./Auth.sol";
 
 contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
-    using ECDSA for bytes32;
 
     address constant private NULL_ADDRESS = address(0);
     bytes32 constant private NULL_HASH = bytes32(0);
@@ -47,26 +46,32 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     bool public isUpgrading;
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
+    Auth private auth;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
 
-    function initialize(
-        address _manager,
-        address _federation,
-        address _allowTokens,
-        address _sideTokenFactory,
-        string memory _symbolPrefix
-    ) public initializer {
-        UpgradableOwnable.initialize(_manager);
-        UpgradablePausable.initialize(_manager);
-        symbolPrefix = _symbolPrefix;
-        allowTokens = AllowTokens(_allowTokens);
-        _changeSideTokenFactory(_sideTokenFactory);
-        _changeFederation(_federation);
-        //keccak256("ERC777TokensRecipient")
-        erc1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
+// We are not using this initializer anymore because we are upgrading.
+//    function initialize(
+//        address _manager,
+//        address _federation,
+//        address _allowTokens,
+//        address _sideTokenFactory,
+//        string memory _symbolPrefix
+//    ) public initializer {
+//        UpgradableOwnable.initialize(_manager);
+//        UpgradablePausable.initialize(_manager);
+//        symbolPrefix = _symbolPrefix;
+//        allowTokens = AllowTokens(_allowTokens);
+//        _changeSideTokenFactory(_sideTokenFactory);
+//        _changeFederation(_federation);
+//        //keccak256("ERC777TokensRecipient")
+//        erc1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
+//    }
+
+    function setAuth(address _auth) external onlyOwner {
+        auth = Auth(_auth);
     }
 
     function version() external pure returns (string memory) {
@@ -181,21 +186,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
                 amount,
                 receiver
             );
-            _verifySignature(sender, blob, signature);
+            auth.verifySignature(sender, blob, signature);
         }
 
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, "");
         return true;
-    }
-
-    /**
-     * Verify that msgHash is signed by signerAddr
-     */
-    function _verifySignature(address signerAddr, bytes memory msgHash, bytes memory signature) private pure {
-        address retAddr = keccak256(msgHash).toEthSignedMessageHash().recover(signature);
-        require(retAddr == signerAddr, "Bridge: The signature is not valid!");
     }
 
     /**
