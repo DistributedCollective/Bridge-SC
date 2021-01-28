@@ -4,7 +4,7 @@ module.exports = {
     sidechain: require('./kovan.json'), //the json containing the smart contract addresses in eth
     runEvery: 2, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
-    privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8'),
+    privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
     confirmationTable: {
         "1": {
@@ -284,11 +284,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 0.2,
+                    "amount": 50,
                     "confirmations": 30
                 },
                 {
-                    "amount": 0.5,
+                    "amount": 100,
                     "confirmations": 50
                 }
             ],
