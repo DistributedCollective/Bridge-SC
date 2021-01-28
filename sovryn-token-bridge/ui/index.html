@@ -286,7 +286,7 @@
                 margin-bottom: 110px;
                 margin-top: 25px;
             }
-            .tab-content .col-sm-10, .tab-content .col-sm-9, .tab-content .col-sm-8, .tab-content .col-sm-7, .tab-content .col-sm-6, 
+            .tab-content .col-sm-10, .tab-content .col-sm-9, .tab-content .col-sm-8, .tab-content .col-sm-7, .tab-content .col-sm-6,
             .tab-content .col-sm-4, .tab-content .col-sm-3, .tab-content .col-sm-2, .tab-content .col-sm-2, .tab-content .col-sm-1
             {
               padding-right: 0;
@@ -608,7 +608,7 @@
                         <div class="fees text-center mt-2" style="display:none">
                             <p>Service fee: <span id="serviceFee"></span> <span class="selectedToken"></span></p>
                             <p>Total cost: <span class="black"><span id="totalCost"></span> <span class="selectedToken"></span></span></p>
-                        </div> 
+                        </div>
                         <div class="row justify-content-center">
                             <button id="cross" type="submit" class="btn btn-primary mt-3 mb-3">Convert tokens</button>
                         </div>
@@ -633,8 +633,8 @@
                                 <div class="sk-circle12 sk-circle"></div>
                             </div>
                             <div class="mt-2">
-                                Wait for aproximately <b><span id="secondsPerBlock">X</span> seconds:</b> 
-                                the waiting period is required to confirm the transaction on the blockchain. 
+                                Wait for aproximately <b><span id="secondsPerBlock">X</span> seconds:</b>
+                                the waiting period is required to confirm the transaction on the blockchain.
                                 Please <b>do not close this tab</b> until the process has finished.
                             </div>
                         </div>
@@ -770,7 +770,7 @@
                                  <li><a href="https://github.com/rsksmart/tokenbridge" target="_blank">Repository</a></li>
                                  <li><a id="get-rbtc-navlink" href="https://coinswitch.rsk.co/" target="_blank">Get RBTC</a></li>
                                  <li><a id="network-navlink" href="https://testnet.tokenbridge.rsk.co">Use Testnet</a></li>
-                                 <li><a href="https://developers.rsk.co/tools/tokenbridge" rel="nofollow noopener noreferrer" target="_blank" class="footer-button" title="Documentation">Documentation</a></li>    
+                                 <li><a href="https://developers.rsk.co/tools/tokenbridge" rel="nofollow noopener noreferrer" target="_blank" class="footer-button" title="Documentation">Documentation</a></li>
                               </ul>
                            </div>
                         </div>
@@ -1499,9 +1499,9 @@
                 let KOVAN_CONFIG = {
                     networkId: 42,
                     name: 'Ethereum Kovan',
-                    bridge: '0x4293FB32CB3a8092f2ad30f9317da59A2b7930B7',
-                    allowTokens: '0xd8a478D5efd35B13d6AE7cFE6f62300F5B3bF1Fe',
-                    federation: '0x348687ae39700148f96E59a4a64DEB77be433068',
+                    bridge: '0x7b0778034fec87e86f7d5a63e88c6edde6e4f07b',
+                    allowTokens: '0xb32e9cda22cec430f8b62f227da852492b5f19ba',
+                    federation: '0x7a0d50aac4734d3434859257cf122ac0cc3d6007',
                     explorer: 'https://kovan.etherscan.io',
                     explorerTokenTab: '#tokentxns',
                     confirmations: 10,
@@ -1511,9 +1511,9 @@
                 let RSK_TESTNET_CONFIG = {
                     networkId: 31,
                     name: 'RSK Testnet',
-                    bridge: '0xd7a11ca86a6b5365a431f11e2ad8d4e10aaf45ee',
-                    allowTokens: '0xdf68bd983525113049282950c0b8afb539e7bd1e',
-                    federation: '0x79a1b1ddaf83d32bc4c1ae4c532b469d7c1deea1',
+                    bridge: '0xc387c565a7caecee83fb600a35b3e8d6282dbc42',
+                    allowTokens: '0x850a7b645c26db3e2f16b5dd455e7ca774e06b49',
+                    federation: '0x05e67ec587b381d5b51b6acd506e9077868a88de',
                     explorer: 'https://explorer.testnet.rsk.co',
                     explorerTokenTab: '?__tab=tokens%20transfers',
                     confirmations: 10,
@@ -1571,12 +1571,12 @@
 
                 const DAI_TOKEN = { token: 'DAI', name: 'Dai Stablecoin', icon: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
                     30:{symbol:'rDAI', address:'0x6b1a73d547f4009a26b8485b63d7015d248ad406', decimals:18},
-                    31:{symbol:'rKovDAI', address:'0x7b846216a194c69bb1ea52ea8faa92d314866451', decimals:18},
+                    31:{symbol:'rDAI', address:'0x253CDCA0576D6e52e41b397beb5923FEB0c1e8CA', decimals:18},
                     1:{symbol:'DAI', address:'0x6b175474e89094c44da98b954eedeac495271d0f', decimals:18},
                     42:{symbol:'DAI', address:'0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa', decimals:18}
                 };
 
-                const SAI_TOKEN = { token: 'SAI', name: 'Sai Stablecoin', icon: 'https://raw.githubusercontent.com/rsksmart/rsk-testnet-contract-metadata/master/images/sai.png',   
+                const SAI_TOKEN = { token: 'SAI', name: 'Sai Stablecoin', icon: 'https://raw.githubusercontent.com/rsksmart/rsk-testnet-contract-metadata/master/images/sai.png',
                     31:{symbol:'rKovSAI', address:'0x0d86fca9be034a363cf12c9834af08d54a10451c', decimals:18},
                     42:{symbol:'SAI', address:'0xc7cc3413f169a027dccfeffe5208ca4f38ef0c40', decimals:18}
                 };

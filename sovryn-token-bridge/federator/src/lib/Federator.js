@@ -245,9 +245,6 @@ module.exports = class Federator {
     }
 
     async _getCurrentBlockNumber() {
-        if (!this._currentBlockNumber) {
-            this._currentBlockNumber = await this.mainWeb3.eth.getBlockNumber();
-        }
-        return this._currentBlockNumber
+        return this.mainWeb3.eth.getBlockNumber();
     }
 }

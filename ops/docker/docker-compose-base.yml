@@ -1,12 +1,12 @@
 version: "3"
 services:
   federation:
-    image: docker.atixlabs.com/projectChangeMe-backend:0.0.1-SNAPSHOT-822f8e52
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:7738f172
     volumes:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
   frontend:
-    image: docker.atixlabs.com/projectChangeMe-frontend:0.1.0-5742bc3b
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:96c679ec
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`bridge.staging.sovryn.atixlabs.xyz`)"
