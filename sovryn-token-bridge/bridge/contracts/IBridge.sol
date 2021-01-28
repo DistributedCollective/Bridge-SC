@@ -19,7 +19,7 @@ interface IBridge {
      * ERC-20 tokens approve and transferFrom pattern
      * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
      */
-    function receiveTokens(
+    function receiveTokensAt(
         address tokenToUse,
         uint256 amount,
         address receiver,
