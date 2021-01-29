@@ -22,7 +22,7 @@
    4. federator.key
    5. db directory
    6. log-config.json
-6. Change Contract addresses in ui/index.html. You can search "CONFIGS" in the file to found the place where they are configured.
+6. Change Contract addresses in ui/index.html. You can search "CONFIGS" in the file to found the place where they are configured. The RSK addresses must be in lowercase.
 7. Copy the above files to server running `./ops.sh --config-server environment`.
 8.  Edit `ops/docker/docker-compose-base.yml` file with the pertinent docker images.
 9.  Push `ops/docker/docker-compose-base.yml` to a release branch.
