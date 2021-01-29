@@ -39,6 +39,19 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         address _currentAddress
     );
 
+    event TokensReceived(
+        address _sellerAddress,
+        uint256 _orderAmount,
+        address _tokenAddress
+    );
+
+    event MakeSellOrder(
+        uint256 orderId,
+        uint256 amount,
+        address tokenAddress,
+        address seller
+    );
+
     event WhitelistTokenAdded(address tokenAddress);
     event WhitelistTokenRemoved(address tokenAddress);
 
