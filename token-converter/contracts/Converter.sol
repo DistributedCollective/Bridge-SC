@@ -21,7 +21,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         address sellerAddress; // Sell Order maker address
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
-        address finalReceipientAddress; // Final destination of the rBTC payed by the buyer
+        address finalRecipientAddress; // Final destination of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
     }
@@ -30,31 +30,13 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
 
+    uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
+
     event ConversionFeeChanged(uint256 previousValue, uint256 currentValue);
 
     event BridgeContractAddressChanged(
         address _previousAddress,
         address _currentAddress
-    );
-
-    event TokensReceived(
-        address _sellerAddress,
-        uint256 _orderAmount,
-        address _tokenAddress
-    );
-
-    event MakeSellOrder(
-        uint256 orderId,
-        uint256 amount,
-        address tokenAddress,
-        address seller
-    );
-    event BuySellOrder(
-        uint256 orderId,
-        uint256 amount,
-        address tokenAddress,
-        address buyerAdress,
-        address ethDestinationAddress
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -89,11 +71,11 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         _;
     }
 
-    modifier aceptableConversionFee(uint256 _newConversionFee) {
+    modifier acceptableConversionFee(uint256 _newConversionFee) {
         require(_newConversionFee > 0, "New conversion fee cannot be zero");
         require(
-            _newConversionFee < 100,
-            "New conversion fee cannot be more than 100%"
+            _newConversionFee < feePercentageDivider,
+            "New conversion fee cannot be more than 100.00%"
         );
         _;
     }
