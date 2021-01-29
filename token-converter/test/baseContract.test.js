@@ -32,9 +32,9 @@ contract("Converter", (accounts) => {
       );
     });
 
-    it("REJECT conversionFee update when its value is more than 100", async () => {
+    it("REJECT conversionFee update when its value is more than 10000", async () => {
       await truffleAssert.fails(
-        converterContract.setConversionFee(110),
+        converterContract.setConversionFee(10001),
         truffleAssert.ErrorType.REVERT
       );
     });
@@ -95,24 +95,6 @@ contract("Converter", (accounts) => {
       );
     });
 
-    xit("ACCEPT transaction when contract is NOT PAUSED", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      const numberToAdd = 200;
-      const testPauseVarPrevious = (
-        await converterContract.testPauseVar()
-      ).toNumber();
-      const testPauseVarChangeTo = testPauseVarPrevious + numberToAdd;
-
-      await converterContract.testPause(testPauseVarChangeTo);
-      const testPauseVarCurrent = (
-        await converterContract.testPauseVar()
-      ).toNumber();
-
-      assert.notStrictEqual(testPauseVarCurrent, testPauseVarPrevious);
-      assert.strictEqual(testPauseVarChangeTo, testPauseVarCurrent);
-    });
-
     it("PAUSE the contract when sender is owner and contract is UNPAUSED", async () => {
       await converterContract.pauseContract();
       const contractIsPaused = await converterContract.paused();
@@ -122,6 +104,8 @@ contract("Converter", (accounts) => {
     xit("REJECT any transaction (except update conversionFee by owner) when contract is PAUSED", async () => {
       // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
       // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
+      await converterContract.pauseContract();
+      // TODO test function with whenNotPaused modifier
       await truffleAssert.fails(converterContract.testPause(5));
     });
 
@@ -199,7 +183,7 @@ contract("Converter", (accounts) => {
     it("REMOVE token from whitelist when sender is owner && EMIT the proper event", async () => {
       // const isTokenValidPrev = await converterContract.isValidToken(fakeAddress);
       const result = await converterContract.removeTokenFromWhitelist(fakeAddress);
-      
+
       const isTokenValid = await converterContract.isTokenValid(fakeAddress);
 
       assert.strictEqual(
