@@ -36,6 +36,19 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         address _currentAddress
     );
 
+    event TokensReceived(
+        address _sellerAddress,
+        uint256 _orderAmount,
+        address _tokenAddress
+    );
+
+    event MakeSellOrder(
+        uint256 orderId,
+        uint256 amount,
+        address tokenAddress,
+        address seller
+    );
+
     event WhitelistTokenAdded(address tokenAddress);
     event WhitelistTokenRemoved(address tokenAddress);
 
@@ -153,5 +166,66 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             bridgeContractAddress
         );
         return true;
+    }
+
+    function onTokensReceived(
+        address _sellerAddress,
+        uint256 _orderAmount,
+        address _tokenAddress,
+        bytes32 userData
+    )
+        public
+        onlyBridge
+        whenNotPaused
+        notNull(_sellerAddress)
+        notNull(_tokenAddress)
+        isTokenWhitelisted(_tokenAddress)
+    {
+        require(_orderAmount > 0, "Invalid Amount sent");
+
+        // contrato del bridge ERC777 o receivetoken
+
+        // TODO parse user data to obtain finalReceipientAddress
+        address finalReceipientAddress = _sellerAddress;
+
+        emit TokensReceived(_sellerAddress, _orderAmount, _tokenAddress);
+
+        // call to make the sell orders of the received tokens
+        makeSellOrder(
+            _sellerAddress,
+            _orderAmount,
+            _tokenAddress,
+            finalReceipientAddress
+        );
+    }
+
+    function makeSellOrder(
+        address _sellerAddress,
+        uint256 _orderAmount,
+        address _tokenAddress,
+        address _finalRecipientAddress
+    ) internal whenNotPaused {
+        // returns (uint256 orderId) { ==> Return anything ??
+        uint256 previousOrder = numOrder;
+        numOrder.add(1);
+
+        if (previousOrder != 0) {
+            orders[previousOrder].nextOrder = numOrder;
+        }
+
+        orders[numOrder] = Order(
+            _sellerAddress,
+            _tokenAddress,
+            _orderAmount,
+            _finalRecipientAddress,
+            previousOrder,
+            0
+        );
+        emit MakeSellOrder(
+            numOrder,
+            orders[numOrder].orderAmount,
+            orders[numOrder].tokenAddress,
+            orders[numOrder].sellerAddress
+        );
     }
 }
