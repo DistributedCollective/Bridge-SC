@@ -11,6 +11,7 @@
     "test": "npx truffle test",
     "coverage": "npx truffle run coverage",
     "prepare": "npx truffle compile && node ./datagen.js",
+    "ganache": "npx ganache-cli -i 5777",
     "deployIntegrationTest": "rm -f ./.openzeppelin/dev-5777.json && rm -f ./.openzeppelin/dev-33.json && rm -rf ./build && npx truffle migrate --reset --network rskregtest && npx truffle migrate --reset --network development"
   },
   "keywords": [
