@@ -338,21 +338,6 @@ contract('Bridge upgrade test', async (accounts) => {
                     });
                 }); // end after changeSideTokenFactory
             }); //end after upgrade
-            describe('send extra data', () => {
-                it('should generate cross even with extra data', async () => {
-                    const amount = web3.utils.toWei('1000');
-                    await this.token.transfer(anAccount, amount, { from: deployerAddress });
-                    await this.token.approve(this.proxy.address, amount, { from: anAccount });
-
-                    let extraData = 'Extra data';
-                    console.log("Methods", this.proxy.methods);
-                    let tx = await this.proxy.methods.receiveTokensAt(this.token.address, amount, anAccount, '', extraData).send({ from: anAccount});
-
-                    assert.equal(tx.events.Cross.event, 'Cross');
-                    assert.equal(tx.events.Cross.returnValues.userData, extraData);
-                    console.log("Cross event", tx.events.Cross.returnValues.userData);
-                });
-            });// end send extra data
         }); // end initialized
     }); // end freshly created
 });
