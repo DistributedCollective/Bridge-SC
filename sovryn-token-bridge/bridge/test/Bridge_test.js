@@ -631,6 +631,25 @@ contract('Bridge', async function (accounts) {
                 utils.checkRcpt(receipt);
             });
 
+            it('should generate cross even with extra data', async () => {
+                const amount = web3.utils.toWei('1000');
+                const granularity = '1000';
+                let erc777 = await SideToken.new("ERC777", "777", tokenOwner, granularity, { from: tokenOwner });
+
+                await this.allowTokens.addAllowedToken(erc777.address, { from: bridgeManager });
+                await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
+
+                const originalTokenBalance = await erc777.balanceOf(tokenOwner);
+                let receipt = await erc777.approve(this.bridge.address, amount, { from: tokenOwner });
+                utils.checkRcpt(receipt);
+
+                let extraData = 'Extra data';
+                receipt = await this.bridge.receiveTokensAt(erc777.address, amount, tokenOwner, '', extraData, { from: tokenOwner });
+                utils.checkRcpt(receipt);
+
+                assert.equal(receipt.logs[0].event, 'Cross');
+                assert.equal(receipt.logs[0].args[4], extraData);
+            });
         });
 
     });

@@ -154,9 +154,10 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address tokenToUse,
         uint256 amount,
         address receiver,
-        bytes calldata signature
+        bytes calldata signature,
+        bytes calldata extraData
     ) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, receiver, signature);
+        return _receiveTokens(tokenToUse, amount, receiver, signature, extraData);
     }
 
     /**
@@ -164,7 +165,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
     */
     function receiveTokens(address tokenToUse, uint256 amount) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, _msgSender(), "");
+        return _receiveTokens(tokenToUse, amount, _msgSender(), "", "");
     }
 
     /**
@@ -175,7 +176,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address tokenToUse,
         uint256 amount,
         address receiver,
-        bytes memory signature
+        bytes memory signature,
+        bytes memory extraData
     ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
         address sender = _msgSender();
         require(!sender.isContract(), "Bridge: Sender can't be a contract");
@@ -191,16 +193,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
-        crossTokens(tokenToUse, receiver, amount, "");
-        return true;
-    }
-
-    function receiveTokens(address tokenToUse, uint256 amount, bytes calldata extraData) external whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
-        address sender = _msgSender();
-        require(!sender.isContract(), "Bridge: Sender can't be a contract");
-        //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
-        IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
-        crossTokens(tokenToUse, sender, amount, extraData);
+        crossTokens(tokenToUse, receiver, amount, extraData);
         return true;
     }
 
