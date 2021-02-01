@@ -9,7 +9,7 @@ services:
     image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:67792a76
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`bridge.staging.sovryn.atixlabs.xyz`)"
+      - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
       - "traefik.http.routers.frontend.entrypoints=web-secure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=le"

@@ -42,3 +42,14 @@ deploy-staging:
     - ssh-keyscan federation.staging.sovryn.atixlabs.xyz >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
     - cd ./ops && bash ./ops.sh --deploy "staging"
+
+deploy-uat:
+  <<: *deploy
+  environment:
+    name: uat
+    url: https://federation.uat.sovryn.atixlabs.xyz
+  script:
+    - *deploy-script 
+    - ssh-keyscan federation.uat.sovryn.atixlabs.xyz >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - cd ./ops && bash ./ops.sh --deploy "uat"
