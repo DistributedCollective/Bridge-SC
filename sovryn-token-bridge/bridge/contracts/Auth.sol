@@ -10,7 +10,6 @@ contract Auth {
      */
     function verifySignature(address signerAddr, bytes calldata msgHash, bytes calldata signature) external pure {
         address retAddr = keccak256(msgHash).toEthSignedMessageHash().recover(signature);
-        require(retAddr == signerAddr, "Bridge: The signature is not valid!");
+        require(retAddr == signerAddr, "Auth: The signature is not valid!");
     }
-
 }
