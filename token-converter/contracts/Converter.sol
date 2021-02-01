@@ -14,7 +14,8 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     uint256 public conversionFee; // fee to give the buyers a better price
     address public bridgeContractAddress; // Bridge Address
-    uint256 private numOrder; // to store the incremental sell orders
+    uint256 public numOrder; // to store the incremental sell orders
+    uint256 public lastOrderIndex;
 
     struct Order {
         address sellerAddress; // Sell Order maker address
@@ -25,7 +26,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint256 nextOrder; // Address of the next Order
     }
 
-    mapping(uint256 => Order) private orders; // map of made sell orders
+    mapping(uint256 => Order) public orders; // map of made sell orders
 
     uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
 
@@ -97,6 +98,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     {
         conversionFee = _conversionFee;
         numOrder = 0;
+        lastOrderIndex = 0;
         __Ownable_init();
         __Pausable_init();
     }
@@ -204,10 +206,10 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint256 _orderAmount,
         address _tokenAddress,
         address _finalRecipientAddress
-    ) internal whenNotPaused {
+    ) internal whenNotPaused {  // it is necesary ?
         // returns (uint256 orderId) { ==> Return anything ??
         uint256 previousOrder = numOrder;
-        numOrder.add(1);
+        numOrder = numOrder.add(1);
 
         if (previousOrder != 0) {
             orders[previousOrder].nextOrder = numOrder;
