@@ -12,7 +12,7 @@
     "ganache": "ganache-cli",
     "test": "truffle test",
     "coverage": "truffle run coverage",
-    "rmv": "test/helpers/removeBuilds.sh"    
+    "rmv": "test/helpers/removeBuilds.sh"
   },
   "repository": {
     "type": "git",
@@ -34,6 +34,9 @@
   },
   "devDependencies": {
     "@openzeppelin/truffle-upgrades": "1.3.1",
+    "bip39": "3.0.3",
+    "chai": "4.2.0",
+    "chai-as-promised": "7.1.1",
     "ganache-cli": "6.12.2",
     "openzeppelin-solidity": "3.3.0",
     "solidity-coverage": "0.7.13",

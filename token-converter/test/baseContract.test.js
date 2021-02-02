@@ -1,13 +1,18 @@
+const { contract, describe, it, before } = global;
+
 const ConverterContract = artifacts.require("Converter");
+const { use: chaiUse, expect } = require('chai');
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
+
+chaiUse(require('chai-as-promised'))
 
 const initialDeploymentFee = 10;
 const updatedFee = 20;
 const fakeAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559"; // put a fake address
 const fakeAddress2 = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A"; // put a fake address
 
-contract("Converter", (accounts) => {
+contract.only("Converter", (accounts) => {
   let converterContract;
   before(async function () {
     converterContract = await ConverterContract.deployed();
@@ -194,5 +199,35 @@ contract("Converter", (accounts) => {
 
       truffleAssert.eventEmitted(result, "WhitelistTokenRemoved");
     });
+  });
+
+  describe.only("decodeAddress function should", async () => {
+    // TODO: this tests will change to be part of onTokensReceived tests when the decodeAddress becomes private
+    it("RETURN the address when there is only one address encoded", async () => {
+      const address = web3.eth.accounts.create().address;
+      const data = web3.eth.abi.encodeParameter("address", address);
+      const returnedAddress = await converterContract.decodeAddress(data);
+
+      expect(returnedAddress).equal(address);
+    });
+
+    it("RETURN the address when there is an address and other data", async () => {
+      const address = web3.eth.accounts.create().address;
+      const extraData = "1000000000";
+      const data = web3.eth.abi.encodeParameters(["address", "uint32"], [address, extraData]);
+      const returnedAddress = await converterContract.decodeAddress(data);
+
+      expect(returnedAddress).equal(address);
+    });
+
+    it("REJECT when there is no data", async () => {
+      const data = web3.eth.abi.encodeParameters([], []);
+
+      await truffleAssert.fails(
+          converterContract.decodeAddress(data),
+          truffleAssert.ErrorType.REVERT
+      );
+    });
+
   });
 });

@@ -154,4 +154,11 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         );
         return true;
     }
+
+    // TODO: change visibility to private when onTokensReceived function is created.
+    function decodeAddress(bytes memory extraData) public pure returns(address) {
+        address addr = abi.decode(extraData, (address));
+        require(addr != NULL_ADDRESS, "Converter: Error decoding extraData");
+        return addr;
+    }
 }
