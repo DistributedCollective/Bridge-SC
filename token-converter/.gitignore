@@ -5,3 +5,5 @@ coverage.json
 .openzeppelin
 mnemonic.key
 rskDeploy
+
+.idea

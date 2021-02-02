@@ -661,6 +661,7 @@ contract('Bridge', async function (accounts) {
                 const isKnownToken = await this.bridge.knownTokens(this.token.address);
                 assert.equal(isKnownToken, true);
             });
+
             it('receiveTokensAt approve and transferFrom for ERC20 Max allowed tokens 18 decimals', async function () {
                 const amount = await this.allowTokens.getMaxTokensAllowed();
                 const originalTokenBalance = await this.token.balanceOf(tokenOwner);

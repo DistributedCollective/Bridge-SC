@@ -11,7 +11,8 @@
   "scripts": {
     "ganache": "ganache-cli",
     "test": "truffle test",
-    "coverage": "truffle run coverage"
+    "coverage": "truffle run coverage",
+    "rmv": "test/helpers/removeBuilds.sh"    
   },
   "repository": {
     "type": "git",
