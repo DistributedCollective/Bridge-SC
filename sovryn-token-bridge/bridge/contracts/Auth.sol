@@ -7,8 +7,8 @@ import "./zeppelin/cryptography/ECDSA.sol";
 contract Auth {
     using ECDSA for bytes32;
 
-    /// @title Verify that msgHash is signed by signerAddr
-    /// @notice It reverts if the signature is invalid
+    /// @notice Verify that msgHash is signed by signerAddr
+    /// @dev It reverts if the signature is invalid
     /// @param signerAddr The address of the signer
     /// @param msgHash The message to validate
     /// @param signature The given signature to validate within the hash
