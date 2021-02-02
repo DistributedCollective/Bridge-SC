@@ -14,8 +14,9 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     uint256 public conversionFee; // fee to give the buyers a better price
     address public bridgeContractAddress; // Bridge Address
-    uint256 public numOrder; // to store the incremental sell orders
-    uint256 public lastOrderIndex;
+    uint256 public numOrder; // to store the incremental sell orders, always increment when creating new order
+    uint256 public lastOrderIndex; // to store the number of the last order (differs from numOrder when buiying the last order)
+    uint256 public firstOrderIndex; // to store the number of the first order (to do the getSellOrder pagination)
 
     struct Order {
         address sellerAddress; // Sell Order maker address
@@ -28,9 +29,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     mapping(uint256 => Order) public orders; // map of made sell orders
 
-    uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
-
-    uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
+    uint256 public constant feePercentageDivider = 10000; // Percentage with up to 2 decimals
 
     event ConversionFeeChanged(uint256 previousValue, uint256 currentValue);
 
@@ -46,10 +45,10 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     );
 
     event MakeSellOrder(
-        uint256 orderId,
-        uint256 amount,
-        address tokenAddress,
-        address seller
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _seller
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -101,6 +100,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         conversionFee = _conversionFee;
         numOrder = 0;
         lastOrderIndex = 0;
+        firstOrderIndex = 1;
         __Ownable_init();
         __Pausable_init();
     }
@@ -208,10 +208,10 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint256 _orderAmount,
         address _tokenAddress,
         address _finalRecipientAddress
-    ) internal whenNotPaused {  // it is necesary ?
-        // returns (uint256 orderId) { ==> Return anything ??
-        uint256 previousOrder = numOrder;
+    ) internal whenNotPaused {
+        uint256 previousOrder = lastOrderIndex;
         numOrder = numOrder.add(1);
+        lastOrderIndex = lastOrderIndex.add(1);
 
         if (previousOrder != 0) {
             orders[previousOrder].nextOrder = numOrder;
@@ -225,6 +225,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             previousOrder,
             0
         );
+
         emit MakeSellOrder(
             numOrder,
             orders[numOrder].orderAmount,
@@ -233,94 +234,45 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         );
     }
 
-    function makeSellOrder(
-        address _sellerAddress,
-        uint256 _orderAmount,
-        address _tokenAddress,
-        address _finalReceipientAddress
-    ) internal whenNotPaused {
-        // returns (uint256 orderId) { ==> Return anything ??
-        uint256 previousOrder = numOrder;
-        numOrder.add(1);
-
-        if (previousOrder != 0) {
-            orders[previousOrder].nextOrder = numOrder;
-        }
-
-        orders[numOrder] = Order(
-            _sellerAddress,
-            _tokenAddress,
-            _orderAmount,
-            _finalReceipientAddress,
-            previousOrder,
-            0
-        );
-        emit MakeSellOrder(
-            numOrder,
-            orders[numOrder].orderAmount,
-            orders[numOrder].tokenAddress,
-            orders[numOrder].sellerAddress
-        );
-    }
-
-    function buySellOrder(uint256 _orderId, address _ethDestinationAddress)
+    /// This function is exclusively for offchain query
+    function getSellOrders(uint256 fromOrder, uint256 qtyToReturn)
         public
+        view
         whenNotPaused
-        notNull(_ethDestinationAddress)
-        notNull(orders[_orderId].sellerAddress)
+        returns (uint256[] memory, uint256[] memory)
     {
-        // require(, "Wrong Amount Sent");
-        uint256 previousOrder = orders[_orderId].previousOrder;
-        uint256 nextOrder = orders[_orderId].nextOrder;
-
-        if (previousOrder != 0) {
-            orders[previousOrder].nextOrder = nextOrder;
-        }
-
-        if (nextOrder != 0) {
-            orders[nextOrder].previousOrder = previousOrder;
-        }
-
-        emit BuySellOrder(
-            _orderId,
-            orders[_orderId].orderAmount,
-            orders[_orderId].tokenAddress,
-            msg.sender,
-            _ethDestinationAddress
+        require(qtyToReturn > 0, "qtyToReturn must be greater than ZERO");
+        require(lastOrderIndex != 0, "No orders to retrieve");
+        require(
+            orders[fromOrder].sellerAddress != NULL_ADDRESS,
+            "Invalid FROM order parameter"
         );
 
-        // transfer to bridge the rsk tokens and pass as a parameter the ethAddress
-        // transfer rBtc from the buyer to orders[orderId].finalReceipientAddress
-        // emit events over the transfers ?
-        delete orders[_orderId];
+        uint256[] memory ordersAmounts = new uint256[](qtyToReturn);
+        uint256[] memory ordersIds = new uint256[](qtyToReturn);
+
+        Order memory sellOrder = orders[fromOrder];
+        uint256 nextOrder;
+        uint256 currentOrderNumber;
+        uint256 index = 0;
+
+        if (sellOrder.nextOrder == 0) {
+            ordersIds[index] = fromOrder;
+            ordersAmounts[index] = sellOrder.orderAmount;
+        }
+
+        while (sellOrder.nextOrder != 0) {
+            nextOrder = sellOrder.nextOrder;
+            currentOrderNumber = orders[nextOrder].previousOrder;
+            ordersIds[index] = currentOrderNumber;
+            ordersAmounts[index] = sellOrder.orderAmount;
+            sellOrder = orders[nextOrder];
+            index = index.add(1);
+        }
+
+        ordersIds[index] = lastOrderIndex;
+        ordersAmounts[index] = orders[lastOrderIndex].orderAmount;
+
+        return (ordersIds, ordersAmounts);
     }
-
-    // function getOrders(uint256 startingOrderId, uint256 qtyOrdersToReturn)
-    //     public
-    //     view
-    //     whenNotPaused
-    //     returns (Order[] memory)
-    // {
-    //     require(orders[startingOrderId].activeOrder, "Invalid Starting Order ID");
-    //     require(qtyOrdersToReturn > 0, "Invalid qtyOrdersToReturn Value");
-    //     require(qtyOrdersToReturn < 21, "qtyOrdersToReturn too big");
-
-    //     Order[] memory availableOrders = new Order[](qtyOrdersToReturn);
-
-    //     uint256 i = 0;
-    //     uint256 tempQtyOrdersToReturn = qtyOrdersToReturn;
-
-    //     Order memory currentOrder = orders[startingOrderId];
-
-    //     while (i < tempQtyOrdersToReturn) {
-    //         if (currentOrder.activeOrder) availableOrders[i] = currentOrder;
-    //         if (currentOrder.nextOrder != 0) {
-    //             currentOrder = orders[currentOrder.nextOrder];
-    //             i++;
-    //         } else {
-    //             tempQtyOrdersToReturn = 0;
-    //         }
-    //     }
-    //     return availableOrders;
-    // }
 }

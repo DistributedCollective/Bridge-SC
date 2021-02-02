@@ -42,22 +42,6 @@ contract("Converter", async (accounts) => {
         "Transaction error when updating fee"
       );
     });
-
-    xit("ACCEPT transaction and store values", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      const numberToAdd = 200;
-      const testPauseVarPrevious = (
-        await v1_contract.testPauseVar()
-      ).toNumber();
-      const testPauseVarChangeTo = testPauseVarPrevious + numberToAdd;
-
-      await v1_contract.testPause(testPauseVarChangeTo);
-      const testPauseVarCurrent = (await v1_contract.testPauseVar()).toNumber();
-      v1_contractStoredValue = testPauseVarCurrent;
-      assert.notStrictEqual(testPauseVarCurrent, testPauseVarPrevious);
-      assert.strictEqual(testPauseVarChangeTo, testPauseVarCurrent);
-    });
   });
 
   describe("Delpoy UPGRADED Contract should", () => {
@@ -78,18 +62,6 @@ contract("Converter", async (accounts) => {
         updatedFee,
         "Wrong upgraded contract -> initialization fee"
       );
-    });
-
-    xit("ACCEPT transaction and store value + 10, as contrac was updated", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      const numberToSend = 200;
-      const numberToRetrieve = 210;
-
-      await v2_contract.incrementValueByTen(numberToSend);
-      const testPauseVarCurrent = (await v2_contract.testPauseVar()).toNumber();
-
-      assert.strictEqual(numberToRetrieve, testPauseVarCurrent);
     });
   });
 });

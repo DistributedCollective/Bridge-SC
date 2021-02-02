@@ -32,21 +32,9 @@ contract("Converter", (accounts) => {
       );
     });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     it("REJECT conversionFee update when its value is more than 10000", async () => {
       await truffleAssert.fails(
         converterContract.setConversionFee(10001),
-=======
-    it("REJECT conversionFee update when its value is more than 100", async () => {
-      await truffleAssert.fails(
-        converterContract.setConversionFee(110),
->>>>>>> feat: added make/take SellOrder - getOrders - more
-=======
-    it("REJECT conversionFee update when its value is more than 10000", async () => {
-      await truffleAssert.fails(
-        converterContract.setConversionFee(10001),
->>>>>>> feat: break down in different tasks.
         truffleAssert.ErrorType.REVERT
       );
     });
@@ -66,19 +54,10 @@ contract("Converter", (accounts) => {
     });
 
     it("REJECT BridgeContractAddress update when sender is NOT owner", async () => {
-<<<<<<< HEAD
-=======
       await truffleAssert.fails(
         converterContract.setBridgeContractAddress(fakeAddress, {
           from: fakeAddress,
         })
-      );
-    });
-
-    xit("REJECT BridgeContractAddress update when its value is zero", async () => {
-      await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(0),
-        truffleAssert.ErrorType.REVERT
       );
     });
 
@@ -87,49 +66,6 @@ contract("Converter", (accounts) => {
         fakeAddress
       );
       const conversionFee = await converterContract.bridgeContractAddress();
-
-      assert.strictEqual(
-        conversionFee,
-        fakeAddress,
-        "Transaction error when updating Bridge Contract Address"
-      );
-
-      truffleAssert.eventEmitted(result, "BridgeContractAddressChanged");
-    });
-
-    it("REJECT conversionFee update when sender is NOT owner", async () => {
->>>>>>> feat: added make/take SellOrder - getOrders - more
-      await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(fakeAddress, {
-          from: fakeAddress,
-        })
-      );
-    });
-
-    xit("REJECT BridgeContractAddress update when its value is zero", async () => {
-      await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(0),
-        truffleAssert.ErrorType.REVERT
-      );
-    });
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-    it("UPDATE BridgeContractAddress when sender is owner && EMIT the proper event", async () => {
-      const result = await converterContract.setBridgeContractAddress(
-        fakeAddress
-      );
-      const conversionFee = await converterContract.bridgeContractAddress();
-=======
-    xit("ACCEPT transaction when contract is NOT PAUSED", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      const numberToAdd = 200;
-      const testPauseVarPrevious = (
-        await converterContract.testPauseVar()
-      ).toNumber();
-      const testPauseVarChangeTo = testPauseVarPrevious + numberToAdd;
->>>>>>> feat: added make/take SellOrder - getOrders - more
 
       assert.strictEqual(
         conversionFee,
@@ -152,20 +88,10 @@ contract("Converter", (accounts) => {
       );
     });
 
-=======
->>>>>>> feat: break down in different tasks.
     it("PAUSE the contract when sender is owner and contract is UNPAUSED", async () => {
       await converterContract.pauseContract();
       const contractIsPaused = await converterContract.paused();
       assert.strictEqual(contractIsPaused, true);
-    });
-
-    xit("REJECT any transaction (except update conversionFee by owner) when contract is PAUSED", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      await converterContract.pauseContract();
-      // TODO test function with whenNotPaused modifier
-      await truffleAssert.fails(converterContract.testPause(5));
     });
 
     it("REJECT PAUSE contract when contract is already PAUSED", async () => {
@@ -193,13 +119,6 @@ contract("Converter", (accounts) => {
         converterContract.addTokenToWhitelist(fakeAddress, {
           from: fakeAddress,
         })
-      );
-    });
-
-    xit("REJECT addWhiteListToken when address is ZERO", async () => {
-      await truffleAssert.fails(
-        converterContract.addTokenToWhitelist(0),
-        truffleAssert.ErrorType.REVERT
       );
     });
 
@@ -241,16 +160,10 @@ contract("Converter", (accounts) => {
 
     it("REMOVE token from whitelist when sender is owner && EMIT the proper event", async () => {
       // const isTokenValidPrev = await converterContract.isValidToken(fakeAddress);
-      const result = await converterContract.removeTokenFromWhitelist(fakeAddress);
-<<<<<<< HEAD
-<<<<<<< HEAD
+      const result = await converterContract.removeTokenFromWhitelist(
+        fakeAddress
+      );
 
-=======
-      
->>>>>>> feat: added make/take SellOrder - getOrders - more
-=======
-
->>>>>>> feat: break down in different tasks.
       const isTokenValid = await converterContract.isTokenValid(fakeAddress);
 
       assert.strictEqual(
