@@ -98,7 +98,37 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity
-    ) external onlyFederation whenNotPaused nonReentrant returns(bool) {
+    ) external returns(bool) {
+        return _acceptTransfer(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
+    }
+
+    function acceptTransfer(
+        address tokenAddress,
+        address receiver,
+        uint256 amount,
+        string calldata symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes calldata userData
+    ) external returns(bool) {
+        return _acceptTransfer(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+    }
+
+    function _acceptTransfer(
+        address tokenAddress,
+        address receiver,
+        uint256 amount,
+        string memory symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes memory userData
+    ) internal onlyFederation whenNotPaused nonReentrant returns(bool) {
         require(tokenAddress != NULL_ADDRESS, "Bridge: Token is null");
         require(receiver != NULL_ADDRESS, "Bridge: Receiver is null");
         require(amount > 0, "Bridge: Amount 0");
@@ -113,7 +143,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         if (knownTokens[tokenAddress]) {
             _acceptCrossBackToToken(receiver, tokenAddress, decimals, granularity, amount);
         } else {
-            _acceptCrossToSideToken(receiver, tokenAddress, decimals, granularity, amount, symbol);
+            _acceptCrossToSideToken(receiver, tokenAddress, decimals, granularity, amount, symbol, userData);
         }
         return true;
     }
@@ -124,7 +154,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint8 decimals,
         uint256 granularity,
         uint256 amount,
-        string memory symbol
+        string memory symbol,
+        bytes memory userData
     ) private {
 
         (uint256 calculatedGranularity,uint256 formattedAmount) = Utils.calculateGranularityAndAmount(decimals, granularity, amount);
@@ -134,7 +165,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         } else {
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
-        sideToken.mint(receiver, formattedAmount, "", "");
+        sideToken.mint(receiver, formattedAmount, userData, "");
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity);
     }
 
