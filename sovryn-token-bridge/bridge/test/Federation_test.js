@@ -1,5 +1,6 @@
 const { TestHelper } = require('@openzeppelin/cli');
 const { Contracts, ZWeb3 } = require('@openzeppelin/upgrades');
+const abiDecoder = require('abi-decoder');
 
 ZWeb3.initialize(web3.currentProvider);
 
@@ -293,33 +294,6 @@ contract('Federation', async function (accounts) {
 
             await this.sideTokenFactory.transferPrimary(this.bridge.address);
             await this.federation.setBridge(this.bridge.address);
-        });
-
-        it('voteTransaction should be successful sendint extra data', async function() {
-            const extraData = 'Extra data';
-            this.federation.removeMember(fedMember2)
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
-            let transactionCount = await this.federation.getTransactionCount(transactionId);
-            assert.equal(transactionCount, 0);
-
-            let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
-                Buffer.from(extraData), {from: fedMember1});
-            utils.checkRcpt(receipt);
-            //let bridge = await this.federation.bridge();
-            truffleAssert.eventEmitted(receipt, 'Executed', (ev) => {
-                return ev.transactionId === transactionId;
-            });
-            console.log("Evento: ", receipt);
-            console.log("Evento2: ", this.bridge.allEvents());
-            const allEvents = bridge.allEvents({
-                fromBlock: 0,
-                toBlock: 'latest'
-              });
-              console.log(allEvents);
-            //let sideTokenAddress = await this.mirrorBridge.mappedTokens(originalTokenAddress);
-            //let sideToken = await SideToken.at(sideTokenAddress);
-            //const sideTokenSymbol = await sideToken.symbol();
-            //assert.equal(sideTokenSymbol, "rMAIN");
         });
 
         it('voteTransaction should be successful with 1/1 feds require 1', async function() {
@@ -673,6 +647,33 @@ contract('Federation', async function (accounts) {
             utils.checkRcpt(receipt);
         });
 
+        it('voteTransaction should be successful sendint extra data', async function() {
+            const extraData = 'Extra data';
+            this.federation.removeMember(fedMember2)
+            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionCount = await this.federation.getTransactionCount(transactionId);
+            assert.equal(transactionCount, 0);
+
+            let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
+                Buffer.from(extraData), {from: fedMember1});
+            utils.checkRcpt(receipt);
+            //let bridge = await this.federation.bridge();
+            truffleAssert.eventEmitted(receipt, 'Executed', (ev) => {
+                return ev.transactionId === transactionId;
+            });
+            let tx = await web3.eth.getTransactionReceipt(receipt.tx);
+            abiDecoder.addABI(this.bridge.abi);
+            const decodedLogs = abiDecoder.decodeLogs(tx.logs);
+            let event;
+            decodedLogs.forEach(ev => {
+                if (ev.name === 'AcceptedCrossTransfer') {
+                    event = ev;
+                }
+            });
+            assert.notEqual(event, undefined);
+            assert.equal(event.events[8].name, "_userData");
+            assert.equal(utils.hexaToString(event.events[8].value), extraData);
+        });
     });
 
     describe('Calls from MultiSig', async function() {

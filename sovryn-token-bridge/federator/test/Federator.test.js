@@ -124,7 +124,8 @@ describe('Federator module tests', () => {
                 _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
                 _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
                 _amount: '1000000000000000000',
-                _symbol: 'MAIN'
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
             },
             event: 'Cross',
             signature:
@@ -164,7 +165,8 @@ describe('Federator module tests', () => {
                 _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
                 _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
                 _amount: '50',
-                _symbol: 'MAIN'
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
             },
             event: 'Cross',
             signature:
@@ -206,7 +208,8 @@ describe('Federator module tests', () => {
                 _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
                 _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
                 _amount: '1000000000000000000',
-                _symbol: 'MAIN'
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
             },
             event: 'Cross',
             signature:
@@ -253,7 +256,8 @@ describe('Federator module tests', () => {
                 _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
                 _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
                 _amount: '1000',
-                _symbol: 'MAIN'
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
             },
             event: 'Cross',
             signature:
@@ -285,7 +289,8 @@ describe('Federator module tests', () => {
                 _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
                 _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
                 _amount: '1000',
-                _symbol: 'MAIN'
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
             },
             event: 'Cross',
             signature:
