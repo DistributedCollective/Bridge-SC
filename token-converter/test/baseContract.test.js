@@ -12,7 +12,7 @@ const updatedFee = 20;
 const fakeAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559"; // put a fake address
 const fakeAddress2 = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A"; // put a fake address
 
-contract.only("Converter", (accounts) => {
+contract("Converter", (accounts) => {
   let converterContract;
   before(async function () {
     converterContract = await ConverterContract.deployed();
@@ -201,7 +201,7 @@ contract.only("Converter", (accounts) => {
     });
   });
 
-  describe.only("decodeAddress function should", async () => {
+  describe("decodeAddress function should", async () => {
     // TODO: this tests will change to be part of onTokensReceived tests when the decodeAddress becomes private
     it("RETURN the address when there is only one address encoded", async () => {
       const address = web3.eth.accounts.create().address;
