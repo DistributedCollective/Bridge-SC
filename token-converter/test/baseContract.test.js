@@ -66,13 +66,6 @@ contract("Converter", (accounts) => {
       );
     });
 
-    xit("REJECT BridgeContractAddress update when its value is zero", async () => {
-      await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(0),
-        truffleAssert.ErrorType.REVERT
-      );
-    });
-
     it("UPDATE BridgeContractAddress when sender is owner && EMIT the proper event", async () => {
       const result = await converterContract.setBridgeContractAddress(
         fakeAddress
@@ -106,14 +99,6 @@ contract("Converter", (accounts) => {
       assert.strictEqual(contractIsPaused, true);
     });
 
-    xit("REJECT any transaction (except update conversionFee by owner) when contract is PAUSED", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      await converterContract.pauseContract();
-      // TODO test function with whenNotPaused modifier
-      await truffleAssert.fails(converterContract.testPause(5));
-    });
-
     it("REJECT PAUSE contract when contract is already PAUSED", async () => {
       await truffleAssert.fails(converterContract.pauseContract());
     });
@@ -139,13 +124,6 @@ contract("Converter", (accounts) => {
         converterContract.addTokenToWhitelist(fakeAddress, {
           from: fakeAddress,
         })
-      );
-    });
-
-    xit("REJECT addWhiteListToken when address is ZERO", async () => {
-      await truffleAssert.fails(
-        converterContract.addTokenToWhitelist(0),
-        truffleAssert.ErrorType.REVERT
       );
     });
 
@@ -187,7 +165,9 @@ contract("Converter", (accounts) => {
 
     it("REMOVE token from whitelist when sender is owner && EMIT the proper event", async () => {
       // const isTokenValidPrev = await converterContract.isValidToken(fakeAddress);
-      const result = await converterContract.removeTokenFromWhitelist(fakeAddress);
+      const result = await converterContract.removeTokenFromWhitelist(
+        fakeAddress
+      );
 
       const isTokenValid = await converterContract.isTokenValid(fakeAddress);
 

@@ -23,7 +23,8 @@ interface IBridge {
         address tokenToUse,
         uint256 amount,
         address receiver,
-        bytes calldata signature
+        bytes calldata signature,
+        bytes calldata extraData
     ) external returns(bool);
 
     /**

@@ -338,7 +338,6 @@ contract('Bridge upgrade test', async (accounts) => {
                     });
                 }); // end after changeSideTokenFactory
             }); //end after upgrade
-
         }); // end initialized
     }); // end freshly created
 });

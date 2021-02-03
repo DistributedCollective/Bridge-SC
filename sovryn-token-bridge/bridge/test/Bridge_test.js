@@ -634,7 +634,6 @@ contract('Bridge', async function (accounts) {
                 let receipt = await this.bridge.receiveTokens(this.token.address, amount, { from: tokenOwner});
                 utils.checkRcpt(receipt);
             });
-
         });
 
         describe('receiveTokensAt', async function () {
@@ -643,7 +642,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await this.token.balanceOf(tokenOwner);
                 let receipt = await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 assert.equal(receipt.logs[0].event, 'Cross');
@@ -668,7 +667,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await this.token.balanceOf(tokenOwner);
                 let receipt = await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const tokenBalance = await this.token.balanceOf(tokenOwner);
@@ -684,7 +683,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await this.token.balanceOf(tokenOwner);
                 let receipt = await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const tokenBalance = await this.token.balanceOf(tokenOwner);
@@ -703,7 +702,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await token.balanceOf(tokenOwner);
                 let receipt = await token.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const tokenBalance = await token.balanceOf(tokenOwner);
@@ -723,7 +722,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await token.balanceOf(tokenOwner);
                 let receipt = await token.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const tokenBalance = await token.balanceOf(tokenOwner);
@@ -743,7 +742,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await erc20Alternative.balanceOf(tokenOwner);
                 let receipt = await erc20Alternative.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(erc20Alternative.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(erc20Alternative.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 assert.equal(receipt.logs[0].event, 'Cross');
@@ -774,7 +773,7 @@ contract('Bridge', async function (accounts) {
                 const originalTokenBalance = await erc777.balanceOf(tokenOwner);
                 let receipt = await erc777.approve(this.bridge.address, amount, { from: tokenOwner });
                 utils.checkRcpt(receipt);
-                receipt = await this.bridge.receiveTokensAt(erc777.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                receipt = await this.bridge.receiveTokensAt(erc777.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 assert.equal(receipt.logs[0].event, 'Cross');
@@ -975,7 +974,7 @@ contract('Bridge', async function (accounts) {
                 await this.bridge.setFeePercentage(payment, { from: bridgeManager});
                 await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
 
-                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const ownerBalance = await this.token.balanceOf(bridgeManager);
@@ -1003,7 +1002,7 @@ contract('Bridge', async function (accounts) {
                 await this.bridge.setFeePercentage(payment, { from: bridgeManager});
                 await erc777.approve(this.bridge.address, amount, { from: tokenOwner });
 
-                let receipt = await this.bridge.receiveTokensAt(erc777.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                let receipt = await this.bridge.receiveTokensAt(erc777.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const ownerBalance = await erc777.balanceOf(bridgeManager);
@@ -1030,7 +1029,7 @@ contract('Bridge', async function (accounts) {
                     this.token.address, amount.toString(), anAccount
                 );
                 let signature = fixSignature(await web3.eth.sign(msgHash, tokenOwner));
-                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, anAccount, signature, { from: tokenOwner });
+                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, anAccount, signature, Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const ownerBalance = await this.token.balanceOf(bridgeManager);
@@ -1060,7 +1059,7 @@ contract('Bridge', async function (accounts) {
                 const adulteratedMsgHash = randomHex(32);
                 let adulteratedSignature = fixSignature(await web3.eth.sign(adulteratedMsgHash, tokenOwner));
                 await utils.expectThrow(
-                    this.bridge.receiveTokensAt(this.token.address, amount, anAccount, adulteratedSignature, { from: tokenOwner })
+                    this.bridge.receiveTokensAt(this.token.address, amount, anAccount, adulteratedSignature, Buffer.from(""), { from: tokenOwner })
                 );
             });
 
@@ -1083,7 +1082,7 @@ contract('Bridge', async function (accounts) {
                 let amount = maxTokensAllowed.add(new BN('1'));
                 await this.token.approve(this.bridge.address, amount.toString(), { from: tokenOwner });
 
-                await utils.expectThrow(this.bridge.receiveTokensAt(this.token.address, amount.toString(), tokenOwner, Buffer.from(""), { from: tokenOwner}));
+                await utils.expectThrow(this.bridge.receiveTokensAt(this.token.address, amount.toString(), tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner}));
 
                 const isKnownToken = await this.bridge.knownTokens(this.token.address);
                 assert.equal(isKnownToken, false);
@@ -1097,7 +1096,7 @@ contract('Bridge', async function (accounts) {
                 let amount = maxTokensAllowed.div(new BN((10**10).toString()).add(new BN('1')));
                 await newToken.approve(this.bridge.address, amount.toString(), { from: tokenOwner });
 
-                await utils.expectThrow(this.bridge.receiveTokensAt(newToken.address, amount.toString(), tokenOwner, Buffer.from(""), { from: tokenOwner}));
+                await utils.expectThrow(this.bridge.receiveTokensAt(newToken.address, amount.toString(), tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner}));
 
                 const isKnownToken = await this.bridge.knownTokens(newToken.address);
                 assert.equal(isKnownToken, false);
@@ -1138,7 +1137,7 @@ contract('Bridge', async function (accounts) {
 
                 for(var tokensSent = 0; tokensSent < dailyLimit; tokensSent = BigInt(maxTokensAllowed) + BigInt(tokensSent)) {
                     await this.token.approve(this.bridge.address, maxTokensAllowed, { from: tokenOwner });
-                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), { from: tokenOwner })
+                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner })
                 }
                 await utils.expectThrow(this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, { from: tokenOwner}));
             });
@@ -1152,7 +1151,7 @@ contract('Bridge', async function (accounts) {
 
                 for(var tokensSent = 0; tokensSent < dailyLimit; tokensSent = BigInt(maxTokensAllowed) + BigInt(tokensSent)) {
                     await newToken.approve(this.bridge.address, amount.toString(), { from: tokenOwner });
-                    await this.bridge.receiveTokensAt(newToken.address, amount.toString(), tokenOwner, Buffer.from(""), { from: tokenOwner })
+                    await this.bridge.receiveTokensAt(newToken.address, amount.toString(), tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner })
                 }
                 await utils.expectThrow(this.bridge.receiveTokensAt(newToken.address, amount.toString(), { from: tokenOwner}));
             });
@@ -1165,7 +1164,7 @@ contract('Bridge', async function (accounts) {
 
                 for(var tokensSent = 0; tokensSent < dailyLimit; tokensSent = BigInt(maxTokensAllowed) + BigInt(tokensSent)) {
                     await this.token.approve(this.bridge.address, maxTokensAllowed, { from: tokenOwner });
-                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), { from: tokenOwner })
+                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner })
                 }
                 maxWidthdraw = await this.bridge.calcMaxWithdraw();
                 assert.equal(maxWidthdraw.toString(), '0');
@@ -1181,15 +1180,29 @@ contract('Bridge', async function (accounts) {
 
                 for(let tokensSent = 0; tokensSent < dailyLimit; tokensSent = BigInt(maxTokensAllowed) + BigInt(tokensSent)) {
                     await this.token.approve(this.bridge.address, maxTokensAllowed, { from: tokenOwner });
-                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), { from: tokenOwner })
+                    await this.bridge.receiveTokensAt(this.token.address, maxTokensAllowed, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner })
                 }
                 await utils.increaseTimestamp(web3, ONE_DAY + 1);
 
                 await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
-                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), { from: tokenOwner });
+                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
             });
 
+            it('should generate cross event with extra data', async function () {
+                const extraData = 'Extra data';
+                const amount = web3.utils.toWei('1000');
+                let receipt = await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
+                utils.checkRcpt(receipt);
+                receipt = await this.bridge.receiveTokensAt(this.token.address, amount, tokenOwner, Buffer.from(""), Buffer.from(extraData), { from: tokenOwner });
+                let result = '';
+                for (var i = 0; i < receipt.logs[0].args[4].toString().length; i += 2) {
+                    result += String.fromCharCode(parseInt(receipt.logs[0].args[4].toString().substr(i, 2), 16));
+                }
+                result = result.replace(/\0/g, '');
+                assert.equal(receipt.logs[0].event, 'Cross');
+                assert.equal(result, extraData);
+            });
         });
 
     });
@@ -1990,6 +2003,5 @@ contract('Bridge', async function (accounts) {
             assert.equal(result.toLowerCase(), newAddress.toLowerCase());
         });
     });
-
 });
 
