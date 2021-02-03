@@ -130,7 +130,7 @@ module.exports = class Federator {
     async _processLog(log, from) {
         const {
             _to: receiver, _amount: amount, _symbol: symbol, _tokenAddress: tokenAddress,
-            _decimals: decimals, _granularity: granularity
+            _decimals: decimals, _granularity: granularity, _userData: userData
         } = log.returnValues;
 
         let transactionId = await this.federationContract.methods.getTransactionId(
@@ -159,7 +159,8 @@ module.exports = class Federator {
                     log.transactionHash,
                     log.logIndex,
                     decimals,
-                    granularity);
+                    granularity,
+                    userData);
             } else {
                 this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
             }
@@ -170,7 +171,7 @@ module.exports = class Federator {
     }
 
 
-    async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity) {
+    async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
         try {
 
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
@@ -197,10 +198,11 @@ module.exports = class Federator {
                 transactionHash,
                 logIndex,
                 decimals,
-                granularity
+                granularity,
+                userData
             ).encodeABI();
 
-            this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity})`);
+            this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
             await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
             this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
             return true;
