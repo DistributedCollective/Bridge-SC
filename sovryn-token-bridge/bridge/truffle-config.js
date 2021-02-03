@@ -90,7 +90,9 @@ module.exports = {
       skipDryRun: true
     },
   },
-  plugins: ["solidity-coverage"],
+  plugins: [
+      'truffle-contract-size', 'solidity-coverage'
+  ],
   mocha: {
     reporter: 'eth-gas-reporter',
     //reporterOptions : { ... } // See options below

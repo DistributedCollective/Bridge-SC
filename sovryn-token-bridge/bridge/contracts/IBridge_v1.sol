@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 
 import "./zeppelin/token/ERC20/ERC20Detailed.sol";
 
-interface IBridge {
+interface IBridge_v1 {
     function version() external pure returns (string memory);
 
     function getFeePercentage() external view returns(uint);
@@ -14,17 +14,6 @@ interface IBridge {
      * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
      */
     function receiveTokens(address tokenToUse, uint256 amount) external returns(bool);
-
-    /**
-     * ERC-20 tokens approve and transferFrom pattern
-     * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
-     */
-    function receiveTokensAt(
-        address tokenToUse,
-        uint256 amount,
-        address receiver,
-        bytes calldata signature
-    ) external returns(bool);
 
     /**
      * ERC-777 tokensReceived hook allows to send tokens to a contract and notify it in a single transaction

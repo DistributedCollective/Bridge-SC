@@ -1,5 +1,4 @@
-infura.key
-mnemonic.key
+*.key
 build
 .openzeppelin/.session
 .openzeppelin/dev-*.json
