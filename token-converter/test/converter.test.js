@@ -60,17 +60,17 @@ contract("Converter", () => {
 
     it("REJECT BridgeContractAddress update when sender is NOT owner", async () => {
       await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(fakeAddress, {
+        converterContract.setBridgeContract(fakeAddress, {
           from: fakeAddress,
         })
       );
     });
 
     it("UPDATE BridgeContractAddress when sender is owner && EMIT the proper event", async () => {
-      const result = await converterContract.setBridgeContractAddress(
+      const result = await converterContract.setBridgeContract(
         fakeAddress
       );
-      const conversionFee = await converterContract.bridgeContractAddress();
+      const conversionFee = await converterContract.bridgeContract();
 
       assert.strictEqual(
         conversionFee,

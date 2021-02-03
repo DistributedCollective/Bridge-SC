@@ -19,11 +19,11 @@
  */
 
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const fs = require('fs');
+const fs = require("fs");
 
 const MNEMONIC = fs.readFileSync("./mnemonic.key").toString().trim();
-if (!MNEMONIC || MNEMONIC.split(' ').length !== 12) {
-  throw new Error('unable to retrieve mnemonic from .secret');
+if (!MNEMONIC || MNEMONIC.split(" ").length !== 12) {
+  throw new Error("unable to retrieve mnemonic from .secret");
 }
 
 module.exports = {
@@ -50,13 +50,12 @@ module.exports = {
       network_id: "*", // Any network (default: none)
     },
     rsktestnet: {
-      provider: () =>
-        new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
+      provider: () => new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
       network_id: 31,
       gas: 6300000,
       gasPrice: 70000000, // 0.07 gwei
       skipDryRun: true,
-      timeoutBlocks: 200
+      timeoutBlocks: 200,
     },
     // kovan: {
     //   provider: new HDWalletProvider(
@@ -98,13 +97,13 @@ module.exports = {
   // Set default mocha options here, use special reporters etc.
   mocha: {
     timeout: 100000,
-    useColors: true
+    useColors: true,
   },
   plugins: ["solidity-coverage"],
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.6.0",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.6.12", // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {

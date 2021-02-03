@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "./IBridge.sol";
 
 contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -13,7 +14,9 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     mapping(address => bool) private allowedTokens;
 
     uint256 public conversionFee; // fee to give the buyers a better price
-    address public bridgeContractAddress; // Bridge Address
+
+    IBridge public bridgeContract; // Bridge Address
+
     uint256 public numOrder; // to store the incremental sell orders, always increment when creating new order
     uint256 public lastOrderIndex; // to store the number of the last order (differs from numOrder when buiying the last order)
     uint256 public firstOrderIndex; // to store the number of the first order (to do the getSellOrder pagination)
@@ -21,6 +24,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     struct Order {
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
+        uint256 remainingAmount; // Amount left to fill the order
         address recipient; // Destination address of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
@@ -32,7 +36,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     event ConversionFeeChanged(uint256 previousValue, uint256 currentValue);
 
-    event BridgeContractAddressChanged(
+    event BridgeContractChanged(
         address _previousAddress,
         address _currentAddress
     );
@@ -48,6 +52,21 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint256 _amount,
         address _tokenAddress,
         address _recipientAddress
+    );
+
+    event TakeSellOrder(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _buyer,
+        address _ethDestinationAddress
+    );
+
+    event SentToBridge(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _ethDestinationAddress
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -76,7 +95,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     modifier onlyBridge() {
         require(
-            msg.sender == bridgeContractAddress,
+            msg.sender == address(bridgeContract),
             "Only BRIDGE Contract can call this function"
         );
         _;
@@ -99,7 +118,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         conversionFee = _conversionFee;
         numOrder = 0;
         lastOrderIndex = 0;
-        firstOrderIndex = 1;
+        firstOrderIndex = 0;
         __Ownable_init();
         __Pausable_init();
     }
@@ -155,19 +174,16 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         return tokenisValid;
     }
 
-    function setBridgeContractAddress(address _bridgeContractAddress)
+    function setBridgeContract(address _bridgeContract)
         public
         onlyOwner
-        notNull(_bridgeContractAddress)
+        notNull(_bridgeContract)
         returns (bool)
     {
-        address previousAddress = bridgeContractAddress;
-        bridgeContractAddress = _bridgeContractAddress;
+        address previousAddress = address(bridgeContract);
+        bridgeContract = IBridge(_bridgeContract);
 
-        emit BridgeContractAddressChanged(
-            previousAddress,
-            bridgeContractAddress
-        );
+        emit BridgeContractChanged(previousAddress, _bridgeContract);
         return true;
     }
 
@@ -191,14 +207,10 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         emit TokensReceived(recipient, _orderAmount, _tokenAddress);
 
         // call to make the sell orders of the received tokens
-        makeSellOrder(
-            _orderAmount,
-            _tokenAddress,
-            recipient
-        );
+        makeSellOrder(_orderAmount, _tokenAddress, recipient);
     }
 
-    function decodeAddress(bytes memory data) private pure returns(address) {
+    function decodeAddress(bytes memory data) private pure returns (address) {
         address addr = abi.decode(data, (address));
         require(addr != NULL_ADDRESS, "Converter: Error decoding extraData");
         return addr;
@@ -220,6 +232,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         orders[numOrder] = Order(
             _tokenAddress,
             _orderAmount,
+            0,
             _recipient,
             previousOrder,
             0
@@ -273,5 +286,111 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         ordersAmounts[index] = orders[lastOrderIndex].orderAmount;
 
         return (ordersIds, ordersAmounts);
+    }
+
+    function updateOrdersMap(Order memory order, uint256 orderId) internal returns (bool) {
+        uint256 previousOrder = order.previousOrder;
+        uint256 nextOrder = order.nextOrder;
+
+        // Order filled completely, must be removed
+        if (previousOrder == 0) {
+            // It's the FIRST one in the map
+            if (nextOrder == 0) {
+                // It's the only one in the map, no next
+                lastOrderIndex = 0;
+                firstOrderIndex = 0;
+            } else {
+                // It has SUBSEQUENTS orders
+                firstOrderIndex = orders[nextOrder].previousOrder;
+                orders[nextOrder].previousOrder = 0;
+            }
+        } else {
+            // It's NOT THE FIRST
+            if (nextOrder == 0) {
+                // It's the LAST in the map
+                lastOrderIndex = previousOrder;
+                orders[previousOrder].nextOrder = 0;
+            } else {
+                // It's NOT THE LAST
+                orders[previousOrder].nextOrder = order.nextOrder;
+                orders[nextOrder].previousOrder = order.previousOrder;
+            }
+        }
+        delete orders[orderId];
+        return true;
+    }
+
+    function takeSellOrder(
+        uint256 orderId,
+        uint256 amountToBuy, // qty tokens to buy
+        address ethDestinationAddress,
+        bytes calldata signature,
+        bytes calldata extraData // public
+    )
+        external
+        payable
+        whenNotPaused
+        notNull(ethDestinationAddress)
+        notNull(orders[orderId].tokenAddress)
+    {
+        require(amountToBuy > 0, "Amount to buy must be greater than 0");
+
+        Order memory order = orders[orderId];
+        require(
+            amountToBuy <= order.remainingAmount,
+            "Amount to buy must be equal or less than remaining tokens"
+        );
+        require(order.remainingAmount > 0, "Order already filled");
+
+        uint256 priceWithDiscount =
+            amountToBuy.sub(
+                ((amountToBuy).mul(conversionFee)).div(feePercentageDivider)
+            );
+        require(
+            msg.value >= priceWithDiscount,
+            "Transfered Amount is less than expected"
+        );
+
+        order.remainingAmount = order.remainingAmount.sub(amountToBuy);
+
+        bool calledOK;
+        if (order.remainingAmount == 0) {
+            calledOK = updateOrdersMap(order, orderId);
+            require(calledOK, "Error when updating orders map");
+        }
+
+        calledOK = bridgeContract.receiveTokensAt(
+            order.tokenAddress,
+            amountToBuy,
+            ethDestinationAddress,
+            signature,
+            extraData
+        );
+        require(calledOK, "Error when sending to the bridge");
+
+        emit SentToBridge(
+            orderId,
+            amountToBuy,
+            order.tokenAddress,
+            ethDestinationAddress
+        );
+
+        uint256 sendBackAmount; // amount to send back to the LP because it was bigger than the order
+        if (msg.value > priceWithDiscount) {
+            sendBackAmount = msg.value.sub(priceWithDiscount);
+            (calledOK, ) = msg.sender.call{value: sendBackAmount}("");
+            require(calledOK, "Error sending back to the Liquidity provider");
+        }
+
+        (calledOK, ) = order.recipient.call{value: amountToBuy}("");
+
+        require(calledOK, "Error sending to seller rsk address");
+        emit TakeSellOrder(
+            orderId,
+            amountToBuy,
+            order.tokenAddress,
+            msg.sender,
+            ethDestinationAddress
+        );
     }
 }

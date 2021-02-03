@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "../IBridge.sol";
 
 contract MockConverter_v2 is
     Initializable,
@@ -17,16 +18,17 @@ contract MockConverter_v2 is
     mapping(address => bool) private allowedTokens;
 
     uint256 public conversionFee; // fee to give the buyers a better price
-    address public bridgeContractAddress; // Bridge Address
+
+    IBridge public bridgeContract; // Bridge Address
+
     uint256 public numOrder; // to store the incremental sell orders, always increment when creating new order
     uint256 public lastOrderIndex; // to store the number of the last order (differs from numOrder when buiying the last order)
     uint256 public firstOrderIndex; // to store the number of the first order (to do the getSellOrder pagination)
 
     struct Order {
-        address sellerAddress; // Sell Order maker address
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
-        address finalRecipientAddress; // Final destination of the rBTC payed by the buyer
+        address recipient; // Destination address of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
     }
@@ -37,13 +39,13 @@ contract MockConverter_v2 is
 
     event ConversionFeeChanged(uint256 previousValue, uint256 currentValue);
 
-    event BridgeContractAddressChanged(
+    event BridgeContractChanged(
         address _previousAddress,
         address _currentAddress
     );
 
     event TokensReceived(
-        address _sellerAddress,
+        address _recipientAddress,
         uint256 _orderAmount,
         address _tokenAddress
     );
@@ -52,7 +54,29 @@ contract MockConverter_v2 is
         uint256 _orderId,
         uint256 _amount,
         address _tokenAddress,
-        address _seller
+        address _recipientAddress
+    );
+
+    event TakeSellOrder(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _buyer,
+        address _ethDestinationAddress
+    );
+
+    event ReturnedToLP(
+        uint256 _orderId,
+        uint256 _amountPut,
+        uint256 _previousRemainedAmount,
+        uint256 _amountReturned
+    );
+
+    event SentToBridge(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _ethDestinationAddress
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -81,7 +105,7 @@ contract MockConverter_v2 is
 
     modifier onlyBridge() {
         require(
-            msg.sender == bridgeContractAddress,
+            msg.sender == address(bridgeContract),
             "Only BRIDGE Contract can call this function"
         );
         _;
@@ -104,7 +128,7 @@ contract MockConverter_v2 is
         conversionFee = _conversionFee;
         numOrder = 0;
         lastOrderIndex = 0;
-        firstOrderIndex = 1;
+        firstOrderIndex = 0;
         __Ownable_init();
         __Pausable_init();
     }
@@ -160,19 +184,16 @@ contract MockConverter_v2 is
         return tokenisValid;
     }
 
-    function setBridgeContractAddress(address _bridgeContractAddress)
+    function setBridgeContract(address _bridgeContract)
         public
         onlyOwner
-        notNull(_bridgeContractAddress)
+        notNull(_bridgeContract)
         returns (bool)
     {
-        address previousAddress = bridgeContractAddress;
-        bridgeContractAddress = _bridgeContractAddress;
+        address previousAddress = address(bridgeContract);
+        bridgeContract = IBridge(_bridgeContract);
 
-        emit BridgeContractAddressChanged(
-            previousAddress,
-            bridgeContractAddress
-        );
+        emit BridgeContractChanged(previousAddress, _bridgeContract);
         return true;
     }
 }
