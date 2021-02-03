@@ -19,10 +19,9 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     uint256 public firstOrderIndex; // to store the number of the first order (to do the getSellOrder pagination)
 
     struct Order {
-        address sellerAddress; // Sell Order maker address
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
-        address finalRecipientAddress; // Final destination of the rBTC payed by the buyer
+        address recipient; // Destination address of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
     }
@@ -39,7 +38,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     );
 
     event TokensReceived(
-        address _sellerAddress,
+        address _recipientAddress,
         uint256 _orderAmount,
         address _tokenAddress
     );
@@ -48,7 +47,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint256 _orderId,
         uint256 _amount,
         address _tokenAddress,
-        address _seller
+        address _recipientAddress
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -173,15 +172,13 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     function onTokensMinted(
-        address _sellerAddress,
         uint256 _orderAmount,
         address _tokenAddress,
-        bytes32 userData
+        bytes memory userData
     )
         public
         onlyBridge
         whenNotPaused
-        notNull(_sellerAddress)
         notNull(_tokenAddress)
         isTokenWhitelisted(_tokenAddress)
     {
@@ -189,26 +186,29 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         // contrato del bridge ERC777 o receivetoken
 
-        // TODO parse user data to obtain finalReceipientAddress
-        address finalReceipientAddress = _sellerAddress;
+        address recipient = decodeAddress(userData);
 
-        emit TokensReceived(_sellerAddress, _orderAmount, _tokenAddress);
+        emit TokensReceived(recipient, _orderAmount, _tokenAddress);
 
         // call to make the sell orders of the received tokens
         makeSellOrder(
-            _sellerAddress,
             _orderAmount,
             _tokenAddress,
-            finalReceipientAddress
+            recipient
         );
     }
 
+    function decodeAddress(bytes memory data) private pure returns(address) {
+        address addr = abi.decode(data, (address));
+        require(addr != NULL_ADDRESS, "Converter: Error decoding extraData");
+        return addr;
+    }
+
     function makeSellOrder(
-        address _sellerAddress,
         uint256 _orderAmount,
         address _tokenAddress,
-        address _finalRecipientAddress
-    ) internal whenNotPaused {
+        address _recipient
+    ) private whenNotPaused {
         uint256 previousOrder = lastOrderIndex;
         numOrder = numOrder.add(1);
         lastOrderIndex = lastOrderIndex.add(1);
@@ -218,10 +218,9 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         }
 
         orders[numOrder] = Order(
-            _sellerAddress,
             _tokenAddress,
             _orderAmount,
-            _finalRecipientAddress,
+            _recipient,
             previousOrder,
             0
         );
@@ -230,11 +229,11 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             numOrder,
             orders[numOrder].orderAmount,
             orders[numOrder].tokenAddress,
-            orders[numOrder].sellerAddress
+            orders[numOrder].recipient
         );
     }
 
-    /// This function is exclusively for offchain query
+    /// @dev This function is exclusively for offchain query
     function getSellOrders(uint256 fromOrder, uint256 qtyToReturn)
         public
         view
@@ -244,7 +243,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         require(qtyToReturn > 0, "qtyToReturn must be greater than ZERO");
         require(lastOrderIndex != 0, "No orders to retrieve");
         require(
-            orders[fromOrder].sellerAddress != NULL_ADDRESS,
+            orders[fromOrder].recipient != NULL_ADDRESS,
             "Invalid FROM order parameter"
         );
 
@@ -274,12 +273,5 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         ordersAmounts[index] = orders[lastOrderIndex].orderAmount;
 
         return (ordersIds, ordersAmounts);
-    }
-
-    // TODO: change visibility to private when onTokensReceived function is created.
-    function decodeAddress(bytes memory extraData) public pure returns(address) {
-        address addr = abi.decode(extraData, (address));
-        require(addr != NULL_ADDRESS, "Converter: Error decoding extraData");
-        return addr;
     }
 }

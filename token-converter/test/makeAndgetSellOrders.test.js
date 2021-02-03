@@ -1,23 +1,32 @@
 const ConverterContract = artifacts.require("Converter");
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
+const chai = require('chai');
+const { expect } = require('chai');
+
+chai.use(require('chai-as-promised'));
 
 const { checkGetOrders } = require("./helpers/utilities");
 
-const bridgeAddress = "0x1DE9306A49D738443D2Ca79D6C0bFF1f8070F338";
 const whiteListedToken = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const notWhiteListedToken = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A";
-const userData = web3.utils.sha3("RANDOM_DATA");
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const ordersIds = [1, 2, 3];
 const ordersAmounts = [1000, 1500, 2000];
-const sellerAddressess = [
+const sellerAddresses = [
   "0xd6f527C12470A0aAeB38A3b2CEB99f07Bc8F174B",
   "0x8AeF249d8191f1CBCCb3978b828A8C88251A6e7D",
   "0x4D80D038D7191Ceb7E0451E5329389606e644fDa",
 ];
+const userDatas = sellerAddresses.map((address) => web3.eth.abi.encodeParameter("address", address));
+const zeroAddressUserData = web3.eth.abi.encodeParameter("address", zeroAddress);
 
-contract("Converter", (accounts) => {
+contract("Converter", (
+    [
+      owner,
+      bridgeAddress
+    ]
+) => {
   let converterContract;
   before(async function () {
     converterContract = await ConverterContract.deployed();
@@ -27,109 +36,103 @@ contract("Converter", (accounts) => {
 
   describe("Called onTokenMinted INCORRECTLY from the bridge should:", async () => {
     it("REJECT when calling address is not the Bridge", async () => {
-      await truffleAssert.fails(
+      await expect(
         converterContract.onTokensMinted(
-          sellerAddressess[0],
           ordersAmounts[0],
           whiteListedToken,
-          userData
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
+          userDatas[0]
+        )
+      ).to.be.rejectedWith(Error);
     });
 
     it("REJECT when contract is paused", async () => {
-      converterContract.pauseContract();
-      await truffleAssert.fails(
-        converterContract.onTokensMinted(
-          sellerAddressess[0],
+      await converterContract.pauseContract();
+      await expect(converterContract.onTokensMinted(
           ordersAmounts[0],
           whiteListedToken,
-          userData,
+          userDatas[0],
           { from: bridgeAddress }
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
-      converterContract.unpauseContract();
+      )).to.be.rejectedWith(Error);
+      await converterContract.unpauseContract();
     });
 
     it("REJECT when seller address is null", async () => {
-      await truffleAssert.fails(
+      const invalidUserData = web3.eth.abi.encodeParameters([], []);
+      await expect(
         converterContract.onTokensMinted(
-          zeroAddress,
           ordersAmounts[0],
           whiteListedToken,
-          userData,
+          invalidUserData,
           { from: bridgeAddress }
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
+        )
+      ).to.be.rejectedWith(Error);
+    });
+
+    it("REJECT when seller address is the zero address", async () => {
+      await expect(
+        converterContract.onTokensMinted(
+          ordersAmounts[0],
+          whiteListedToken,
+          zeroAddressUserData,
+          { from: bridgeAddress }
+        )
+      ).to.be.rejectedWith(Error);
     });
 
     it("REJECT when token address is null", async () => {
-      await truffleAssert.fails(
+      await expect(
         converterContract.onTokensMinted(
-          zeroAddress,
           ordersAmounts[0],
           whiteListedToken,
-          userData,
+          zeroAddressUserData,
           { from: bridgeAddress }
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
+        )
+      ).to.be.rejectedWith(Error);
+
     });
 
     it("REJECT when amount received is zero", async () => {
-      await truffleAssert.fails(
+      await expect(
         converterContract.onTokensMinted(
-          sellerAddressess[0],
           0,
           whiteListedToken,
-          userData,
+          userDatas[0],
           { from: bridgeAddress }
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
+        )
+      ).to.be.rejectedWith(Error);
     });
 
     it("REJECT when token address is not whitelisted", async () => {
-      await truffleAssert.fails(
+      await expect(
         converterContract.onTokensMinted(
-          sellerAddressess[0],
           ordersAmounts[0],
           notWhiteListedToken,
-          userData,
+          userDatas[0],
           { from: bridgeAddress }
-        ),
-        truffleAssert.ErrorType.REVERT
-      );
+        )
+      ).to.be.rejectedWith(Error);
     });
   });
 
   describe("Called Get Sell Orders should:", async () => {
     it("REJECT when Qty to show Orders is ZERO or less", async () => {
-      await truffleAssert.fails(
-        converterContract.getSellOrders(ordersIds[0], 0),
-        truffleAssert.ErrorType.REVERT,
-        "qtyToReturn must be greater than ZERO"
-      );
+      await expect(
+        converterContract.getSellOrders(ordersIds[0], 0)
+      ).to.be.rejectedWith(Error, "qtyToReturn must be greater than ZERO");
     });
 
     it("REJECT when contract is paused", async () => {
-      converterContract.pauseContract();
-      await truffleAssert.fails(
-        converterContract.getSellOrders(ordersIds[0], 3),
-        truffleAssert.ErrorType.REVERT
-      );
-      converterContract.unpauseContract();
+      await converterContract.pauseContract();
+      await expect(
+        converterContract.getSellOrders(ordersIds[0], 3)
+      ).to.be.rejectedWith(Error);
+      await converterContract.unpauseContract();
     });
 
     it("REJECT when there's no Orders", async () => {
-      await truffleAssert.fails(
-        converterContract.getSellOrders(ordersIds[0], 3),
-        truffleAssert.ErrorType.REVERT,
-        "No orders to retrieve"
-      );
+      await expect(
+        converterContract.getSellOrders(ordersIds[0], 3)
+      ).to.be.rejectedWith(Error, "No orders to retrieve");
     });
   });
 
@@ -159,10 +162,9 @@ contract("Converter", (accounts) => {
       previousNumOrder = previousNumOrderBN.toNumber();
 
       result = await converterContract.onTokensMinted(
-        sellerAddressess[0],
         ordersAmounts[0],
         whiteListedToken,
-        userData,
+        userDatas[0],
         { from: bridgeAddress }
       );
 
@@ -204,7 +206,7 @@ contract("Converter", (accounts) => {
       const nextOrder = sellOrder.nextOrder.toNumber();
       assert.strictEqual(nextOrder, 0, "Next Order should be Zero");
 
-      assert.strictEqual(sellOrder.sellerAddress, sellerAddressess[0], "");
+      assert.strictEqual(sellOrder.recipient, sellerAddresses[0], "");
       assert.strictEqual(sellOrder.tokenAddress, whiteListedToken, "");
       assert.strictEqual(
         sellOrder.orderAmount.toNumber(),
@@ -250,15 +252,20 @@ contract("Converter", (accounts) => {
       assert.strictEqual(returnedObject.checkOrdersOk, false, "");
     });
 
-    it("Second Sell Order: receive Tokens - emit TOKENS RECEIVED Event - call makeSellOrder", async () => {
+    it("Second Sell Order: receive Tokens - emit TOKENS RECEIVED Event - call makeSellOrder - with multipleUserData", async () => {
       const previousNumOrderBN = await converterContract.numOrder();
       previousNumOrder = previousNumOrderBN.toNumber();
 
+      const intExtraData = "1000000000";
+      const multipleUserData = web3.eth.abi.encodeParameters(
+          ["address", "uint32"],
+          [sellerAddresses[1], intExtraData]
+      );
+
       result = await converterContract.onTokensMinted(
-        sellerAddressess[1],
         ordersAmounts[1],
         whiteListedToken,
-        userData,
+        multipleUserData,
         { from: bridgeAddress }
       );
 
@@ -310,7 +317,7 @@ contract("Converter", (accounts) => {
       const nextOrder = sellOrder.nextOrder.toNumber();
       assert.strictEqual(nextOrder, 0, "Next Order should be Zero");
 
-      assert.strictEqual(sellOrder.sellerAddress, sellerAddressess[1], "");
+      assert.strictEqual(sellOrder.recipient, sellerAddresses[1], "");
       assert.strictEqual(sellOrder.tokenAddress, whiteListedToken, "");
       assert.strictEqual(
         sellOrder.orderAmount.toNumber(),
@@ -339,10 +346,9 @@ contract("Converter", (accounts) => {
       previousNumOrder = previousNumOrderBN.toNumber();
 
       result = await converterContract.onTokensMinted(
-        sellerAddressess[2],
         ordersAmounts[2],
         whiteListedToken,
-        userData,
+        userDatas[2],
         { from: bridgeAddress }
       );
 
@@ -394,7 +400,7 @@ contract("Converter", (accounts) => {
       const nextOrder = sellOrder.nextOrder.toNumber();
       assert.strictEqual(nextOrder, 0, "Next Order should be Zero");
 
-      assert.strictEqual(sellOrder.sellerAddress, sellerAddressess[2], "");
+      assert.strictEqual(sellOrder.recipient, sellerAddresses[2], "");
       assert.strictEqual(sellOrder.tokenAddress, whiteListedToken, "");
       assert.strictEqual(
         sellOrder.orderAmount.toNumber(),
