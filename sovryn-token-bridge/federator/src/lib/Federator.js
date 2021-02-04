@@ -200,7 +200,7 @@ module.exports = class Federator {
                 logIndex,
                 decimals,
                 granularity,
-                userData
+                userData || Buffer.from("")
             ).encodeABI();
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
