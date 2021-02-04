@@ -17,6 +17,7 @@ const MultiSigWallet = artifacts.require('./MultiSigWallet');
 const UtilsContract = artifacts.require('./Utils');
 const Auth = artifacts.require('./Auth');
 const mockReceiveTokensCall = artifacts.require('./mockReceiveTokensCall');
+const TokenReceiver = artifacts.require('./TokenReceiverImpl');
 
 const utils = require('./utils');
 const {fixSignature} = require("../utils/cryptoUtils");
@@ -1276,6 +1277,24 @@ contract('Bridge', async function (accounts) {
                 assert.equal(mirrorAnAccountBalance, this.amount * 2);
             });
 
+            it('Call receiver onTokenMinted if the receiver is a contract', async function () {
+                const tokenReceiver = await TokenReceiver.new();
+                const receiver = tokenReceiver.address;
+                const converterReceiver = Buffer.from("Converter Receiver");
+
+                const result = await this.mirrorBridge.acceptTransferAt(this.token.address, receiver, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals,
+                    this.granularity, converterReceiver,
+                    { from: federation }
+                );
+                utils.checkRcpt(result);
+
+                const eventSignature = web3.eth.abi.encodeEventSignature('onTokenMintedCall(uint256,address,bytes)');
+
+                assert.equal(result.receipt.rawLogs[7].topics[0], eventSignature);
+            });
+
             it('accept transfer with decimals other than 18', async function () {
                 let decimals = 6;
                 let tokenWithDecimals = await MainToken.new("MAIN", "MAIN", decimals, web3.utils.toWei('1000000000'), { from: tokenOwner });
@@ -1587,7 +1606,7 @@ contract('Bridge', async function (accounts) {
                 utils.checkRcpt(receipt);
 
                 assert.equal(receipt.logs[1].event, 'AcceptedCrossTransfer');
-                
+
                 const result = utils.hexaToString(receipt.logs[1].args[8]);
 
                 assert.equal(result, extraData);

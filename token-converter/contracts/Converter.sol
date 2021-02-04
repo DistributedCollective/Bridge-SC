@@ -175,7 +175,7 @@ contract Converter is Initializable, ITokenReceiver, OwnableUpgradeable, Pausabl
     function onTokensMinted(
         uint256 _orderAmount,
         address _tokenAddress,
-        bytes memory userData
+        bytes memory _userData
     )
         external
         onlyBridge
@@ -187,7 +187,7 @@ contract Converter is Initializable, ITokenReceiver, OwnableUpgradeable, Pausabl
 
         // contrato del bridge ERC777 o receivetoken
 
-        address recipient = decodeAddress(userData);
+        address recipient = decodeAddress(_userData);
 
         emit TokensReceived(recipient, _orderAmount, _tokenAddress);
 
