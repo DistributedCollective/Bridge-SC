@@ -190,18 +190,33 @@ module.exports = class Federator {
                 granularity
             ).call();
 
-            let txData = await this.federationContract.methods.voteTransaction(
-                tokenAddress,
-                receiver,
-                amount,
-                symbol,
-                blockHash,
-                transactionHash,
-                logIndex,
-                decimals,
-                granularity,
-                userData || Buffer.from("")
-            ).encodeABI();
+            let txData;
+            if(userData) {
+                txData = await this.federationContract.methods.voteTransaction(
+                    tokenAddress,
+                    receiver,
+                    amount,
+                    symbol,
+                    blockHash,
+                    transactionHash,
+                    logIndex,
+                    decimals,
+                    granularity,
+                    userData
+                ).encodeABI();
+            } else {
+                txData = await this.federationContract.methods.voteTransaction(
+                    tokenAddress,
+                    receiver,
+                    amount,
+                    symbol,
+                    blockHash,
+                    transactionHash,
+                    logIndex,
+                    decimals,
+                    granularity
+                ).encodeABI();
+            }
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
             await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);

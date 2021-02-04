@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:7330e18d
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:52951bd6
     volumes:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
