@@ -109,7 +109,7 @@ contract Federation is Ownable {
         uint transactionCount = getTransactionCount(transactionId);
         if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
             processed[transactionId] = true;
-            bool acceptTransfer = bridge.acceptTransfer(
+            bool acceptTransfer = bridge.acceptTransferAt(
                 originalTokenAddress,
                 receiver,
                 amount,

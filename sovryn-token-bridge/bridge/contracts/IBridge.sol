@@ -55,7 +55,7 @@ interface IBridge {
         uint256 granularity
     ) external returns(bool);
 
-    function acceptTransfer(
+    function acceptTransferAt(
         address originalTokenAddress,
         address receiver,
         uint256 amount,

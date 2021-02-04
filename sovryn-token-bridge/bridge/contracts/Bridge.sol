@@ -103,7 +103,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         return _acceptTransfer(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
     }
 
-    function acceptTransfer(
+    function acceptTransferAt(
         address tokenAddress,
         address receiver,
         uint256 amount,
