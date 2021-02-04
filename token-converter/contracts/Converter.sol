@@ -5,9 +5,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "../../sovryn-token-bridge/bridge/contracts/ITokenReceiver.sol"
 
-contract Converter is Initializable, ITokenReceiver, OwnableUpgradeable, PausableUpgradeable {
+contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     address private constant NULL_ADDRESS = address(0);
@@ -175,7 +174,7 @@ contract Converter is Initializable, ITokenReceiver, OwnableUpgradeable, Pausabl
     function onTokensMinted(
         uint256 _orderAmount,
         address _tokenAddress,
-        bytes memory _userData
+        bytes calldata _userData
     )
         external
         onlyBridge
