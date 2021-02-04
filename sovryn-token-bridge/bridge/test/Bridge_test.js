@@ -1644,14 +1644,14 @@ contract('Bridge', async function (accounts) {
                     assert.equal(mirrorBridgeBalance.toString(), '0');
                 });
 
-                it('clearSideToken should be successful', async function () {
+                xit('clearSideToken should be successful', async function () {
                     let sideTokenAddress = '0xe506f698b31a66049bd4653ed934e7a07cbc5549';
                     await this.mirrorBridge.clearSideToken({ from: bridgeManager });
                     let originalTokenAddressNow = await this.mirrorBridge.mappedTokens(sideTokenAddress);
                     assert.equal(originalTokenAddressNow, utils.NULL_ADDRESS);
                 });
 
-                it('clearSideToken should fail if already run', async function () {
+                xit('clearSideToken should fail if already run', async function () {
                     let sideTokenAddress = '0xe506f698b31a66049bd4653ed934e7a07cbc5549';
                     await this.mirrorBridge.clearSideToken({ from: bridgeManager });
                     let originalTokenAddressNow = await this.mirrorBridge.mappedTokens(sideTokenAddress);
@@ -1660,7 +1660,7 @@ contract('Bridge', async function (accounts) {
                     await utils.expectThrow(this.mirrorBridge.clearSideToken( { from: bridgeManager }));
                 });
 
-                it('clearSideToken should fail if not the owner', async function () {
+                xit('clearSideToken should fail if not the owner', async function () {
                     await utils.expectThrow(this.mirrorBridge.clearSideToken({ from: anAccount }));
                 });
 

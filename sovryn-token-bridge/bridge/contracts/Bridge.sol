@@ -17,7 +17,6 @@ import "./zeppelin/math/SafeMath.sol";
 import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
-import "./ITokenReceiver.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
 import "./Auth.sol";
@@ -168,7 +167,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         sideToken.mint(receiver, formattedAmount, userData, "");
 
         if (receiver.isContract()) {
-            ITokenReceiver(receiver).onTokensMinted(amount, tokenAddress, userData);
+            (bool success, bytes memory errorData) = receiver.call(
+                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", amount, tokenAddress, userData)
+            );
+            if (!success) {
+                emit ErrorTokenReceiver(errorData);
+            }
         }
 
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
@@ -387,22 +391,23 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit Upgrading(isUpgrading);
     }
 
+    // Commented because it is unused for us and need decrease contract size
     //This method is only to recreate the USDT and USDC tokens on rsk without granularity restrictions.
-    function clearSideToken() external onlyOwner returns(bool) {
-        require(!alreadyRun, "already done");
-        alreadyRun = true;
-        address payable[4] memory sideTokens = [
-            0xe506F698b31a66049BD4653ed934E7a07Cbc5549,
-            0x5a42221D7AaE8e185BC0054Bb036D9757eC18857,
-            0xcdc8ccBbFB6407c53118fE47259e8d00C81F42CD,
-            0x6117C9529F15c52e2d3188d5285C745B757b5825
-        ];
-        for (uint i = 0; i < sideTokens.length; i++) {
-            address originalToken = address(originalTokens[sideTokens[i]]);
-            originalTokens[sideTokens[i]] = NULL_ADDRESS;
-            mappedTokens[originalToken] = ISideToken(NULL_ADDRESS);
-        }
-        return true;
-    }
+//    function clearSideToken() external onlyOwner returns(bool) {
+//        require(!alreadyRun, "already done");
+//        alreadyRun = true;
+//        address payable[4] memory sideTokens = [
+//            0xe506F698b31a66049BD4653ed934E7a07Cbc5549,
+//            0x5a42221D7AaE8e185BC0054Bb036D9757eC18857,
+//            0xcdc8ccBbFB6407c53118fE47259e8d00C81F42CD,
+//            0x6117C9529F15c52e2d3188d5285C745B757b5825
+//        ];
+//        for (uint i = 0; i < sideTokens.length; i++) {
+//            address originalToken = address(originalTokens[sideTokens[i]]);
+//            originalTokens[sideTokens[i]] = NULL_ADDRESS;
+//            mappedTokens[originalToken] = ISideToken(NULL_ADDRESS);
+//        }
+//        return true;
+//    }
 
 }
