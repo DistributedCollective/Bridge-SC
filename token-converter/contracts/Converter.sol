@@ -5,8 +5,9 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "../../sovryn-token-bridge/bridge/contracts/ITokenReceiver.sol"
 
-contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract Converter is Initializable, ITokenReceiver, OwnableUpgradeable, PausableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     address private constant NULL_ADDRESS = address(0);
@@ -176,7 +177,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         address _tokenAddress,
         bytes memory userData
     )
-        public
+        external
         onlyBridge
         whenNotPaused
         notNull(_tokenAddress)

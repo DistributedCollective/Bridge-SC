@@ -17,6 +17,7 @@ import "./zeppelin/math/SafeMath.sol";
 import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
+import "./ITokenReceiver.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
 import "./Auth.sol";
@@ -157,7 +158,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         string memory symbol,
         bytes memory userData
     ) private {
-
         (uint256 calculatedGranularity,uint256 formattedAmount) = Utils.calculateGranularityAndAmount(decimals, granularity, amount);
         ISideToken sideToken = mappedTokens[tokenAddress];
         if (address(sideToken) == NULL_ADDRESS) {
@@ -166,6 +166,11 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
         sideToken.mint(receiver, formattedAmount, userData, "");
+
+        if (receiver.isContract()) {
+            ITokenReceiver(receiver).onTokensMinted(amount, tokenAddress, userData);
+        }
+
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 

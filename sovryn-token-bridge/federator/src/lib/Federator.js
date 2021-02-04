@@ -160,7 +160,8 @@ module.exports = class Federator {
                     log.logIndex,
                     decimals,
                     granularity,
-                    userData);
+                    userData
+                );
             } else {
                 this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
             }

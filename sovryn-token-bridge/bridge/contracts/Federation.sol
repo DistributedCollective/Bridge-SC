@@ -92,9 +92,8 @@ contract Federation is Ownable {
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes memory userData)
-    internal onlyMember returns(bool)
-    {
+        bytes memory userData
+    ) internal onlyMember returns(bool) {
         // solium-disable-next-line max-len
         bytes32 transactionId = getTransactionId(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
         if (processed[transactionId])
@@ -110,7 +109,18 @@ contract Federation is Ownable {
         uint transactionCount = getTransactionCount(transactionId);
         if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
             processed[transactionId] = true;
-            bool acceptTransfer = bridge.acceptTransfer(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+            bool acceptTransfer = bridge.acceptTransfer(
+                originalTokenAddress,
+                receiver,
+                amount,
+                symbol,
+                blockHash,
+                transactionHash,
+                logIndex,
+                decimals,
+                granularity,
+                userData
+            );
             require(acceptTransfer, "Federation: Bridge acceptTransfer error");
             emit Executed(transactionId);
             return true;
