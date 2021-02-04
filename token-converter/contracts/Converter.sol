@@ -340,7 +340,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             amountToBuy <= order.remainingAmount,
             "Amount to buy must be equal or less than remaining tokens"
         );
-        require(order.remainingAmount > 0, "Order already filled");
+//        require(order.remainingAmount > 0, "Order already filled"); not necessary
 
         uint256 priceWithDiscount =
             amountToBuy.sub(
@@ -348,7 +348,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             );
         require(
             msg.value >= priceWithDiscount,
-            "Transfered Amount is less than expected"
+            "Transferred Amount is less than expected"
         );
 
         order.remainingAmount = order.remainingAmount.sub(amountToBuy);

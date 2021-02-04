@@ -8,14 +8,14 @@ const { expect } = require('chai');
 
 chai.use(require('chai-as-promised'));
 
-const { checkGetOrders } = require("./helpers/utilities");
+const { checkGetOrders, makeSellOrder } = require("./helpers/utilities");
 
 
 //// THIS IS NOT FINISHED AT ALL
 
 
-// const whiteListedToken = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
-// const notWhiteListedToken = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A";
+const whiteListedToken = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
+const notWhiteListedToken = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A";
 const ethDestinationAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const ordersIds = [1, 2, 3];
@@ -27,6 +27,9 @@ const sellerAddresses = [
 ];
 const userDatas = sellerAddresses.map((address) => web3.eth.abi.encodeParameter("address", address));
 const zeroAddressUserData = web3.eth.abi.encodeParameter("address", zeroAddress);
+const NOT_NULL_ERROR = "Address cannot be empty";
+const PAUSED_ERROR = "Pausable: paused";
+const ZERO_AMOUNT_ERROR = "Amount to buy must be greater than 0";
 
 contract("Converter", (
     [
@@ -35,21 +38,23 @@ contract("Converter", (
     ]
 ) => {
   let converterContract;
+  let bridge;
   before(async function () {
     converterContract = await ConverterContract.deployed();
-    // await converterContract.addTokenToWhitelist(whiteListedToken);
-    // await converterContract.setBridgeContract(bridgeAddress);
+    bridge = await Bridge.new();
+    await converterContract.setBridgeContract(bridge.address);
+    await converterContract.addTokenToWhitelist(whiteListedToken);
   });
 
   describe("Called takeSellOrder INCORRECTLY should:", async () => {
-    it("REJECT when eth address is null", async () => {
+    it("REJECT when eth destination address is null", async () => {
       await expect(converterContract.takeSellOrder(
         ordersIds[0],  // order id
         500, // qty tokens to buy
         zeroAddress,
         userDatas[0],
         userDatas[0]
-      )).to.be.rejectedWith(Error);
+      )).to.be.rejectedWith(Error, NOT_NULL_ERROR);
     });
 
     it("REJECT when contract is paused", async () => {
@@ -60,55 +65,72 @@ contract("Converter", (
         ethDestinationAddress,
         userDatas[0],
         userDatas[0]
-      )).to.be.rejectedWith(Error);
+      )).to.be.rejectedWith(Error, PAUSED_ERROR);
       await converterContract.unpauseContract();
     });
 
     it("REJECT when order id does not exist", async () => {
-      await converterContract.pauseContract();
       await expect(converterContract.takeSellOrder(
         10,   // order id
         500,  // qty tokens to buy
         ethDestinationAddress,
         userDatas[0],
         userDatas[0]
-      )).to.be.rejectedWith(Error);
-      await converterContract.unpauseContract();
+      )).to.be.rejectedWith(Error, NOT_NULL_ERROR);
     });
 
     it("REJECT when amount to buy is ZERO", async () => {
-      await converterContract.pauseContract();
+      await converterContract.setBridgeContract(bridgeAddress);
+      await makeSellOrder(converterContract, 10, whiteListedToken, sellerAddresses[0], { from: bridgeAddress });
+      await converterContract.setBridgeContract(bridge.address);
+
       await expect(converterContract.takeSellOrder(
         ordersIds[0],
         0, // qty tokens to buy
         ethDestinationAddress,
         userDatas[0],
         userDatas[0]
-      )).to.be.rejectedWith(Error);
-      await converterContract.unpauseContract();
+      )).to.be.rejectedWith(Error, ZERO_AMOUNT_ERROR);
     });
 
-    xit("REJECT when token address is null", async () => {
-      await expect(
-        converterContract.onTokensMinted(
-          ordersAmounts[0],
-          whiteListedToken,
-          zeroAddressUserData,
-          { from: bridgeAddress }
-        )
-      ).to.be.rejectedWith(Error);
+    it("REJECT when amount to buy is grater than remaining amount", async () => {
+      await converterContract.setBridgeContract(bridgeAddress);
+      await makeSellOrder(converterContract, 10, whiteListedToken, sellerAddresses[0], { from: bridgeAddress });
+      await converterContract.setBridgeContract(bridge.address);
 
-    });
-
-    xit("REJECT when amount received is zero", async () => {
-      await expect(
-        converterContract.onTokensMinted(
-          0,
-          whiteListedToken,
+      await expect(converterContract.takeSellOrder(
+          ordersIds[0],
+          11, // qty tokens to buy
+          ethDestinationAddress,
           userDatas[0],
-          { from: bridgeAddress }
-        )
-      ).to.be.rejectedWith(Error);
+          userDatas[0]
+      )).to.be.rejectedWith(Error, "Amount to buy must be equal or less than remaining tokens");
+
+    });
+
+    it("REJECT when value transferred is lesstan amount to buy with discount", async () => {
+      await converterContract.setBridgeContract(bridgeAddress);
+      const orderAmount = 10;
+      const orderId = await makeSellOrder(converterContract, orderAmount, whiteListedToken, sellerAddresses[0], { from: bridgeAddress });
+      await converterContract.setBridgeContract(bridge.address);
+      const conversionFee = 1000; // 10.00%
+      await converterContract.setConversionFee(conversionFee)
+      const feePercentageDivider = await converterContract.feePercentageDivider();
+      const rbtcValueToTransfer = 8;
+      expect(rbtcValueToTransfer).to.be.below(orderAmount - 1000/feePercentageDivider);
+
+      const order = await converterContract.orders(orderId);
+      expect(order.remainingAmount.toNumber()).to.equal(orderAmount); // TODO remove remaining amount and user orderAmount instead
+
+      await expect(converterContract.takeSellOrder(
+          orderId,
+          orderAmount, // qty tokens to buy
+          ethDestinationAddress,
+          userDatas[0],
+          userDatas[0],
+          { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
+      )).to.be.rejectedWith(Error, "Transferred Amount is less than expected");
+
     });
 
     xit("REJECT when token address is not whitelisted", async () => {
@@ -123,7 +145,7 @@ contract("Converter", (
     });
   });
 
-  
+
 /*
   describe("Called onTokenMinted CORRECTLY from the bridge should:", async () => {
     let result;
