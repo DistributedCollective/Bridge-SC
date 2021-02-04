@@ -647,7 +647,7 @@ contract('Federation', async function (accounts) {
             utils.checkRcpt(receipt);
         });
 
-        it('voteTransaction should be successful sendint extra data', async function() {
+        it('voteTransaction should be successful sending extra data', async function() {
             const extraData = 'Extra data';
             this.federation.removeMember(fedMember2)
             let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
@@ -657,7 +657,6 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                 Buffer.from(extraData), {from: fedMember1});
             utils.checkRcpt(receipt);
-            //let bridge = await this.federation.bridge();
             truffleAssert.eventEmitted(receipt, 'Executed', (ev) => {
                 return ev.transactionId === transactionId;
             });
