@@ -14,26 +14,40 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     uint256 public conversionFee; // fee to give the buyers a better price
     address public bridgeContractAddress; // Bridge Address
-    uint256 private numOrder; // to store the incremental sell orders
+    uint256 public numOrder; // to store the incremental sell orders, always increment when creating new order
+    uint256 public lastOrderIndex; // to store the number of the last order (differs from numOrder when buiying the last order)
+    uint256 public firstOrderIndex; // to store the number of the first order (to do the getSellOrder pagination)
 
     struct Order {
-        address sellerAddress; // Sell Order maker address
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
-        address finalRecipientAddress; // Final destination of the rBTC payed by the buyer
+        address recipient; // Destination address of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
     }
 
-    mapping(uint256 => Order) private orders; // map of made sell orders
+    mapping(uint256 => Order) public orders; // map of made sell orders
 
-    uint256 constant public feePercentageDivider = 10000; // Percentage with up to 2 decimals
+    uint256 public constant feePercentageDivider = 10000; // Percentage with up to 2 decimals
 
     event ConversionFeeChanged(uint256 previousValue, uint256 currentValue);
 
     event BridgeContractAddressChanged(
         address _previousAddress,
         address _currentAddress
+    );
+
+    event TokensReceived(
+        address _recipientAddress,
+        uint256 _orderAmount,
+        address _tokenAddress
+    );
+
+    event MakeSellOrder(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _recipientAddress
     );
 
     event WhitelistTokenAdded(address tokenAddress);
@@ -84,6 +98,8 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
     {
         conversionFee = _conversionFee;
         numOrder = 0;
+        lastOrderIndex = 0;
+        firstOrderIndex = 1;
         __Ownable_init();
         __Pausable_init();
     }
@@ -153,5 +169,109 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             bridgeContractAddress
         );
         return true;
+    }
+
+    function onTokensMinted(
+        uint256 _orderAmount,
+        address _tokenAddress,
+        bytes memory userData
+    )
+        public
+        onlyBridge
+        whenNotPaused
+        notNull(_tokenAddress)
+        isTokenWhitelisted(_tokenAddress)
+    {
+        require(_orderAmount > 0, "Invalid Amount sent");
+
+        // contrato del bridge ERC777 o receivetoken
+
+        address recipient = decodeAddress(userData);
+
+        emit TokensReceived(recipient, _orderAmount, _tokenAddress);
+
+        // call to make the sell orders of the received tokens
+        makeSellOrder(
+            _orderAmount,
+            _tokenAddress,
+            recipient
+        );
+    }
+
+    function decodeAddress(bytes memory data) private pure returns(address) {
+        address addr = abi.decode(data, (address));
+        require(addr != NULL_ADDRESS, "Converter: Error decoding extraData");
+        return addr;
+    }
+
+    function makeSellOrder(
+        uint256 _orderAmount,
+        address _tokenAddress,
+        address _recipient
+    ) private whenNotPaused {
+        uint256 previousOrder = lastOrderIndex;
+        numOrder = numOrder.add(1);
+        lastOrderIndex = lastOrderIndex.add(1);
+
+        if (previousOrder != 0) {
+            orders[previousOrder].nextOrder = numOrder;
+        }
+
+        orders[numOrder] = Order(
+            _tokenAddress,
+            _orderAmount,
+            _recipient,
+            previousOrder,
+            0
+        );
+
+        emit MakeSellOrder(
+            numOrder,
+            orders[numOrder].orderAmount,
+            orders[numOrder].tokenAddress,
+            orders[numOrder].recipient
+        );
+    }
+
+    /// @dev This function is exclusively for offchain query
+    function getSellOrders(uint256 fromOrder, uint256 qtyToReturn)
+        public
+        view
+        whenNotPaused
+        returns (uint256[] memory, uint256[] memory)
+    {
+        require(qtyToReturn > 0, "qtyToReturn must be greater than ZERO");
+        require(lastOrderIndex != 0, "No orders to retrieve");
+        require(
+            orders[fromOrder].recipient != NULL_ADDRESS,
+            "Invalid FROM order parameter"
+        );
+
+        uint256[] memory ordersAmounts = new uint256[](qtyToReturn);
+        uint256[] memory ordersIds = new uint256[](qtyToReturn);
+
+        Order memory sellOrder = orders[fromOrder];
+        uint256 nextOrder;
+        uint256 currentOrderNumber;
+        uint256 index = 0;
+
+        if (sellOrder.nextOrder == 0) {
+            ordersIds[index] = fromOrder;
+            ordersAmounts[index] = sellOrder.orderAmount;
+        }
+
+        while (sellOrder.nextOrder != 0) {
+            nextOrder = sellOrder.nextOrder;
+            currentOrderNumber = orders[nextOrder].previousOrder;
+            ordersIds[index] = currentOrderNumber;
+            ordersAmounts[index] = sellOrder.orderAmount;
+            sellOrder = orders[nextOrder];
+            index = index.add(1);
+        }
+
+        ordersIds[index] = lastOrderIndex;
+        ordersAmounts[index] = orders[lastOrderIndex].orderAmount;
+
+        return (ordersIds, ordersAmounts);
     }
 }

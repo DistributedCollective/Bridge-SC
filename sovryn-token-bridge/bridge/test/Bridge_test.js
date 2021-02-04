@@ -1189,7 +1189,7 @@ contract('Bridge', async function (accounts) {
                 utils.checkRcpt(receipt);
             });
 
-            it('should generate cross even with extra data', async function () {
+            it('should generate cross event with extra data', async function () {
                 const extraData = 'Extra data';
                 const amount = web3.utils.toWei('1000');
 

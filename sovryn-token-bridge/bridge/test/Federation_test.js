@@ -657,6 +657,7 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                 Buffer.from(extraData), {from: fedMember1});
             utils.checkRcpt(receipt);
+
             truffleAssert.eventEmitted(receipt, 'Executed', (ev) => {
                 return ev.transactionId === transactionId;
             });

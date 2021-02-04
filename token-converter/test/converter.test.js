@@ -1,13 +1,18 @@
+const { contract, describe, it, before } = global;
+
 const ConverterContract = artifacts.require("Converter");
+const { use: chaiUse, expect } = require('chai');
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
+
+chaiUse(require('chai-as-promised'));
 
 const initialDeploymentFee = 10;
 const updatedFee = 20;
 const fakeAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559"; // put a fake address
 const fakeAddress2 = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A"; // put a fake address
 
-contract("Converter", (accounts) => {
+contract("Converter", () => {
   let converterContract;
   before(async function () {
     converterContract = await ConverterContract.deployed();
@@ -61,13 +66,6 @@ contract("Converter", (accounts) => {
       );
     });
 
-    xit("REJECT BridgeContractAddress update when its value is zero", async () => {
-      await truffleAssert.fails(
-        converterContract.setBridgeContractAddress(0),
-        truffleAssert.ErrorType.REVERT
-      );
-    });
-
     it("UPDATE BridgeContractAddress when sender is owner && EMIT the proper event", async () => {
       const result = await converterContract.setBridgeContractAddress(
         fakeAddress
@@ -101,14 +99,6 @@ contract("Converter", (accounts) => {
       assert.strictEqual(contractIsPaused, true);
     });
 
-    xit("REJECT any transaction (except update conversionFee by owner) when contract is PAUSED", async () => {
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      // THIS TEST MUST BE UPDATED WITH A REAL FUNCTION OF THE CONTRACT
-      await converterContract.pauseContract();
-      // TODO test function with whenNotPaused modifier
-      await truffleAssert.fails(converterContract.testPause(5));
-    });
-
     it("REJECT PAUSE contract when contract is already PAUSED", async () => {
       await truffleAssert.fails(converterContract.pauseContract());
     });
@@ -137,15 +127,7 @@ contract("Converter", (accounts) => {
       );
     });
 
-    xit("REJECT addWhiteListToken when address is ZERO", async () => {
-      await truffleAssert.fails(
-        converterContract.addTokenToWhitelist(0),
-        truffleAssert.ErrorType.REVERT
-      );
-    });
-
     it("ADD token to whitelist when sender is owner && EMIT the proper event", async () => {
-      // const isTokenValidPrev = await converterContract.isValidToken(fakeAddress);
       const result = await converterContract.addTokenToWhitelist(fakeAddress);
       const isTokenValid = await converterContract.isTokenValid(fakeAddress);
 
@@ -181,8 +163,9 @@ contract("Converter", (accounts) => {
     });
 
     it("REMOVE token from whitelist when sender is owner && EMIT the proper event", async () => {
-      // const isTokenValidPrev = await converterContract.isValidToken(fakeAddress);
-      const result = await converterContract.removeTokenFromWhitelist(fakeAddress);
+      const result = await converterContract.removeTokenFromWhitelist(
+        fakeAddress
+      );
 
       const isTokenValid = await converterContract.isTokenValid(fakeAddress);
 
@@ -195,4 +178,5 @@ contract("Converter", (accounts) => {
       truffleAssert.eventEmitted(result, "WhitelistTokenRemoved");
     });
   });
+
 });
