@@ -234,6 +234,8 @@ contract Converter is
 
         if (previousOrder != 0) {
             orders[previousOrder].nextOrder = numOrder;
+        } else {
+            firstOrderIndex = numOrder;
         }
 
         orders[numOrder] = Order(
@@ -312,7 +314,7 @@ contract Converter is
                 firstOrderIndex = 0;
             } else {
                 // It has SUBSEQUENTS orders
-                firstOrderIndex = orders[nextOrder].previousOrder;
+                firstOrderIndex = orders[orderId].nextOrder;
                 orders[nextOrder].previousOrder = 0;
             }
         } else {

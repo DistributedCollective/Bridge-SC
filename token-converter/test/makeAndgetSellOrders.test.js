@@ -195,7 +195,7 @@ contract("Converter", (
 
       const firstOrderIndexBN = await converterContract.firstOrderIndex();
       firstOrderIndex = firstOrderIndexBN.toNumber();
-      assert.strictEqual(firstOrderIndex, 0, "firstOrderIndex should be ZERO");
+      assert.strictEqual(firstOrderIndex, 1, "firstOrderIndex should be 1");
     });
 
     it("Orders mapping should contain received parameters and set ZERO as next & previous order", async () => {
