@@ -1,5 +1,6 @@
 const ConverterContract = artifacts.require("Converter");
 const Bridge = artifacts.require("Bridge");
+const MockSideToken = artifacts.require("MockSideToken");
 
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
@@ -10,7 +11,6 @@ chai.use(require("chai-as-promised"));
 
 const { checkGetOrders, makeSellOrder } = require("./helpers/utilities");
 
-const whiteListedToken = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const ethDestinationAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const ordersIds = [1, 2, 3];
@@ -36,10 +36,13 @@ contract(
     );
     let converterContract;
     let bridge;
+    let whiteListedToken;
+
     before(async function () {
       converterContract = await ConverterContract.deployed();
       bridge = await Bridge.new();
       await converterContract.setBridgeContract(bridge.address);
+      whiteListedToken = (await MockSideToken.new()).address;
       await converterContract.addTokenToWhitelist(whiteListedToken);
     });
 
@@ -147,7 +150,7 @@ contract(
         assert.strictEqual(order4.previousOrder.toString(), "3", "ErrPrev4 1a4");
         assert.strictEqual(order4.nextOrder.toString(), "0", "ErrNext4 1a4");
 
-        
+
         firstOrderIndex = (await converterContract.firstOrderIndex()).toNumber();
         lastOrderIndex = (await converterContract.lastOrderIndex()).toNumber();
         assert.strictEqual(firstOrderIndex, 1, "ErrFirst 1a4");
