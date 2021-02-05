@@ -253,6 +253,30 @@ contract(
         truffleAssert.eventEmitted(result, "SentToBridge");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
+
+      it("TakeSellOrder should Update the map, remove only left order (3)", async () => {
+        await converterContract.setBridgeContract(bridge.address);
+        const rbtcValueToTransfer = 1;
+        const amountToBuy = web3.utils.toWei("1");
+
+        const result = await converterContract.takeSellOrder(
+          orderId3,
+          amountToBuy, // qty tokens to buy
+          ethDestinationAddress,
+          usersData[0],
+          usersData[0],
+          { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+        );
+
+        firstOrderIndex = (await converterContract.firstOrderIndex()).toNumber();
+        lastOrderIndex = (await converterContract.lastOrderIndex()).toNumber();
+        assert.strictEqual(firstOrderIndex, 0, "ErrFirst 0");
+        assert.strictEqual(lastOrderIndex, 0, "ErrLast 0");
+
+        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "TakeSellOrder");
+      });
+
     });
   }
 );

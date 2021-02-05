@@ -9,7 +9,7 @@ const { expect } = require("chai");
 
 chai.use(require("chai-as-promised"));
 
-const { checkGetOrders, makeSellOrder } = require("./helpers/utilities");
+const { makeSellOrder } = require("./helpers/utilities");
 
 const ethDestinationAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
