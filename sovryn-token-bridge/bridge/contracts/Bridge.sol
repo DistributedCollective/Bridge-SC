@@ -168,7 +168,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
         if (receiver.isContract()) {
             (bool success, bytes memory errorData) = receiver.call(
-                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", amount, tokenAddress, userData)
+                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", amount, sideToken, userData)
             );
             if (!success) {
                 emit ErrorTokenReceiver(errorData);
