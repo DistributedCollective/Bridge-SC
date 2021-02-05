@@ -1,12 +1,12 @@
 version: "3"
 services:
   federation:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:52951bd6
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:10c34309
     volumes:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
   frontend:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:b04d19c1
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:10c34309
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
@@ -25,7 +25,7 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--certificatesResolvers.le.acme.email=info@atixlabs.com"
       - "--certificatesResolvers.le.acme.storage=/certs/acme.json"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"  
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
     ports:
       - "80:80"
       - "443:443"
@@ -46,4 +46,4 @@ services:
       - "/var/lib/docker/:/var/lib/docker:ro"
     ports:
       - "127.0.0.1:9000:8080"
-    
+
