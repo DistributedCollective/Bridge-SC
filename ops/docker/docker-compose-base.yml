@@ -6,7 +6,7 @@ services:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
   frontend:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:7330e18d
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:b04d19c1
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
