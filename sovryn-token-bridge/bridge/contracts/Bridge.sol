@@ -222,15 +222,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address sender = _msgSender();
         require(!sender.isContract(), "Bridge: Sender can't be a contract");
 
-        if (sender != receiver) {
-            bytes memory blob = abi.encodePacked(
-                tokenToUse,
-                amount,
-                receiver
-            );
-            auth.verifySignature(sender, blob, signature);
-        }
-
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, extraData);

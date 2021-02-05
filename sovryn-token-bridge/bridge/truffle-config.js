@@ -101,6 +101,7 @@ module.exports = {
       solc: {
         version: "0.5.17",
         settings: {
+          evmVersion: "constantinople",
           optimizer: {
             enabled: false,
             // Optimize for how many times you intend to run the code.
