@@ -66,7 +66,7 @@ contract Federation is Ownable {
         return _voteTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
     }
 
-    function voteTransaction(
+    function voteTransactionAt(
         address originalTokenAddress,
         address receiver,
         uint256 amount,

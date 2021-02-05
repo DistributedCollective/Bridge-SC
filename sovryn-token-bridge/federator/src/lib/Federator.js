@@ -192,7 +192,7 @@ module.exports = class Federator {
 
             let txData;
             if(userData) {
-                txData = await this.federationContract.methods.voteTransaction(
+                txData = await this.federationContract.methods.voteTransactionAt(
                     tokenAddress,
                     receiver,
                     amount,
