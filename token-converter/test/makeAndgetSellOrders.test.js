@@ -18,7 +18,7 @@ const sellerAddresses = [
   "0x8AeF249d8191f1CBCCb3978b828A8C88251A6e7D",
   "0x4D80D038D7191Ceb7E0451E5329389606e644fDa",
 ];
-const userDatas = sellerAddresses.map((address) => web3.eth.abi.encodeParameter("address", address));
+const usersData = sellerAddresses.map((address) => web3.eth.abi.encodeParameter("address", address));
 const zeroAddressUserData = web3.eth.abi.encodeParameter("address", zeroAddress);
 
 contract("Converter", (
@@ -40,7 +40,7 @@ contract("Converter", (
         converterContract.onTokensMinted(
           ordersAmounts[0],
           whiteListedToken,
-          userDatas[0]
+          usersData[0]
         )
       ).to.be.rejectedWith(Error);
     });
@@ -50,7 +50,7 @@ contract("Converter", (
       await expect(converterContract.onTokensMinted(
           ordersAmounts[0],
           whiteListedToken,
-          userDatas[0],
+          usersData[0],
           { from: bridgeAddress }
       )).to.be.rejectedWith(Error);
       await converterContract.unpauseContract();
@@ -96,7 +96,7 @@ contract("Converter", (
         converterContract.onTokensMinted(
           0,
           whiteListedToken,
-          userDatas[0],
+          usersData[0],
           { from: bridgeAddress }
         )
       ).to.be.rejectedWith(Error);
@@ -107,7 +107,7 @@ contract("Converter", (
         converterContract.onTokensMinted(
           ordersAmounts[0],
           notWhiteListedToken,
-          userDatas[0],
+          usersData[0],
           { from: bridgeAddress }
         )
       ).to.be.rejectedWith(Error);
@@ -164,7 +164,7 @@ contract("Converter", (
       result = await converterContract.onTokensMinted(
         ordersAmounts[0],
         whiteListedToken,
-        userDatas[0],
+        usersData[0],
         { from: bridgeAddress }
       );
 
@@ -348,7 +348,7 @@ contract("Converter", (
       result = await converterContract.onTokensMinted(
         ordersAmounts[2],
         whiteListedToken,
-        userDatas[2],
+        usersData[2],
         { from: bridgeAddress }
       );
 

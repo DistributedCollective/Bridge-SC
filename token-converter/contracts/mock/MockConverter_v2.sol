@@ -5,12 +5,14 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "../IBridge.sol";
 
 contract MockConverter_v2 is
     Initializable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     using SafeMathUpgradeable for uint256;
 
@@ -28,6 +30,7 @@ contract MockConverter_v2 is
     struct Order {
         address tokenAddress; // Address of the Token
         uint256 orderAmount; // Amount of the order
+        uint256 remainingAmount; // Amount left to fill the order
         address recipient; // Destination address of the rBTC payed by the buyer
         uint256 previousOrder; // Address of the previous Order
         uint256 nextOrder; // Address of the next Order
@@ -63,13 +66,6 @@ contract MockConverter_v2 is
         address _tokenAddress,
         address _buyer,
         address _ethDestinationAddress
-    );
-
-    event ReturnedToLP(
-        uint256 _orderId,
-        uint256 _amountPut,
-        uint256 _previousRemainedAmount,
-        uint256 _amountReturned
     );
 
     event SentToBridge(

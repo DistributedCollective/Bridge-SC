@@ -1,11 +1,11 @@
 const { contract, describe, it, before } = global;
 
 const ConverterContract = artifacts.require("Converter");
-const { use: chaiUse, expect } = require('chai');
+const { use: chaiUse, expect } = require("chai");
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
 
-chaiUse(require('chai-as-promised'));
+chaiUse(require("chai-as-promised"));
 
 const initialDeploymentFee = 10;
 const updatedFee = 20;
@@ -67,9 +67,7 @@ contract("Converter", () => {
     });
 
     it("UPDATE BridgeContractAddress when sender is owner && EMIT the proper event", async () => {
-      const result = await converterContract.setBridgeContract(
-        fakeAddress
-      );
+      const result = await converterContract.setBridgeContract(fakeAddress);
       const conversionFee = await converterContract.bridgeContract();
 
       assert.strictEqual(
@@ -78,7 +76,7 @@ contract("Converter", () => {
         "Transaction error when updating Bridge Contract Address"
       );
 
-      truffleAssert.eventEmitted(result, "BridgeContractAddressChanged");
+      truffleAssert.eventEmitted(result, "BridgeContractChanged");
     });
 
     it("REJECT conversionFee update when sender is NOT owner", async () => {
@@ -178,5 +176,4 @@ contract("Converter", () => {
       truffleAssert.eventEmitted(result, "WhitelistTokenRemoved");
     });
   });
-
 });

@@ -5,9 +5,15 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./IBridge.sol";
 
-contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract Converter is
+    Initializable,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using SafeMathUpgradeable for uint256;
 
     address private constant NULL_ADDRESS = address(0);
@@ -201,7 +207,6 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         require(_orderAmount > 0, "Invalid Amount sent");
 
         // contrato del bridge ERC777 o receivetoken
-
         address recipient = decodeAddress(_userData);
 
         emit TokensReceived(recipient, _orderAmount, _tokenAddress);
@@ -232,7 +237,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         orders[numOrder] = Order(
             _tokenAddress,
             _orderAmount,
-            0,
+            _orderAmount,
             _recipient,
             previousOrder,
             0
@@ -288,10 +293,14 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         return (ordersIds, ordersAmounts);
     }
 
-    function updateOrdersMap(Order memory order, uint256 orderId) internal returns (bool) {
+    function updateOrdersMap(Order memory order, uint256 orderId)
+        internal
+        returns (bool)
+    {
         uint256 previousOrder = order.previousOrder;
         uint256 nextOrder = order.nextOrder;
 
+        // TODO: this can be improved by using firstIndex and lastIndex
         // Order filled completely, must be removed
         if (previousOrder == 0) {
             // It's the FIRST one in the map
@@ -330,6 +339,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         external
         payable
         whenNotPaused
+        nonReentrant
         notNull(ethDestinationAddress)
         notNull(orders[orderId].tokenAddress)
     {
@@ -340,7 +350,6 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             amountToBuy <= order.remainingAmount,
             "Amount to buy must be equal or less than remaining tokens"
         );
-//        require(order.remainingAmount > 0, "Order already filled"); not necessary
 
         uint256 priceWithDiscount =
             amountToBuy.sub(
@@ -352,6 +361,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
         );
 
         order.remainingAmount = order.remainingAmount.sub(amountToBuy);
+        orders[orderId].remainingAmount = order.remainingAmount;
 
         bool calledOK;
         if (order.remainingAmount == 0) {
@@ -367,7 +377,6 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             extraData
         );
         require(calledOK, "Error when sending to the bridge");
-
         emit SentToBridge(
             orderId,
             amountToBuy,
@@ -382,8 +391,7 @@ contract Converter is Initializable, OwnableUpgradeable, PausableUpgradeable {
             require(calledOK, "Error sending back to the Liquidity provider");
         }
 
-        (calledOK, ) = order.recipient.call{value: amountToBuy}("");
-
+        (calledOK, ) = order.recipient.call{value: priceWithDiscount}("");
         require(calledOK, "Error sending to seller rsk address");
         emit TakeSellOrder(
             orderId,
