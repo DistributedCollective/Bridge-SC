@@ -7,12 +7,14 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./IBridge.sol";
+import "./IERC777Recipient.sol";
 
 contract Converter is
     Initializable,
     OwnableUpgradeable,
     PausableUpgradeable,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    IERC777Recipient
 {
     using SafeMathUpgradeable for uint256;
 
@@ -400,5 +402,19 @@ contract Converter is
             msg.sender,
             ethDestinationAddress
         );
+    }
+
+    /**
+     * ERC-677's only method implementation
+     * See https://github.com/ethereum/EIPs/issues/677 for details
+     */
+    function tokensReceived(
+        address operator,
+        address from,
+        address to,
+        uint amount,
+        bytes calldata userData,
+        bytes calldata operatorData
+    ) external override {
     }
 }

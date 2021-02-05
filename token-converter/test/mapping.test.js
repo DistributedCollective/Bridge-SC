@@ -43,7 +43,7 @@ contract(
       await converterContract.addTokenToWhitelist(whiteListedToken);
     });
 
-    describe.only("Called takeSellOrder should:", async () => {
+    describe("Called takeSellOrder should:", async () => {
       it("ACCEPT rBTC, fill an order - check maping", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         let orderAmount = web3.utils.toWei("1");
