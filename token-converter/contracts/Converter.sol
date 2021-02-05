@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./IBridge.sol";
 import "./IERC777Recipient.sol";
+import "./ISideToken.sol";
 
 contract Converter is
     Initializable,
@@ -373,6 +374,7 @@ contract Converter is
             require(calledOK, "Error when updating orders map");
         }
 
+        require(ISideToken(order.tokenAddress).approve(address(bridgeContract), amountToBuy), "Converter: Fail Approval");
         calledOK = bridgeContract.receiveTokensAt(
             order.tokenAddress,
             amountToBuy,
