@@ -71,7 +71,7 @@ contract Converter is
         address _ethDestinationAddress
     );
 
-    event SentToBridge(
+    event SentToReceiver(
         uint256 _orderId,
         uint256 _amount,
         address _tokenAddress,
@@ -339,7 +339,7 @@ contract Converter is
     function takeSellOrder(
         uint256 orderId,
         uint256 amountToBuy, // qty tokens to buy
-        address ethDestinationAddress,
+        address destinationAddress,
         bytes calldata signature,
         bytes calldata extraData // public
     )
@@ -347,7 +347,7 @@ contract Converter is
         payable
         whenNotPaused
         nonReentrant
-        notNull(ethDestinationAddress)
+        notNull(destinationAddress)
         notNull(orders[orderId].tokenAddress)
     {
         require(amountToBuy > 0, "Amount to buy must be greater than 0");
@@ -376,20 +376,22 @@ contract Converter is
             require(calledOK, "Error when updating orders map");
         }
 
-        require(ISideToken(order.tokenAddress).approve(address(bridgeContract), amountToBuy), "Converter: Fail Approval");
-        calledOK = bridgeContract.receiveTokensAt(
-            order.tokenAddress,
-            amountToBuy,
-            ethDestinationAddress,
-            signature,
-            extraData
-        );
-        require(calledOK, "Error when sending to the bridge");
-        emit SentToBridge(
+//        require(ISideToken(order.tokenAddress).approve(address(bridgeContract), amountToBuy), "Converter: Fail Approval");
+//        calledOK = bridgeContract.receiveTokensAt(
+//            order.tokenAddress,
+//            amountToBuy,
+//            ethDestinationAddress,
+//            signature,
+//            extraData
+//        );
+//        require(calledOK, "Error when sending to the bridge");
+        require(ISideToken(order.tokenAddress).transfer(destinationAddress, amountToBuy), "Converter: Fail transfer");
+
+        emit SentToReceiver(
             orderId,
             amountToBuy,
             order.tokenAddress,
-            ethDestinationAddress
+            destinationAddress
         );
 
         uint256 sendBackAmount; // amount to send back to the LP because it was bigger than the order
@@ -406,7 +408,7 @@ contract Converter is
             amountToBuy,
             order.tokenAddress,
             msg.sender,
-            ethDestinationAddress
+            destinationAddress
         );
     }
 }
