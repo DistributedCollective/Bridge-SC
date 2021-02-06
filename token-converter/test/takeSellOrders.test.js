@@ -196,7 +196,7 @@ contract(
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -240,7 +240,7 @@ contract(
           (difBalance - amountWithDiscount) / 10 ** 18
         );
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         assert.strictEqual(difBalanceOrder, 0, "");
         // THIS CAN BE IMPROVED TO USE A MORE ACCURATE SOLUTION
@@ -291,7 +291,7 @@ contract(
           await web3.eth.getBalance(sellerAddress3)
         );
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         assert.strictEqual(
           finalBalanceSeller,
@@ -335,7 +335,7 @@ contract(
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
 
         order = await converterContract.orders(orderId);

@@ -190,7 +190,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 1, "ErrFirst 1-3-4b");
         assert.strictEqual(lastOrderIndex, 4, "ErrLast 1-3-4b");
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -222,7 +222,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 3, "ErrFirst 3-4b");
         assert.strictEqual(lastOrderIndex, 4, "ErrLast 3-4b");
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -250,7 +250,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 3, "ErrFirst 3-3b");
         assert.strictEqual(lastOrderIndex, 3, "ErrLast 3-3b");
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -273,7 +273,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 0, "ErrFirst 0");
         assert.strictEqual(lastOrderIndex, 0, "ErrLast 0");
 
-        truffleAssert.eventEmitted(result, "SentToBridge");
+        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
