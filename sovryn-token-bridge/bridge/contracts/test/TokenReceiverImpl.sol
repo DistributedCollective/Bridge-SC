@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "../ITokenReceiver.sol";
+import "./ITokenReceiver.sol";
 import "../zeppelin/introspection/IERC1820Registry.sol";
 
 /// @title method for test feature of calling onTokenMinter

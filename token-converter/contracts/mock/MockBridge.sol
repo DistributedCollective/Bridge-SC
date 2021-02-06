@@ -8,15 +8,15 @@ contract Bridge {
         return "";
     }
 
-    function getFeePercentage() external view returns (uint256) {
+    function getFeePercentage() external pure returns (uint256) {
         return 1;
     }
 
-    function calcMaxWithdraw() external view returns (uint256) {
+    function calcMaxWithdraw() external pure returns (uint256) {
         return 1;
     }
 
-    function receiveTokens(address, uint256) external returns (bool) {
+    function receiveTokens(address, uint256) external pure returns (bool) {
         return true;
     }
 
@@ -26,7 +26,7 @@ contract Bridge {
         address,
         bytes calldata,
         bytes calldata
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return true;
     }
 
@@ -49,7 +49,7 @@ contract Bridge {
         uint32,
         uint8,
         uint256
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return true;
     }
 }
