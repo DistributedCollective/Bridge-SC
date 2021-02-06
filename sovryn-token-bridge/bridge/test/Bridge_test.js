@@ -20,7 +20,7 @@ const mockReceiveTokensCall = artifacts.require('./mockReceiveTokensCall');
 const TokenReceiver = artifacts.require('./TokenReceiverImpl');
 
 const utils = require('./utils');
-const {fixSignature} = require("../utils/cryptoUtils");
+const {fixSignature, getSignature} = require("../utils/cryptoUtils");
 const BN = web3.utils.BN;
 const randomHex = web3.utils.randomHex;
 const ONE_DAY = 24*3600;
