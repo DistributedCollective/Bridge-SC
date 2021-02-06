@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "./zeppelin/token/ERC777/IERC777Recipient.sol";
-import "./zeppelin/introspection/IERC1820Registry.sol";
+import "../zeppelin/token/ERC777/IERC777Recipient.sol";
+import "../zeppelin/introspection/IERC1820Registry.sol";
 
 
 /// @title interface for contracts called from the bridge
