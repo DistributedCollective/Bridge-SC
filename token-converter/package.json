@@ -28,6 +28,7 @@
   "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "3.3.0",
+    "@openzeppelin/test-helpers": "0.5.10",
     "@truffle/hdwallet-provider": "1.2.1",
     "solidity-coverage": "0.7.13",
     "solium": "1.2.5"
