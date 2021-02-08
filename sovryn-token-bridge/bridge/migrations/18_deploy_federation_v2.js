@@ -30,6 +30,6 @@ module.exports = function(deployer, networkName, accounts) {
             await federation.transferOwnership(multiSig.address);
 
             const changeFederationData = bridge.contract.methods.changeFederation(federation.address).encodeABI();
-            await multiSig.submitTransaction(proxyAdmin.options.address, 0, changeFederationData, { from: accounts[0] });
+            await multiSig.submitTransaction(bridge.address, 0, changeFederationData, { from: accounts[0] });
         });
 };
