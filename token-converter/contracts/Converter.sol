@@ -202,8 +202,8 @@ contract Converter is
         address _tokenAddress,
         bytes calldata _userData
     )
-        override
         external
+        override
         onlyBridge
         whenNotPaused
         notNull(_tokenAddress)
@@ -233,7 +233,7 @@ contract Converter is
     ) private whenNotPaused {
         uint256 previousOrder = lastOrderIndex;
         numOrder = numOrder.add(1);
-        lastOrderIndex = lastOrderIndex.add(1);
+        lastOrderIndex = numOrder;
 
         if (previousOrder != 0) {
             orders[previousOrder].nextOrder = numOrder;
@@ -259,6 +259,8 @@ contract Converter is
     }
 
     /// @dev This function is exclusively for offchain query
+    /// It will return 2 arrays, one for the orderIds and the other with the remaining amounts of each order
+
     function getSellOrders(uint256 fromOrder, uint256 qtyToReturn)
         public
         view
@@ -269,7 +271,7 @@ contract Converter is
         require(lastOrderIndex != 0, "No orders to retrieve");
         require(
             orders[fromOrder].recipient != NULL_ADDRESS,
-            "Invalid FROM order parameter"
+            "Invalid FROM Order parameter"
         );
 
         uint256[] memory ordersAmounts = new uint256[](qtyToReturn);
@@ -280,22 +282,19 @@ contract Converter is
         uint256 currentOrderNumber;
         uint256 index = 0;
 
-        if (sellOrder.nextOrder == 0) {
-            ordersIds[index] = fromOrder;
-            ordersAmounts[index] = sellOrder.orderAmount;
-        }
-
-        while (sellOrder.nextOrder != 0) {
+        while (sellOrder.nextOrder != 0 && index < qtyToReturn) {
             nextOrder = sellOrder.nextOrder;
             currentOrderNumber = orders[nextOrder].previousOrder;
             ordersIds[index] = currentOrderNumber;
-            ordersAmounts[index] = sellOrder.orderAmount;
+            ordersAmounts[index] = sellOrder.remainingAmount;
             sellOrder = orders[nextOrder];
             index = index.add(1);
         }
 
-        ordersIds[index] = lastOrderIndex;
-        ordersAmounts[index] = orders[lastOrderIndex].orderAmount;
+        if (sellOrder.nextOrder == 0 && index < qtyToReturn) {
+            ordersIds[index] = lastOrderIndex;
+            ordersAmounts[index] = orders[lastOrderIndex].remainingAmount;
+        }
 
         return (ordersIds, ordersAmounts);
     }
@@ -376,16 +375,28 @@ contract Converter is
             require(calledOK, "Error when updating orders map");
         }
 
-//        require(ISideToken(order.tokenAddress).approve(address(bridgeContract), amountToBuy), "Converter: Fail Approval");
-//        calledOK = bridgeContract.receiveTokensAt(
-//            order.tokenAddress,
-//            amountToBuy,
-//            ethDestinationAddress,
-//            signature,
-//            extraData
-//        );
-//        require(calledOK, "Error when sending to the bridge");
-        require(ISideToken(order.tokenAddress).transfer(destinationAddress, amountToBuy), "Converter: Fail transfer");
+        // require(
+        //     ISideToken(order.tokenAddress).approve(
+        //         address(bridgeContract),
+        //         amountToBuy
+        //     ),
+        //     "Converter: Fail Approval"
+        // );
+        // calledOK = bridgeContract.receiveTokensAt(
+        //     order.tokenAddress,
+        //     amountToBuy,
+        //     ethDestinationAddress,
+        //     signature,
+        //     extraData
+        // );
+        // require(calledOK, "Error when sending to the bridge");
+        require(
+            ISideToken(order.tokenAddress).transfer(
+                destinationAddress,
+                amountToBuy
+            ),
+            "Converter: Fail transfer"
+        );
 
         emit SentToReceiver(
             orderId,
