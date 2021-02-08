@@ -223,7 +223,7 @@ contract("Converter", (
       await truffleAssert.fails(
         converterContract.getSellOrders(500, 3),
         truffleAssert.ErrorType.REVERT,
-        "Invalid FROM order parameter"
+        "Invalid FROM Order parameter"
       );
     });
 
