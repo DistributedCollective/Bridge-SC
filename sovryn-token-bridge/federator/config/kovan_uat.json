@@ -1,0 +1,8 @@
+{
+    "bridge": "0x901b56f32b71eaf0d2b017cf061e3df299e5980f",
+    "federation": "0xa160e5d4dd5656cb1e1929179e018cd9092585f6",
+    "multiSig": "0xa271d3dd869ee517058f85d25e3c276d63ce7028",
+    "allowTokens": "0x59639b45e0749270254c263e8a6eeafc89e3ec9b",
+    "host": "https://kovan.infura.io/v3/ab314c38f0e541359ff8909ad3d9887e",
+    "fromBlock": 23379249
+}
