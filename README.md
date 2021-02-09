@@ -20,6 +20,10 @@ New tokens must be allowed in the AllowTokens contract which resides in the orig
 To allow a token go to directory `sovryn-token-bridge/bridge` and run:
  - `npx truffle exec ./scripts/allowToken.js --network <networkName> <tokenAddress>`
 
+## How to get the side tokens from the original tokens
+- After the first token cross the bridge creates the side token on the side chain. You can use `npx truffle exec --network kovan ./scripts/createRskSideTokens.js <cant>` to make a cross of `<cant>` of each token to the same address.
+- call `bridge.mappedTokens(original token address)` using the bridge from the side chain.
+- As an example, if you want to get the rDAI token address call `mappedTokens` on the rsk network passing as argument the DAI token address.
 
 ## Deploy
 
@@ -48,7 +52,29 @@ To allow a token go to directory `sovryn-token-bridge/bridge` and run:
    5. db directory
    6. log-config.json
 7. Change Contract addresses in `ui/index.html`. You can search "CONFIGS" in the file to found the place where they are configured. The RSK addresses must be in lowercase.
-8. Copy the above files to server running `./ops.sh --config-server environment`.
-9.  Edit `ops/docker/docker-compose-base.yml` file with the pertinent docker images.
+8. Setup server and copy the above files to server running `./ops.sh --config-server environment` from directory `ops`.
+9. Edit `ops/docker/docker-compose-base.yml` file with the pertinent docker images.
 10. Push `ops/docker/docker-compose-base.yml` to a release branch.
-11. Run deploy pipe from gitlab.
+11. Run deploy pipe from gitlab or run manually using `./ops.sh --deploy $environment`
+
+## Common Issues
+
+### `receiveTokensAt` transaction fails.
+It might be because:
+1. The bridge proxy is pointing to an old bridge implementation. So, the function doesn't exist in the contract.
+   1. Try to upgrade the contract using a script similar to the migration `sovryn-token-bridge/bridge/migrations/17_deploy_bridge_v2.js`.
+2. See `receiveTokens` problems.
+
+### `receiveTokens` transaction fails.
+It might be because:
+1. You forgot to make an approval transaction for the bridge address and the pertinent token amount.
+2. The token is not allowed in the `AllowTokens` contract configured in the `Bridge`.
+3. The `feePercentage` is not configured in the `Bridge`.
+
+### Federation vote transaction fails
+It might be because:
+1. The mainchain or sidechain configs are wrong.
+2. The federation contract has set a wrong bridge address. 
+   1. Use `federation.setBridge` function. This can be executed only by the owner which is the MultiSigWallet.
+3. The bridge contract has set a wrong federation address.
+   1. Use `bridge.changeFederation` function. This can be executed only by the owner which is the MultiSigWallet.

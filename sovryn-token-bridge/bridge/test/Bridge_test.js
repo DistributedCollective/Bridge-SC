@@ -20,7 +20,7 @@ const mockReceiveTokensCall = artifacts.require('./mockReceiveTokensCall');
 const TokenReceiver = artifacts.require('./TokenReceiverImpl');
 
 const utils = require('./utils');
-const {fixSignature, getSignature} = require("../utils/cryptoUtils");
+const { getSignature } = require("../utils/cryptoUtils");
 const BN = web3.utils.BN;
 const randomHex = web3.utils.randomHex;
 const ONE_DAY = 24*3600;
@@ -1026,11 +1026,11 @@ contract('Bridge', async function (accounts) {
                 await this.bridge.setFeePercentage(payment, {from: bridgeManager});
                 await this.token.approve(this.bridge.address, amount, {from: tokenOwner});
 
-                const msgHash = web3.utils.soliditySha3(
-                    this.token.address, amount.toString(), anAccount
+                let signature = await getSignature([this.token.address, amount.toString(), anAccount], tokenOwner, web3);
+                let receipt = await this.bridge.receiveTokensAt(
+                    this.token.address, amount, anAccount, signature, Buffer.from(""),
+                    { from: tokenOwner }
                 );
-                let signature = fixSignature(await web3.eth.sign(msgHash, tokenOwner));
-                let receipt = await this.bridge.receiveTokensAt(this.token.address, amount, anAccount, signature, Buffer.from(""), { from: tokenOwner });
                 utils.checkRcpt(receipt);
 
                 const ownerBalance = await this.token.balanceOf(bridgeManager);
