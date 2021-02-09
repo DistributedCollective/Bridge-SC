@@ -278,7 +278,6 @@ contract Converter is
         uint256[] memory ordersIds = new uint256[](qtyToReturn);
 
         Order memory sellOrder = orders[fromOrder];
-<<<<<<< HEAD
         uint256 currentOrderNumber = fromOrder;
         uint256 index = 0;        
 
@@ -290,26 +289,6 @@ contract Converter is
             index = index.add(1);
         }
 
-=======
-        uint256 nextOrder;
-        uint256 currentOrderNumber;
-        uint256 index = 0;
-
-        while (sellOrder.nextOrder != 0 && index < qtyToReturn) {
-            nextOrder = sellOrder.nextOrder;
-            currentOrderNumber = orders[nextOrder].previousOrder;
-            ordersIds[index] = currentOrderNumber;
-            ordersAmounts[index] = sellOrder.remainingAmount;
-            sellOrder = orders[nextOrder];
-            index = index.add(1);
-        }
-
-        if (sellOrder.nextOrder == 0 && index < qtyToReturn) {
-            ordersIds[index] = lastOrderIndex;
-            ordersAmounts[index] = orders[lastOrderIndex].remainingAmount;
-        }
-
->>>>>>> 956840ade2aeeee5a815a5f3b108524dafdf1aac
         return (ordersIds, ordersAmounts);
     }
 
@@ -388,25 +367,6 @@ contract Converter is
             calledOK = updateOrdersMap(order, orderId);
             require(calledOK, "Error when updating orders map");
         }
-<<<<<<< HEAD
-=======
-
-        // require(
-        //     ISideToken(order.tokenAddress).approve(
-        //         address(bridgeContract),
-        //         amountToBuy
-        //     ),
-        //     "Converter: Fail Approval"
-        // );
-        // calledOK = bridgeContract.receiveTokensAt(
-        //     order.tokenAddress,
-        //     amountToBuy,
-        //     ethDestinationAddress,
-        //     signature,
-        //     extraData
-        // );
-        // require(calledOK, "Error when sending to the bridge");
->>>>>>> 956840ade2aeeee5a815a5f3b108524dafdf1aac
         require(
             ISideToken(order.tokenAddress).transfer(
                 destinationAddress,

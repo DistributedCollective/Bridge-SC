@@ -1,7 +1,7 @@
 const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 const ConverterContract = artifacts.require("Converter");
 
-const initialDeploymentFee = 10;
+const initialDeploymentFee = 1000;
 
 module.exports = async (deployer) => {
   const instance = await deployProxy(
