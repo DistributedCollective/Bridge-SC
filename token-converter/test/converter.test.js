@@ -7,7 +7,7 @@ const truffleAssert = require("truffle-assertions");
 
 chaiUse(require("chai-as-promised"));
 
-const initialDeploymentFee = 10;
+const initialDeploymentFee = 1000;
 const updatedFee = 20;
 const fakeAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559"; // put a fake address
 const fakeAddress2 = "0x02c3e04E90DE8B5ba93C6f1fec8124F2c177ba8A"; // put a fake address
