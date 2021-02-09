@@ -21,7 +21,7 @@ To allow a token go to directory `sovryn-token-bridge/bridge` and run:
  - `npx truffle exec ./scripts/allowToken.js --network <networkName> <tokenAddress>`
 
 ## How to get the side tokens from the original tokens
-- After the first token cross the bridge creates the side token on the side chain.
+- After the first token cross the bridge creates the side token on the side chain. You can use `npx truffle exec --network kovan ./scripts/createRskSideTokens.js <cant>` to make a cross of `<cant>` of each token to the same address.
 - call `bridge.mappedTokens(original token address)` using the bridge from the side chain.
 - As an example, if you want to get the rDAI token address call `mappedTokens` on the rsk network passing as argument the DAI token address.
 
