@@ -9,7 +9,7 @@ module.exports = async callback => {
             console.error('You need to pass the fee percentage');
         const feePercentage = Number.parseInt(feePercentageArg);
         if(feePercentage > 10000)
-            console.log('Fee percentage must be less than 1000');
+            console.log('Fee percentage must be less than 10000');
 
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
@@ -17,7 +17,7 @@ module.exports = async callback => {
 
         const deployer = (await web3.eth.getAccounts())[0];
 
-        console.log(`Configuring fee percentage ${feePercentage/10000}% from address ${deployer}`);
+        console.log(`Configuring fee percentage ${feePercentage/100}% from address ${deployer}`);
         console.log('Bridge address', bridgeAddress);
         const setFeeMethodData = bridge_v1.methods.setFeePercentage(feePercentage).encodeABI();
 

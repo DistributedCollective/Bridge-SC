@@ -1,12 +1,12 @@
 version: "3"
 services:
   federation:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:10c34309
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:20ebf8c9
     volumes:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
   frontend:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:10c34309
+    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:20ebf8c9
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
