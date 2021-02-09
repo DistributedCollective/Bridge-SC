@@ -62,7 +62,7 @@ To allow a token go to directory `sovryn-token-bridge/bridge` and run:
 ### `receiveTokensAt` transaction fails.
 It might be because:
 1. The bridge proxy is pointing to an old bridge implementation. So, the function doesn't exist in the contract.
-   1. Try to upgrade the contract using a script similar to the migration `sovryn-token-bridge/bridge/migrations/17_deploy_bridge_v2.js`.
+   1. Try to upgrade the contract using a script similar to the migration `sovryn-token-bridge/bridge/migrations/16_deploy_bridge_v2.js`.
 2. See `receiveTokens` problems.
 
 ### `receiveTokens` transaction fails.
