@@ -3,6 +3,6 @@
     "federation": "0x1790e2f5db3515ee5e0428a51d141d1f36698cfb",
     "multiSig": "0xda9e5f57ed2fb910258ce20b83c1005c8a96282f",
     "allowTokens": "0xa9fa6a4efb790d4a9c20c5d249169c115c98e14b",
-    "host": "http://45.79.214.38",
+    "host": "<RPC URL>",
     "fromBlock": 1594214
 }
