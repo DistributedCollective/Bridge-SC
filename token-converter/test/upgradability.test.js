@@ -4,8 +4,8 @@ const ConverterContract_v1 = artifacts.require("Converter");
 const MockConverterContract_v2 = artifacts.require("MockConverter_v2");
 const assert = require("assert");
 
-const initialDeploymentFee = 15;
-const updatedFee = 20;
+const initialDeploymentFee = 1000;
+const updatedFee = 1500;
 let v1_contract;
 let v1_contractStoredValue;
 let v2_contract;

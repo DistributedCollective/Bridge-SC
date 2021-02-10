@@ -71,6 +71,13 @@ contract Converter is
         address _ethDestinationAddress
     );
 
+    event SentToBridge(
+        uint256 _orderId,
+        uint256 _amount,
+        address _tokenAddress,
+        address _ethDestinationAddress
+    );
+
     event SentToReceiver(
         uint256 _orderId,
         uint256 _amount,
@@ -279,7 +286,7 @@ contract Converter is
 
         Order memory sellOrder = orders[fromOrder];
         uint256 currentOrderNumber = fromOrder;
-        uint256 index = 0;        
+        uint256 index = 0;
 
         while (currentOrderNumber != 0 && index < qtyToReturn) {
             ordersIds[index] = currentOrderNumber;
@@ -324,6 +331,7 @@ contract Converter is
                 orders[nextOrder].previousOrder = order.previousOrder;
             }
         }
+
         delete orders[orderId];
         return true;
     }
@@ -362,17 +370,45 @@ contract Converter is
         order.remainingAmount = order.remainingAmount.sub(amountToBuy);
         orders[orderId].remainingAmount = order.remainingAmount;
 
-        bool calledOK;
         if (order.remainingAmount == 0) {
-            calledOK = updateOrdersMap(order, orderId);
-            require(calledOK, "Error when updating orders map");
+            require(
+                updateOrdersMap(order, orderId),
+                "Error updating orders map"
+            );
         }
+
+        require(
+            ISideToken(order.tokenAddress).approve(
+                address(bridgeContract),
+                amountToBuy
+            ),
+            "Converter: Failed Approval"
+        );
+
+        require(
+            bridgeContract.receiveTokensAt(
+                order.tokenAddress,
+                amountToBuy,
+                destinationAddress,
+                signature,
+                extraData
+            ),
+            "Error sending to the bridge"
+        );
+
         require(
             ISideToken(order.tokenAddress).transfer(
                 destinationAddress,
                 amountToBuy
             ),
-            "Converter: Fail transfer"
+            "Converter: Failed transfer"
+        );
+
+        emit SentToBridge(
+            orderId,
+            amountToBuy,
+            order.tokenAddress,
+            destinationAddress
         );
 
         emit SentToReceiver(
@@ -382,6 +418,7 @@ contract Converter is
             destinationAddress
         );
 
+        bool calledOK;
         uint256 sendBackAmount; // amount to send back to the LP because it was bigger than the order
         if (msg.value > priceWithDiscount) {
             sendBackAmount = msg.value.sub(priceWithDiscount);

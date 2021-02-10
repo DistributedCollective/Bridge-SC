@@ -1,6 +1,8 @@
 const ConverterContract = artifacts.require("Converter");
 const Bridge = artifacts.require("Bridge");
 const MockSideToken = artifacts.require("MockSideToken");
+const MockSideTokenFalse = artifacts.require("MockSideTokenFalse");
+const MockBridgeFalse = artifacts.require("MockBridgeFalse");
 
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
@@ -14,6 +16,7 @@ const { makeSellOrder } = require("./helpers/utilities");
 const ethDestinationAddress = "0x35cA19131746B8A43F06B53fe0F0731a27328559";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const ordersIds = [1, 2, 3];
+const conversionFee = 1000; // 10.00%
 
 const NOT_NULL_ERROR = "Address cannot be empty";
 const PAUSED_ERROR = "Pausable: paused";
@@ -37,13 +40,17 @@ contract(
     let converterContract;
     let bridge;
     let whiteListedToken;
+    let whiteListedTokenFail;
 
     before(async function () {
       converterContract = await ConverterContract.deployed();
       bridge = await Bridge.new();
       await converterContract.setBridgeContract(bridge.address);
       whiteListedToken = (await MockSideToken.new()).address;
+      whiteListedTokenFail = (await MockSideTokenFalse.new()).address;
       await converterContract.addTokenToWhitelist(whiteListedToken);
+      await converterContract.addTokenToWhitelist(whiteListedTokenFail);
+      await converterContract.setConversionFee(conversionFee);
     });
 
     describe("Called takeSellOrder INCORRECTLY should:", async () => {
@@ -146,9 +153,6 @@ contract(
 
         const orderId = (await converterContract.numOrder()).toNumber();
         const order = await converterContract.orders(orderId);
-
-        const conversionFee = 1000; // 10.00%
-        await converterContract.setConversionFee(conversionFee);
         const rbtcValueToTransfer = 6;
 
         expect(order.remainingAmount.toString()).to.equal(orderAmount);
@@ -164,14 +168,80 @@ contract(
           )
         ).to.be.rejectedWith(Error, "Transferred Amount is less than expected");
       });
+    
+      it("REJECT when SideToken Contract does NOT APPROVE transaction", async () => {
+        await converterContract.setBridgeContract(bridgeAddress);
+        const orderAmount = web3.utils.toWei("1");
+
+        await converterContract.onTokensMinted(
+          orderAmount,
+          whiteListedTokenFail,
+          usersData[0],
+          { from: bridgeAddress }
+        );
+
+        const orderId = (await converterContract.numOrder()).toNumber();
+        const order = await converterContract.orders(orderId);
+
+        await converterContract.setBridgeContract(bridge.address);
+        const rbtcValueToTransfer = 0.9;
+        expect(order.remainingAmount.toString()).to.equal(orderAmount);
+
+        await expect(
+          converterContract.takeSellOrder(
+            orderId,
+            orderAmount, // qty tokens to buy
+            ethDestinationAddress,
+            usersData[0],
+            usersData[0],
+            { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
+          )
+        ).to.be.rejectedWith(Error, "Converter: Failed Approval");
+      });
+
+      it("REJECT when Bridge REJECTS transfer", async () => {
+        await converterContract.setBridgeContract(bridgeAddress);
+        const orderAmount = web3.utils.toWei("1");
+
+        await converterContract.onTokensMinted(
+          orderAmount,
+          whiteListedToken,
+          usersData[0],
+          { from: bridgeAddress }
+        );
+
+        const orderId = (await converterContract.numOrder()).toNumber();
+        const order = await converterContract.orders(orderId);
+
+        // await converterContract.setBridgeContract(bridge.address);
+        const rbtcValueToTransfer = 0.9;
+        expect(order.remainingAmount.toString()).to.equal(orderAmount);
+
+        const bridgeFalse = await MockBridgeFalse.new();
+        await converterContract.setBridgeContract(bridgeFalse.address);
+
+        await expect(
+          converterContract.takeSellOrder(
+            orderId,
+            orderAmount, // qty tokens to buy
+            ethDestinationAddress,
+            usersData[0],
+            usersData[0],
+            { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
+          )
+        ).to.be.rejectedWith(Error, "Error sending to the bridge");
+      });
+
+
+
+      
+
     });
 
     describe("Called takeSellOrder should:", async () => {
       it("ACCEPT rBTC, Emit transfer events", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
-        const conversionFee = 1000; // 10.00%
-        await converterContract.setConversionFee(conversionFee);
 
         await converterContract.onTokensMinted(
           orderAmount,
@@ -198,13 +268,12 @@ contract(
 
         truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
+        truffleAssert.eventEmitted(result, "SentToBridge");
       });
 
       it("ACCEPT rBTC, return to LP exceeded amount", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
-        const conversionFee = 1000; // 10.00%
-        await converterContract.setConversionFee(conversionFee);
 
         await converterContract.onTokensMinted(
           orderAmount,
@@ -242,6 +311,8 @@ contract(
 
         truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
+        truffleAssert.eventEmitted(result, "SentToBridge");
+
         assert.strictEqual(difBalanceOrder, 0, "");
         // THIS CAN BE IMPROVED TO USE A MORE ACCURATE SOLUTION
       });
@@ -249,8 +320,6 @@ contract(
       it("ACCEPT rBTC, transfer to seller encoded address", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
-        const conversionFee = 1000; // 10.00%
-        await converterContract.setConversionFee(conversionFee);
 
         await converterContract.onTokensMinted(
           orderAmount,
@@ -293,6 +362,8 @@ contract(
 
         truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
+        truffleAssert.eventEmitted(result, "SentToBridge");
+
         assert.strictEqual(
           finalBalanceSeller,
           prevBalanceSeller + BigInt(amountWithDiscount),
@@ -303,8 +374,6 @@ contract(
       it("ACCEPT rBTC, fill partialy an order - check remaining after take sell order", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
-        const conversionFee = 1000; // 10.00%
-        await converterContract.setConversionFee(conversionFee);
 
         await converterContract.onTokensMinted(
           orderAmount,
@@ -337,6 +406,7 @@ contract(
 
         truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
+        truffleAssert.eventEmitted(result, "SentToBridge");
 
         order = await converterContract.orders(orderId);
         assert.strictEqual(
