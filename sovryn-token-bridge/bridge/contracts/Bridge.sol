@@ -19,7 +19,6 @@ import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./AllowTokens.sol";
 import "./Utils.sol";
-import "./Auth.sol";
 
 contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -46,7 +45,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     bool public isUpgrading;
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
-    Auth private auth;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -69,10 +67,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //        //keccak256("ERC777TokensRecipient")
 //        erc1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
 //    }
-
-    function setAuth(address _auth) external onlyOwner {
-        auth = Auth(_auth);
-    }
 
     function version() external pure returns (string memory) {
         return "v2";
@@ -194,10 +188,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address tokenToUse,
         uint256 amount,
         address receiver,
-        bytes calldata signature,
         bytes calldata extraData
     ) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, receiver, signature, extraData);
+        return _receiveTokens(tokenToUse, amount, receiver, extraData);
     }
 
     /**
@@ -205,7 +198,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     * See https://eips.ethereum.org/EIPS/eip-20#transferfrom
     */
     function receiveTokens(address tokenToUse, uint256 amount) external returns(bool) {
-        return _receiveTokens(tokenToUse, amount, _msgSender(), "", "");
+        return _receiveTokens(tokenToUse, amount, _msgSender(), "");
     }
 
     /**
@@ -216,7 +209,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address tokenToUse,
         uint256 amount,
         address receiver,
-        bytes memory signature,
         bytes memory extraData
     ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
