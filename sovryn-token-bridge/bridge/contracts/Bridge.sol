@@ -219,9 +219,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         bytes memory signature,
         bytes memory extraData
     ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
-        address sender = _msgSender();
-        require(!sender.isContract(), "Bridge: Sender can't be a contract");
-
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, extraData);
