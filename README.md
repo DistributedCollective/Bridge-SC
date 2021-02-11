@@ -27,7 +27,7 @@ To allow a token go to directory `sovryn-token-bridge/bridge` and run:
 - As an example, if you want to get the rDAI token address call `mappedTokens` on the rsk network passing as argument the DAI token address.
 
 ## Bridge token amounts limitations
-The Bridge contracts have a set of rules, for all tokens, about how many tokens a user can cross. Those rules are:
+The Bridge contracts have a set of rules, for all tokens, that determine how many tokens a user can cross. Those rules are:
 - maxTokensAllowed = 10000 ether; Maximum number of tokens allowed crossing.
 - minTokensAllowed = 1 ether; Minimum number of tokens allowed crossing.
 - dailyLimit = 100000 ether; Limit by day of token allowed crossing.
