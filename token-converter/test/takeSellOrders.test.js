@@ -3,6 +3,7 @@ const Bridge = artifacts.require("Bridge");
 const MockSideToken = artifacts.require("MockSideToken");
 const MockSideTokenFalse = artifacts.require("MockSideTokenFalse");
 const MockBridgeFalse = artifacts.require("MockBridgeFalse");
+const MockFailOnReceiveCaller = artifacts.require("MockFailOnReceiveCaller");
 
 const assert = require("assert");
 const truffleAssert = require("truffle-assertions");
@@ -232,7 +233,71 @@ contract(
         ).to.be.rejectedWith(Error, "Error sending to the bridge");
       });
 
+      it("REJECT when giving back to LP fails on transfer", async () => {
+        await converterContract.setBridgeContract(bridgeAddress);
+        const orderAmount = web3.utils.toWei("1");
 
+        await converterContract.onTokensMinted(
+          orderAmount,
+          whiteListedToken,
+          usersData[0],
+          { from: bridgeAddress }
+        );
+
+        const orderId = (await converterContract.numOrder()).toNumber();
+        const order = await converterContract.orders(orderId);
+
+          // to make the transfer fail using a non payable contract to call takeSellOrder
+        const mockFailOnReceiveCaller = await MockFailOnReceiveCaller.new();
+        
+        const rbtcValueToTransfer = 13;
+        expect(order.remainingAmount.toString()).to.equal(orderAmount);
+
+        await expect(
+          mockFailOnReceiveCaller.call(
+            converterContract,
+            orderId,
+            orderAmount, // qty tokens to buy
+            ethDestinationAddress,
+            usersData[0],
+            usersData[0],
+            { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
+          )
+        ).to.be.rejectedWith(Error, "Error sending back to the Liquidity provider");
+      });
+
+      it("REJECT when transfer to rsk address given by seller fails", async () => {
+        await converterContract.setBridgeContract(bridgeAddress);
+        const orderAmount = web3.utils.toWei("1");
+
+        await converterContract.onTokensMinted(
+          orderAmount,
+          whiteListedToken,
+          usersData[0],
+          { from: bridgeAddress }
+        );
+
+        const orderId = (await converterContract.numOrder()).toNumber();
+        const order = await converterContract.orders(orderId);
+
+          // to make the transfer fail using a non payable contract to call takeSellOrder
+        const mockFailOnReceiveCaller = await MockFailOnReceiveCaller.new();
+        
+        const rbtcValueToTransfer = 0.5;
+        expect(order.remainingAmount.toString()).to.equal(orderAmount);
+
+        await expect(
+          mockFailOnReceiveCaller.call(
+            converterContract,
+            orderId,
+            orderAmount, // qty tokens to buy
+            ethDestinationAddress,
+            usersData[0],
+            usersData[0],
+            { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
+          )
+        ).to.be.rejectedWith(Error, "Error sending to seller rsk address");
+      });
 
       
 
