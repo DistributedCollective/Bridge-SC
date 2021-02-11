@@ -1,8 +1,8 @@
 {
-    "bridge": "0x935d4d1b97ee87ce64606724d513da31c2d18371",
-    "federation": "0x1790e2f5db3515ee5e0428a51d141d1f36698cfb",
-    "multiSig": "0xda9e5f57ed2fb910258ce20b83c1005c8a96282f",
-    "allowTokens": "0xa9fa6a4efb790d4a9c20c5d249169c115c98e14b",
-    "host": "<RPC URL>",
-    "fromBlock": 1594214
+    "bridge": "0xe4ce3e408a697d9c87e4eb0a717d827bd4981adf",
+    "federation": "0x73de7e9f9da8db7e557c2e39c593d5a828ca3720",
+    "multiSig": "0x0912a6f338bf94f0b4ef5cef5d65765820e143ca",
+    "allowTokens": "0x3c0c00d6b6611b049c98be63302bb5aba3b6b366",
+    "host": "http://45.79.214.38",
+    "fromBlock": 1599106
 }

@@ -1,8 +1,8 @@
 {
-    "bridge": "0x879e18cf48a0b988e7addb004f7a9f3639e881e7",
-    "federation": "0x9e5cd8ab3f16b9f3aa2b7dd4d636151f88a7682b",
-    "multiSig": "0x34812468c86c7920225815ac041b7568ad8260e4",
-    "allowTokens": "0x42c93ed1dc7d6b37ca35793ab7ced653f88e1a22",
-    "host": "<RPC URL>",
-    "fromBlock": 23379249
+    "bridge": "0x38624d4087d2bae7449a37f91742dc448aa2b8dd",
+    "federation": "0xd7d82b6810f1365a9cb1a5c955b12a101b3c891c",
+    "multiSig": "0x385b5485b2dcaff802c7cdc3e9cbd45640d5f2b7",
+    "allowTokens": "0x51825117196d9fd2cea563e6c7b229f424d05b10",
+    "host": "https://kovan.infura.io/v3/394e3c95e67e4b03a21569e2f978276e",
+    "fromBlock": 23408497
 }
