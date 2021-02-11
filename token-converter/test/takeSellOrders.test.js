@@ -60,7 +60,6 @@ contract(
             ordersIds[0], // order id
             500, // qty tokens to buy
             zeroAddress,
-            usersData[0],
             usersData[0]
           )
         ).to.be.rejectedWith(Error, NOT_NULL_ERROR);
@@ -73,7 +72,6 @@ contract(
             ordersIds[0], // order id
             500, // qty tokens to buy
             ethDestinationAddress,
-            usersData[0],
             usersData[0]
           )
         ).to.be.rejectedWith(Error, PAUSED_ERROR);
@@ -86,7 +84,6 @@ contract(
             10, // order id
             500, // qty tokens to buy
             ethDestinationAddress,
-            usersData[0],
             usersData[0]
           )
         ).to.be.rejectedWith(Error, NOT_NULL_ERROR);
@@ -108,7 +105,6 @@ contract(
             ordersIds[0],
             0, // qty tokens to buy
             ethDestinationAddress,
-            usersData[0],
             usersData[0]
           )
         ).to.be.rejectedWith(Error, ZERO_AMOUNT_ERROR);
@@ -130,7 +126,6 @@ contract(
             ordersIds[0],
             11, // qty tokens to buy
             ethDestinationAddress,
-            usersData[0],
             usersData[0]
           )
         ).to.be.rejectedWith(
@@ -163,12 +158,11 @@ contract(
             orderAmount, // qty tokens to buy
             ethDestinationAddress,
             usersData[0],
-            usersData[0],
             { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
           )
         ).to.be.rejectedWith(Error, "Transferred Amount is less than expected");
       });
-    
+
       it("REJECT when SideToken Contract does NOT APPROVE transaction", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
@@ -192,7 +186,6 @@ contract(
             orderId,
             orderAmount, // qty tokens to buy
             ethDestinationAddress,
-            usersData[0],
             usersData[0],
             { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
           )
@@ -226,7 +219,6 @@ contract(
             orderAmount, // qty tokens to buy
             ethDestinationAddress,
             usersData[0],
-            usersData[0],
             { value: web3.utils.toWei(`${rbtcValueToTransfer}`) }
           )
         ).to.be.rejectedWith(Error, "Error sending to the bridge");
@@ -234,7 +226,7 @@ contract(
 
 
 
-      
+
 
     });
 
@@ -261,7 +253,6 @@ contract(
           orderId,
           orderAmount, // qty tokens to buy
           ethDestinationAddress,
-          usersData[0],
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
@@ -298,7 +289,6 @@ contract(
           orderId,
           orderAmount, // qty tokens to buy
           ethDestinationAddress,
-          usersData[0],
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp2 }
         );
@@ -352,7 +342,6 @@ contract(
           orderAmount, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
-          usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
 
@@ -399,7 +388,6 @@ contract(
           orderId,
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
-          usersData[0],
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );

@@ -168,7 +168,6 @@ contract(
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
-          usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp2 }
         );
 
@@ -204,7 +203,6 @@ contract(
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
-          usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp2 }
         );
 
@@ -236,7 +234,6 @@ contract(
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
-          usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp2 }
         );
 
@@ -263,7 +260,6 @@ contract(
           orderId3,
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
-          usersData[0],
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );

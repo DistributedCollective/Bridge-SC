@@ -1,6 +1,5 @@
-pragma solidity ^0.5.0;
-
-import "./zeppelin/token/ERC20/ERC20Detailed.sol";
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.6.0 <0.8.0;
 
 interface IBridge {
     function version() external pure returns (string memory);

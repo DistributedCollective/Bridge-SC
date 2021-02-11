@@ -340,7 +340,6 @@ contract Converter is
         uint256 orderId,
         uint256 amountToBuy, // qty tokens to buy
         address destinationAddress,
-        bytes calldata signature,
         bytes calldata extraData // public
     )
         external
@@ -390,7 +389,6 @@ contract Converter is
                 order.tokenAddress,
                 amountToBuy,
                 destinationAddress,
-                signature,
                 extraData
             ),
             "Error sending to the bridge"

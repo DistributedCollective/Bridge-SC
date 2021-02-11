@@ -24,7 +24,6 @@ contract MockBridgeFalse {
         address,
         uint256,
         address,
-        bytes calldata,
         bytes calldata
     ) external pure returns (bool) {
         return false;
