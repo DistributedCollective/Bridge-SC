@@ -92,3 +92,12 @@ It might be because:
    1. Use `federation.setBridge` function. This can be executed only by the owner which is the MultiSigWallet.
 3. The bridge contract has set a wrong federation address.
    1. Use `bridge.changeFederation` function. This can be executed only by the owner which is the MultiSigWallet.
+
+## How to test it manually
+1. Connect to a web3 console. You can use truffle console running: `npx truffle console --network $networkname`.
+2. Copy and paste each command in the web3 console.
+   - For RSK network see `sovryn-token-bridge/bridge/scripts/test/rskTest.js`.
+      - Take sell order
+   - For Kovan network see `sovryn-token-bridge/bridge/scripts/test/ethTest.js`.
+      - cross tokens with converter as receiver. So it creates a sell order in the RSk converter contract
+      - cross tokens to another address
