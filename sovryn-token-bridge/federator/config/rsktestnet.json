@@ -1,8 +1,8 @@
 {
-    "bridge": "0xe4ce3e408a697d9c87e4eb0a717d827bd4981adf",
-    "federation": "0x73de7e9f9da8db7e557c2e39c593d5a828ca3720",
-    "multiSig": "0x0912a6f338bf94f0b4ef5cef5d65765820e143ca",
-    "allowTokens": "0x3c0c00d6b6611b049c98be63302bb5aba3b6b366",
-    "host": "http://45.79.214.38",
-    "fromBlock": 1599106
+    "bridge": "0xd024f2fa6399af2a93dd5356bad3bc2750de4b79",
+    "federation": "0x85162d3c790bfd6e4b7c781eb3b9f5623ab0bf91",
+    "multiSig": "0x472a3ff0c17f26bff5c19ddd622d46e5accb3b61",
+    "allowTokens": "0x758e9f47baef7260fa522bde1e3e0ebc80d6a1ba",
+    "host": "",
+    "fromBlock": 1656712
 }

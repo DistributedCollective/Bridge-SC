@@ -14,7 +14,10 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require('fs');
 
-let MNEMONIC = fs.existsSync('./mnemonic.key') ? fs.readFileSync('./mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
+const MNEMONIC = fs.readFileSync("./mnemonic.key").toString().trim();
+if (!MNEMONIC || MNEMONIC.split(" ").length !== 12) {
+  throw new Error("unable to retrieve mnemonic from .secret");
+}
 const INFURA_API_KEY = fs.existsSync('./infura.key') ? fs.readFileSync('./infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
 
 module.exports = {
