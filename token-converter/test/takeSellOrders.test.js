@@ -231,6 +231,13 @@ contract(
     });
 
     describe("Called takeSellOrder should:", async () => {
+
+      beforeEach(async () => {
+        const orderAmount = web3.utils.toWei('1');
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        sideToken.mint(converterContract.address, orderAmount, Buffer.from(""), Buffer.from(""));
+      })
+
       it("ACCEPT rBTC, Emit transfer events", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
@@ -257,7 +264,6 @@ contract(
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         truffleAssert.eventEmitted(result, "SentToBridge");
       });
@@ -299,7 +305,6 @@ contract(
           (difBalance - amountWithDiscount) / 10 ** 18
         );
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         truffleAssert.eventEmitted(result, "SentToBridge");
 
@@ -349,7 +354,6 @@ contract(
           await web3.eth.getBalance(sellerAddress3)
         );
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         truffleAssert.eventEmitted(result, "SentToBridge");
 
@@ -392,7 +396,6 @@ contract(
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
         );
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         truffleAssert.eventEmitted(result, "SentToBridge");
 
@@ -402,6 +405,40 @@ contract(
           remaining.toString(),
           ""
         );
+      });
+
+      it("ACCEPT rBTC, reduce converter balance in orderAmount", async () => {
+        await converterContract.setBridgeContract(bridgeAddress);
+        const orderAmount = web3.utils.toWei("1");
+
+        await converterContract.onTokensMinted(
+            orderAmount,
+            whiteListedToken,
+            usersData[0],
+            { from: bridgeAddress }
+        );
+
+        const orderId = (await converterContract.numOrder()).toNumber();
+        const order = await converterContract.orders(orderId);
+        const sideToken = await MockSideToken.at(whiteListedToken);
+
+        const oldBalance = await sideToken.balanceOf(converterContract.address);
+
+        await converterContract.setBridgeContract(bridge.address);
+        const rbtcValueToTransfer = 0.9;
+        expect(order.remainingAmount.toString()).to.equal(orderAmount);
+
+        await converterContract.takeSellOrder(
+            orderId,
+            orderAmount, // qty tokens to buy
+            ethDestinationAddress,
+            usersData[0],
+            { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+        );
+
+        const newBalance = await sideToken.balanceOf(converterContract.address);
+
+        expect(newBalance.toString()).to.equal((oldBalance - orderAmount).toString());
       });
     });
   }

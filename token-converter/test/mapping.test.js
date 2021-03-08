@@ -42,8 +42,10 @@ contract(
       converterContract = await ConverterContract.deployed();
       bridge = await Bridge.new();
       await converterContract.setBridgeContract(bridge.address);
-      whiteListedToken = (await MockSideToken.new()).address;
+      const sideToken = await MockSideToken.new();
+      whiteListedToken = sideToken.address;
       await converterContract.addTokenToWhitelist(whiteListedToken);
+      sideToken.mint(converterContract.address, web3.utils.toWei('100000000000000'), Buffer.from(""), Buffer.from(""));
     });
 
     describe("Check the sell order map", async () => {
@@ -189,7 +191,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 1, "ErrFirst 1-3-4b");
         assert.strictEqual(lastOrderIndex, 4, "ErrLast 1-3-4b");
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
+        truffleAssert.eventEmitted(result, "SentToBridge");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -220,7 +222,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 3, "ErrFirst 3-4b");
         assert.strictEqual(lastOrderIndex, 4, "ErrLast 3-4b");
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
+        truffleAssert.eventEmitted(result, "SentToBridge");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -247,7 +249,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 3, "ErrFirst 3-3b");
         assert.strictEqual(lastOrderIndex, 3, "ErrLast 3-3b");
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
+        truffleAssert.eventEmitted(result, "SentToBridge");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 
@@ -269,7 +271,7 @@ contract(
         assert.strictEqual(firstOrderIndex, 0, "ErrFirst 0");
         assert.strictEqual(lastOrderIndex, 0, "ErrLast 0");
 
-        truffleAssert.eventEmitted(result, "SentToReceiver");
+        truffleAssert.eventEmitted(result, "SentToBridge");
         truffleAssert.eventEmitted(result, "TakeSellOrder");
       });
 

@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.8.0;
 
+import "../zeppelin/token/ERC20/IERC20.sol";
+import "../zeppelin/token/ERC20/SafeERC20.sol";
+
 contract Bridge {
+    using SafeERC20 for IERC20;
+
     address private constant NULL_ADDRESS = address(0);
 
     function version() external pure returns (string memory) {
@@ -21,11 +26,12 @@ contract Bridge {
     }
 
     function receiveTokensAt(
-        address,
-        uint256,
+        address tokenToUse,
+        uint256 amount,
         address,
         bytes calldata
-    ) external pure returns (bool) {
+    ) external returns (bool) {
+        IERC20(tokenToUse).safeTransferFrom(msg.sender, address(this), amount);
         return true;
     }
 
