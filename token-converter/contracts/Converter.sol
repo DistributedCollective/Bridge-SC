@@ -78,13 +78,6 @@ contract Converter is
         address _ethDestinationAddress
     );
 
-    event SentToReceiver(
-        uint256 _orderId,
-        uint256 _amount,
-        address _tokenAddress,
-        address _ethDestinationAddress
-    );
-
     event WhitelistTokenAdded(address tokenAddress);
     event WhitelistTokenRemoved(address tokenAddress);
 
@@ -391,25 +384,10 @@ contract Converter is
                 destinationAddress,
                 extraData
             ),
-            "Error sending to the bridge"
-        );
-
-        require(
-            ISideToken(order.tokenAddress).transfer(
-                destinationAddress,
-                amountToBuy
-            ),
-            "Converter: Failed transfer"
+            "Converter: Error sending to the bridge"
         );
 
         emit SentToBridge(
-            orderId,
-            amountToBuy,
-            order.tokenAddress,
-            destinationAddress
-        );
-
-        emit SentToReceiver(
             orderId,
             amountToBuy,
             order.tokenAddress,
