@@ -1,5 +1,5 @@
 const ConverterContract = artifacts.require("Converter");
-const Bridge = artifacts.require("Bridge");
+const MockBridge = artifacts.require("MockBridge");
 const MockSideToken = artifacts.require("MockSideToken");
 
 const assert = require("assert");
@@ -40,7 +40,7 @@ contract(
 
     before(async function () {
       converterContract = await ConverterContract.deployed();
-      bridge = await Bridge.new();
+      bridge = await MockBridge.new();
       await converterContract.setBridgeContract(bridge.address);
       const sideToken = await MockSideToken.new();
       whiteListedToken = sideToken.address;

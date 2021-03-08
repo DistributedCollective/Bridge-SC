@@ -4,7 +4,7 @@ pragma solidity >=0.6.0 <0.8.0;
 import "../zeppelin/token/ERC20/IERC20.sol";
 import "../zeppelin/token/ERC20/SafeERC20.sol";
 
-contract Bridge {
+contract MockBridge {
     using SafeERC20 for IERC20;
 
     address private constant NULL_ADDRESS = address(0);
