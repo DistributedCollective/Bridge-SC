@@ -102,7 +102,7 @@ You can use the script `setMinTokenAmount.js` to set the minimum amount:
 1. To configure this contract a side token, passing throuwgh the Converter must be minted first
    1. Send renBTC or wBTC tokens to any address so the bridge can mint its side token. Wait for it.
    2. Check the minted side token using this script in the rsk console
-      1. `npx truffle exec ./scripts/test/getSideTokenAddresses.js --network rsktestnet`
+      1. `npx truffle exec "./scripts/test/getSideTokensAddresses.js" --network rsktestnet`
       2. This script will bring back a screen similar to this one:
       ┌─────────┬──────────────────────────────────────────────┬──────────────────────────────────────────────┐
       │ (index) │                   original                   │                  sideToken                   │
