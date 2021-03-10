@@ -223,21 +223,9 @@ contract(
           )
         ).to.be.rejectedWith(Error, "Error sending to the bridge");
       });
-
-
-
-
-
     });
 
     describe("Called takeSellOrder should:", async () => {
-
-      beforeEach(async () => {
-        const orderAmount = web3.utils.toWei('1');
-        const sideToken = await MockSideToken.at(whiteListedToken);
-        sideToken.mint(converterContract.address, orderAmount, Buffer.from(""), Buffer.from(""));
-      })
-
       it("ACCEPT rBTC, Emit transfer events", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
@@ -249,6 +237,19 @@ contract(
           { from: bridgeAddress }
         );
 
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        let oldBalance = await sideToken.balanceOf(converterContract.address);
+        sideToken.mint(
+          converterContract.address,
+          orderAmount,
+          Buffer.from(""),
+          Buffer.from("")
+        );
+        let newBalance = await sideToken.balanceOf(converterContract.address);
+        expect((newBalance - oldBalance).toString()).to.equal(
+          orderAmount.toString()
+        );
+
         const orderId = (await converterContract.numOrder()).toNumber();
         const order = await converterContract.orders(orderId);
 
@@ -256,12 +257,23 @@ contract(
         const rbtcValueToTransfer = 0.9;
         expect(order.remainingAmount.toString()).to.equal(orderAmount);
 
+        oldBalance = newBalance;
+        const prevBridgeBalance = await sideToken.balanceOf(bridge.address);
         const result = await converterContract.takeSellOrder(
           orderId,
           orderAmount, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+        );
+        newBalance = await sideToken.balanceOf(converterContract.address);
+        expect((oldBalance - newBalance).toString()).to.equal(
+          orderAmount.toString()
+        );
+
+        const newBridgeBalance = await sideToken.balanceOf(bridge.address);
+        expect((newBridgeBalance - prevBridgeBalance).toString()).to.equal(
+          orderAmount.toString()
         );
 
         truffleAssert.eventEmitted(result, "TakeSellOrder");
@@ -279,6 +291,13 @@ contract(
           { from: bridgeAddress }
         );
 
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        sideToken.mint(
+          converterContract.address,
+          orderAmount,
+          Buffer.from(""),
+          Buffer.from("")
+        );
         const orderId = (await converterContract.numOrder()).toNumber();
         const order = await converterContract.orders(orderId);
 
@@ -288,7 +307,8 @@ contract(
 
         const feePercentageDivider = await converterContract.feePercentageDivider();
         const amountWithDiscount =
-          orderAmount - (orderAmount * conversionFee) / feePercentageDivider;
+          orderAmount -
+          (orderAmount * conversionFee) / feePercentageDivider.toNumber();
         const prevBalanceLP = await web3.eth.getBalance(lp2);
 
         const result = await converterContract.takeSellOrder(
@@ -304,7 +324,6 @@ contract(
         const difBalanceOrder = Math.round(
           (difBalance - amountWithDiscount) / 10 ** 18
         );
-
         truffleAssert.eventEmitted(result, "TakeSellOrder");
         truffleAssert.eventEmitted(result, "SentToBridge");
 
@@ -323,6 +342,13 @@ contract(
           { from: bridgeAddress }
         );
 
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        sideToken.mint(
+          converterContract.address,
+          orderAmount,
+          Buffer.from(""),
+          Buffer.from("")
+        );
         const orderId = (await converterContract.numOrder()).toNumber();
         const order = await converterContract.orders(orderId);
 
@@ -342,6 +368,7 @@ contract(
           await web3.eth.getBalance(sellerAddress3)
         );
 
+        const prevBridgeBalance = await sideToken.balanceOf(bridge.address);
         const result = await converterContract.takeSellOrder(
           orderId,
           orderAmount, // qty tokens to buy
@@ -352,6 +379,11 @@ contract(
 
         const finalBalanceSeller = BigInt(
           await web3.eth.getBalance(sellerAddress3)
+        );
+
+        const newBridgeBalance = await sideToken.balanceOf(bridge.address);
+        expect((newBridgeBalance - prevBridgeBalance).toString()).to.equal(
+          orderAmount.toString()
         );
 
         truffleAssert.eventEmitted(result, "TakeSellOrder");
@@ -375,6 +407,13 @@ contract(
           { from: bridgeAddress }
         );
 
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        sideToken.mint(
+          converterContract.address,
+          orderAmount,
+          Buffer.from(""),
+          Buffer.from("")
+        );
         const orderId = (await converterContract.numOrder()).toNumber();
         let order = await converterContract.orders(orderId);
 
@@ -388,12 +427,19 @@ contract(
         const amountToBuy = web3.utils.toWei("0.4");
         const remaining = BigInt(parseInt(orderAmount) - parseInt(amountToBuy));
 
+        const prevBridgeBalance = await sideToken.balanceOf(bridge.address);
+
         const result = await converterContract.takeSellOrder(
           orderId,
           amountToBuy, // qty tokens to buy
           ethDestinationAddress,
           usersData[0],
           { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+        );
+
+        const newBridgeBalance = await sideToken.balanceOf(bridge.address);
+        expect((newBridgeBalance - prevBridgeBalance).toString()).to.equal(
+          amountToBuy.toString()
         );
 
         truffleAssert.eventEmitted(result, "TakeSellOrder");
@@ -407,38 +453,51 @@ contract(
         );
       });
 
-      it("ACCEPT rBTC, reduce converter balance in orderAmount", async () => {
+      it("ACCEPT rBTC, reduce converter balance when buying orderAmount", async () => {
         await converterContract.setBridgeContract(bridgeAddress);
         const orderAmount = web3.utils.toWei("1");
 
         await converterContract.onTokensMinted(
-            orderAmount,
-            whiteListedToken,
-            usersData[0],
-            { from: bridgeAddress }
+          orderAmount,
+          whiteListedToken,
+          usersData[0],
+          { from: bridgeAddress }
         );
-
+        const sideToken = await MockSideToken.at(whiteListedToken);
+        sideToken.mint(
+          converterContract.address,
+          orderAmount,
+          Buffer.from(""),
+          Buffer.from("")
+        );
+        const oldBalance = await sideToken.balanceOf(converterContract.address);
         const orderId = (await converterContract.numOrder()).toNumber();
         const order = await converterContract.orders(orderId);
-        const sideToken = await MockSideToken.at(whiteListedToken);
-
-        const oldBalance = await sideToken.balanceOf(converterContract.address);
 
         await converterContract.setBridgeContract(bridge.address);
         const rbtcValueToTransfer = 0.9;
         expect(order.remainingAmount.toString()).to.equal(orderAmount);
 
+        const prevBridgeBalance = await sideToken.balanceOf(bridge.address);
+
         await converterContract.takeSellOrder(
-            orderId,
-            orderAmount, // qty tokens to buy
-            ethDestinationAddress,
-            usersData[0],
-            { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+          orderId,
+          orderAmount, // qty tokens to buy
+          ethDestinationAddress,
+          usersData[0],
+          { value: web3.utils.toWei(`${rbtcValueToTransfer}`), from: lp1 }
+        );
+
+        const newBridgeBalance = await sideToken.balanceOf(bridge.address);
+        expect((newBridgeBalance - prevBridgeBalance).toString()).to.equal(
+          orderAmount.toString()
         );
 
         const newBalance = await sideToken.balanceOf(converterContract.address);
 
-        expect(newBalance.toString()).to.equal((oldBalance - orderAmount).toString());
+        expect(newBalance.toString()).to.equal(
+          (oldBalance - orderAmount).toString()
+        );
       });
     });
   }

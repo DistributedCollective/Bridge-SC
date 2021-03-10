@@ -162,10 +162,19 @@ const kovanTokens = {
   WBTC_TOKEN,
 };
 
+const rskTokens = {
+  rWETH_TOKEN,
+  rRENBTC_TOKEN,
+  rDAI_TOKEN,
+  rUSDT_TOKEN,
+  rWBTC_TOKEN,
+};
+
 module.exports = {
   abisObject,
   rskConfig,
   kovanConfig,
   rskTestnetTokens,
   kovanTokens,
+  rskTokens,
 };

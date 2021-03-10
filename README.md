@@ -121,7 +121,7 @@ You can use the script `setMinTokenAmount.js` to set the minimum amount:
    `converter.addTokenToWhitelist("0x7dd5068e1967da72c751e5041864368800c14908")`
 4. Set the Bridge Address in the Converter by copying the address in one of the generated files (Ex. `rsktestnet.json`)
    `converter.setBridgeContract("0xab5013298c85d0E024C566B3ae46033D1f447D4e")`
-5. All the parameters for the Bridge are now configured
+5. All the parameters for the Bridge and Converter are now configured
       
 ## Common Issues
 

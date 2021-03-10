@@ -265,7 +265,7 @@ contract Converter is
         public
         view
         whenNotPaused
-        returns (uint256[] memory, uint256[] memory)
+        returns (uint256[] memory, uint256[] memory, address[] memory)
     {
         require(qtyToReturn > 0, "qtyToReturn must be greater than ZERO");
         require(lastOrderIndex != 0, "No orders to retrieve");
@@ -276,6 +276,7 @@ contract Converter is
 
         uint256[] memory ordersAmounts = new uint256[](qtyToReturn);
         uint256[] memory ordersIds = new uint256[](qtyToReturn);
+        address[] memory ordersToken = new address[](qtyToReturn);
 
         Order memory sellOrder = orders[fromOrder];
         uint256 currentOrderNumber = fromOrder;
@@ -284,12 +285,13 @@ contract Converter is
         while (currentOrderNumber != 0 && index < qtyToReturn) {
             ordersIds[index] = currentOrderNumber;
             ordersAmounts[index] = sellOrder.remainingAmount;
+            ordersToken[index] = sellOrder.tokenAddress;
             currentOrderNumber = sellOrder.nextOrder;
             sellOrder = orders[currentOrderNumber];
             index = index.add(1);
         }
 
-        return (ordersIds, ordersAmounts);
+        return (ordersIds, ordersAmounts, ordersToken);
     }
 
     function updateOrdersMap(Order memory order, uint256 orderId)
