@@ -13,12 +13,17 @@ token-converter/truffle-config.js
 4. Deploy bridge:
 cd sovryn-token-bridge/bridge/
 npm install
+
+// First time or if: "Error on oz deployment" during 7_deploy_bridge_v0.js deployment
+npm run migrate
+// First time or if: "Error on oz deployment" during 7_deploy_bridge_v0.js deployment
+
 truffle migrate --reset --network rsktestnet
 truffle migrate --reset --network kovan
 
 5. Only for testing, create ERC20 tokens (DAI, WBTC) on Kovan:
 cd sovryn-token-bridge/bridge/
-npx truffle exec --network kovan ./scripts/test/deploySovrynTestTokenspooh.js
+npx truffle exec --network kovan ./scripts/test/deploySovrynTestTokens.js
 
 6. setup the Bridge:
 cd sovryn-token-bridge/bridge/
