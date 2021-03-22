@@ -9,7 +9,7 @@ import "./zeppelin/upgradable/ownership/UpgradableOwnable.sol";
 
 import "./zeppelin/introspection/IERC1820Registry.sol";
 import "./zeppelin/token/ERC777/IERC777Recipient.sol";
-import "./zeppelin/token/ERC20/IERC20.sol";
+ import "./zeppelin/token/ERC20/IERC20.sol";
 import "./zeppelin/token/ERC20/SafeERC20.sol";
 import "./zeppelin/utils/Address.sol";
 import "./zeppelin/math/SafeMath.sol";
@@ -30,7 +30,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     IERC1820Registry constant private erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
     address private federation;
-    uint256 private feePercentage;
+    //uint256 private feePercentage;
+    uint256 private feeConst;
     string public symbolPrefix;
     uint256 public lastDay;
     uint256 public spentToday;
@@ -43,6 +44,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     ISideTokenFactory public sideTokenFactory;
     //Bridge_v1 variables
     bool public isUpgrading;
+    // feePercentageDivider is not used for the fast fix of percentage fee to constant fee
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
 
@@ -240,7 +242,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
         //Send the payment to the MultiSig of the Federation
-        uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+        //uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+        uint256 decimalE = 10 ** ISideToken(tokenToUse).decimals();
+        uint256 fee = feeConst.mul(decimalE);
         uint256 amountMinusFees = amount.sub(fee);
         if (isASideToken) {
             uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
@@ -317,14 +321,20 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
+    // Fix temporarly fee Percentage. To make a local fast fix.
+    // Not changing the abi and other sol files, so function will keep same name
     function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
-        require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
-        feePercentage = amount;
-        emit FeePercentageChanged(feePercentage);
+        //require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
+        //feePercentage = amount;
+        require(amount > 0 && amount < 300, " Bridge $ FeeConst should be > 0 and < 300$");
+        feeConst = amount;
+        emit FeePercentageChanged(feeConst);
     }
-
+    
+    // Fix temporarly fee Percentage. To make a local fast fix.
+    // Not changing the abi and other sol files, so function will keep same name
     function getFeePercentage() external view returns(uint) {
-        return feePercentage;
+        return feeConst;
     }
 
     function calcMaxWithdraw() external view returns (uint) {
