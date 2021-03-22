@@ -21,7 +21,7 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require("fs");
 
-const MNEMONIC = fs.readFileSync("./mnemonic.key").toString().trim();
+const MNEMONIC = fs.readFileSync("../../bridgeKey/mnemonic.key").toString().trim();
 if (!MNEMONIC || MNEMONIC.split(" ").length !== 12) {
   throw new Error("unable to retrieve mnemonic from .secret");
 }

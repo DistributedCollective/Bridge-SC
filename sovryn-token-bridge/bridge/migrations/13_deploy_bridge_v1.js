@@ -23,7 +23,7 @@ module.exports = function(deployer, networkName, accounts) {
         }
         let jsonName = networkName;
         const chainId = await web3.eth.net.getId();
-        if((chainId >= 30 && chainId <=33) || chainId == 5777) {
+        if((chainId >= 30 && chainId <=33) || chainId == 5777 || chainId == 56 || chainId == 97) {
             jsonName = `dev-${chainId}`;
         }
         const networkConfig = require(`../.openzeppelin/${jsonName}.json`);
