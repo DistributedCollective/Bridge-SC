@@ -32,14 +32,21 @@ cd sovryn-token-bridge/bridge/
 npx truffle exec ./scripts/allowToken.js --network kovan <DAI address of stage5>
 npx truffle exec ./scripts/allowToken.js --network kovan <WBTC address of stage5>
 
-+ Update percentage value: (example: 200 == 2%)
++ Update percentage value:
+// (example: 200 == 2%)
+//npx truffle exec ./scripts/setFeePercentage.js --network kovan 200
+//npx truffle exec ./scripts/setFeePercentage.js --network rsktestnet 200
+
+Change to constant $ fee > 0 ( example: 200 = 200$)
 npx truffle exec ./scripts/setFeePercentage.js --network kovan 200
-npx truffle exec ./scripts/setFeePercentage.js --network rsktestnet 200
 
 + Set min allowed. Should be in wei units.
-In this example: 
-1000000000000000 wei == 100000 satoshi == 0.001 BTC
-npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 1000000000000000
+//In this example: 
+//1000000000000000 wei == 100000 satoshi == 0.001 BTC
+//npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 1000000000000000
+
+Change to constant $ fee > 0 ( example: 200 = 200$)
+npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 200
 
 + Add default federator (account[0] that deploy the SC) private key: 
 sovryn-token-bridge/federator/config/federator.key

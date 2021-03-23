@@ -14,8 +14,8 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require('fs');
 
-let MNEMONIC = fs.existsSync('../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
-const INFURA_API_KEY = fs.existsSync('../../../bridgeKey/infura.key') ? fs.readFileSync('../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
+let MNEMONIC = fs.existsSync('../../../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
+const INFURA_API_KEY = fs.existsSync('../../../../../bridgeKey/infura.key') ? fs.readFileSync('../../../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
 
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>

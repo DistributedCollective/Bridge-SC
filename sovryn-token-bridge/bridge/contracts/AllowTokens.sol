@@ -30,7 +30,7 @@ contract AllowTokens is Ownable {
         transferOwnership(_manager);
         validateAllowedTokens = true;
         maxTokensAllowed = 10000 ether;
-        minTokensAllowed = 1 ether;
+        minTokensAllowed = 4 ether;
         dailyLimit = 100000 ether;
     }
 
@@ -89,6 +89,8 @@ contract AllowTokens is Ownable {
 
     function setMinTokensAllowed(uint256 minTokens) external onlyOwner {
         require(maxTokensAllowed >= minTokens, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
+        require(minTokens >= minTokensAllowed, "AllowTokens: Min Tokens should be equal or bigger than initial Min Tokens");
+
         minTokensAllowed = minTokens;
         emit MinTokensAllowedChanged(minTokensAllowed);
     }
