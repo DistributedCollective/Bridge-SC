@@ -17,6 +17,15 @@ npm install
 // First time or if: "Error on oz deployment" during 7_deploy_bridge_v0.js deployment
 npm run migrate
 // First time or if: "Error on oz deployment" during 7_deploy_bridge_v0.js deployment
+// Or
+new clone
+npm i
+truffle migrate --reset --network rsktestnet
+//
+// problems:
+rm build/contracts/*
+rm .openzeppelin/* Except project.json
+
 
 truffle migrate --reset --network rsktestnet
 truffle migrate --reset --network kovan
@@ -45,8 +54,8 @@ npx truffle exec ./scripts/setFeePercentage.js --network kovan 200
 //1000000000000000 wei == 100000 satoshi == 0.001 BTC
 //npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 1000000000000000
 
-Change to constant $ fee > 0 ( example: 200 = 200$)
-npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 200
+Change to constant $ fee > 0 ( example: 450 = 450$)
+npx truffle exec ./scripts/setMinTokenAmount.js --network kovan 450
 
 + Add default federator (account[0] that deploy the SC) private key: 
 sovryn-token-bridge/federator/config/federator.key
