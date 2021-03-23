@@ -89,7 +89,7 @@ contract AllowTokens is Ownable {
 
     function setMinTokensAllowed(uint256 minTokens) external onlyOwner {
         require(maxTokensAllowed >= minTokens, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
-        require(minTokens >= minTokensAllowed, "AllowTokens: Min Tokens should be equal or bigger than initial Min Tokens");
+        require(minTokens >= minTokensAllowed,  "AllowTokens: Min Tokens should be equal or bigger than initial Min Tokens");
 
         minTokensAllowed = minTokens;
         emit MinTokensAllowedChanged(minTokensAllowed);
