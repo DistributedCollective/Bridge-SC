@@ -11,8 +11,10 @@ module.exports = async callback => {
             callback();
             return;
         }
-        const minimumTokenAmount = Number.parseInt(minTokenAmount);
-
+        //const minimumTokenAmount = Number.parseInt(minTokenAmount);
+        
+        const minimumTokenAmount = web3.utils.toWei(minTokenAmount);
+        
         const deployer = (await web3.eth.getAccounts())[0];
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
