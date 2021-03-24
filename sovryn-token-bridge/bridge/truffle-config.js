@@ -14,8 +14,8 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require('fs');
 
-let MNEMONIC = fs.existsSync('./mnemonic.key') ? fs.readFileSync('./mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
-const INFURA_API_KEY = fs.existsSync('./infura.key') ? fs.readFileSync('./infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
+let MNEMONIC = fs.existsSync('../../../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
+const INFURA_API_KEY = fs.existsSync('../../../../../bridgeKey/infura.key') ? fs.readFileSync('../../../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
 
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
@@ -46,7 +46,8 @@ module.exports = {
     },
     rsktestnet: {
       provider: () =>
-        new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
+       //new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
+       new HDWalletProvider(MNEMONIC, "wss://testnet.sovryn.app/ws"),
       network_id: 31,
       gas: 6300000,
       gasPrice: 70000000, // 0.07 gwei
@@ -88,6 +89,14 @@ module.exports = {
       gas: 6700000,
       gasPrice: 250000000000,
       skipDryRun: true
+    },
+    //Binance
+    btestnet: {
+      provider: () => new HDWalletProvider(MNEMONIC, "https://data-seed-prebsc-1-s1.binance.org:8545/"),
+      network_id: 97,
+       confirmations: 10,
+       timeoutBlocks: 200,
+       skipDryRun: true
     },
   },
   plugins: [
