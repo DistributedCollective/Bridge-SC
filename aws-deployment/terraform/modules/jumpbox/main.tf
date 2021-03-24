@@ -73,6 +73,8 @@ resource "aws_instance" "fed-jumpbox" {
 
   subnet_id = random_shuffle.subnets.result[0]
 
+  associate_public_ip_address = true
+
   vpc_security_group_ids = [aws_security_group.fed-jumpbox-sec.id]
 
   # Optional: comment out if not required
