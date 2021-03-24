@@ -4,11 +4,9 @@ module.exports = async callback => {
     try {
         console.log('Deploying tokens ...')
         const tokens = [
-            ['Dai Stablecoin', 'DAI', 18, '10000000000000000'],
-            ['Wrapped Ether', 'WETH', 18, '10000000000000000'],
-            ['Wrapped BTC', 'WBTC', 8, '10000000000000000'],
-            ['RenBTC', 'renBTC', 8, '10000000000000000'],
-            ['Tether USD', 'USDT', 6, '10000000000000000'],
+            ['Tether USD', 'USDT', 6, '1000000'],
+            ['USDC Token', 'USDC', 6, '1000000'],
+            ['DAI Token', 'DAI', 18, '1000000'],
         ];
 
         const deployer = (await web3.eth.getAccounts())[0];

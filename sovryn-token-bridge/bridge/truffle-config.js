@@ -62,7 +62,7 @@ module.exports = {
       skipDryRun: true
     },
      //Ethereum
-     ropsten: {
+    ropsten: {
       provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
       network_id: 3,
       gas: 4700000,
