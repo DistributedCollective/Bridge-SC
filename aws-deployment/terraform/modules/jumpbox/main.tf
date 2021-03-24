@@ -75,7 +75,7 @@ resource "aws_instance" "fed-jumpbox" {
 
   associate_public_ip_address = true
 
-  vpc_security_group_ids = [aws_security_group.fed-jumpbox-sec.id]
+  vpc_security_group_ids = [aws_security_group.jumpfed.id]
 
   # Optional: comment out if not required
   # iam_instance_profile = aws_iam_instance_profile.main.name
@@ -125,17 +125,8 @@ resource "aws_security_group_rule" "ingress" {
   from_port                = "22" # NFS
   to_port                  = "22"
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.fed-jumpbox.id
-  security_group_id        = join("", aws_security_group.fed-jumpbox-sec.*.id)
-}
-
-resource "aws_security_group_rule" "egress" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = join("", aws_security_group.fed-jumpbox-sec.*.id)
+  source_security_group_id = aws_security_group.jumpfed.id
+  security_group_id        = join("", aws_security_group.jumpfed.*.id)
 }
 
 ### Outputs

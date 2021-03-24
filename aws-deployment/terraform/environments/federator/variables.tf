@@ -9,7 +9,7 @@ variable "aws_account" {
   default = "500674654096"
 }
 variable "ubuntu_ami" {
-  default = "ami-013f17f36f8b1fefb"
+  default = "ami-08962a4068733a2b6"
 }
 
 variable "ssh_admin_key"{

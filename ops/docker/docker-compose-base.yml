@@ -1,12 +1,12 @@
 version: "3"
 services:
   federation:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/fed-tokenbridge:9d8ee505
+    image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/fed-tokenbridge:1.0
     volumes:
       - /configs/config:/app/federator/config
       - /configs/db:/app/federator/db
   frontend:
-    image: docker.atixlabs.com/sovryn-token-bridge-converter/federation-ui:3943729b
+    image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/federation-ui:1.0
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
@@ -23,7 +23,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=web-secure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--certificatesResolvers.le.acme.email=info@atixlabs.com"
+      - "--certificatesResolvers.le.acme.email=mushon@codely.sh"
       - "--certificatesResolvers.le.acme.storage=/certs/acme.json"
       - "--certificatesresolvers.le.acme.tlschallenge=true"
     ports:
@@ -34,7 +34,7 @@ services:
       # Uncomment if you want to use a file instead of labels
       # - ./trafeik-${ENVIRONMENT}.toml:/etc/traefik/traefik.toml
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "/home/app/certs/:/certs"
+      - "./certs:/certs"
     depends_on:
       - frontend
   monitoring:
@@ -46,4 +46,3 @@ services:
       - "/var/lib/docker/:/var/lib/docker:ro"
     ports:
       - "127.0.0.1:9000:8080"
-

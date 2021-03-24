@@ -9,7 +9,7 @@ module "federator" {
   subnets = [module.worker-subnets.ids[0], module.worker-subnets.ids[1], module.worker-subnets.ids[2]]
   eip     = true
 
-  instance_ami = var.ubuntu_ami
+  instance_ami = var.federator_ami
 
   ssh_key             = var.ssh_admin_key
   instance_type       = var.federator_instance_type
