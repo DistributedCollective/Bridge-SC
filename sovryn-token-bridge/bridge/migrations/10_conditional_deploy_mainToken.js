@@ -2,7 +2,9 @@
 const MainToken = artifacts.require('MainToken');
 
 function shouldDeployToken(network) {
-    return !network.toLowerCase().includes('mainnet');
+    return !network.toLowerCase().includes('mainnet') &&
+    !network.toLowerCase().includes('kovan') &&
+    !network.toLowerCase().includes('testnet');
 }
 
 module.exports = function(deployer, networkName, accounts) {

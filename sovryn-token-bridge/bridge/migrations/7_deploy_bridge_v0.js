@@ -24,6 +24,9 @@ async function ozDeploy(options, name, alias, initArgs) {
 module.exports = function(deployer, networkName, accounts) {
     let symbol = 'e';
 
+    if(networkName == 'btestnet' || networkName == 'bmainnet')
+        symbol = 'b';
+
     if(networkName == 'rskregtest' || networkName == 'rsktestnet' || networkName == 'rskmainnet')
         symbol = 'r';
 
