@@ -37,7 +37,7 @@ module "jumpbox" {
   instance_ami = var.ubuntu_ami
 
   ssh_key             = var.ssh_admin_key
-  instance_type       = var.federator_instance_type
+  instance_type       = var.jump_instance_type
   instance_block_size = 50
   server_count        = 1
   tags                = {
