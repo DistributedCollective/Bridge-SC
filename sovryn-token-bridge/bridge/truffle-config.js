@@ -14,8 +14,11 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require('fs');
 
-let MNEMONIC = fs.existsSync('../../../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
-const INFURA_API_KEY = fs.existsSync('../../../../../bridgeKey/infura.key') ? fs.readFileSync('../../../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
+let MNEMONIC = fs.existsSync('../../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
+const INFURA_API_KEY = fs.existsSync('../../../../bridgeKey/infura.key') ? fs.readFileSync('../../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
+const secrets = JSON.parse(
+  fs.readFileSync("../../../../bridgeKeyMain/.secrets").toString().trim()
+);
 
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
@@ -55,7 +58,8 @@ module.exports = {
     },
     rskmainnet: {
       provider: () =>
-        new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
+      //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
+      new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
       network_id: 30,
       gas: 6300000,
       gasPrice: 65000000, // 0.065 gwei
