@@ -17,7 +17,7 @@ variable "ssh_admin_key"{
   
 }
 variable "federator_ami" {
-  default = "ami-07e08246298307d92"
+  default = "ami-0cd9f9b62a1185815"
 }
 
 variable "federator_instance_type" {
