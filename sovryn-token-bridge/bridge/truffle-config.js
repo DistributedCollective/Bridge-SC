@@ -88,10 +88,11 @@ module.exports = {
       skipDryRun: true
     },
     ethmainnet: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://mainnet.infura.io/v3/" + INFURA_API_KEY),
+      //provider: () => new HDWalletProvider(MNEMONIC, "https://mainnet.infura.io/v3/" + INFURA_API_KEY),
+      provider: () => new HDWalletProvider(secrets.seed, "https://mainnet.infura.io/v3/" + secrets.projectId),
       network_id: 1,
       gas: 6700000,
-      gasPrice: 250000000000,
+      gasPrice: 140000000000,  //140 GWei
       skipDryRun: true
     },
     //Binance
