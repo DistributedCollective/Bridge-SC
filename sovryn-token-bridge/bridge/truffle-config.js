@@ -67,8 +67,11 @@ module.exports = {
     },
      //Ethereum
     ropsten: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
+      //provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
+      provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
       network_id: 3,
+      networkCheckTimeout: 1e9,
+      timeoutBlocks: 500000,
       gas: 4700000,
       gasPrice: 10000000000,
       skipDryRun: true

@@ -271,7 +271,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
-        string memory newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
+        //string memory newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
+        string memory newSymbol = string(abi.encodePacked(symbol, symbolPrefix));
         address sideTokenAddress = sideTokenFactory.createSideToken(newSymbol, newSymbol, granularity);
         sideToken = ISideToken(sideTokenAddress);
         mappedTokens[token] = sideToken;

@@ -52,15 +52,15 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"Success\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{\"onTokenTransfer(address,uint256,bytes)\":{\"notice\":\"ERC-677's only method implementation See https://github.com/ethereum/EIPs/issues/677 for details\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":\"mockERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":{\"keccak256\":\"0xc61878df5b9acab335a044033ec508bcc4217d519ca7eb3d9f1d790d9e78b8fc\",\"urls\":[\"bzz-raw://b964def7d555be9c0dcc7c8a1d276f70bf96d4a9e2e17162b9a2d1501532848b\",\"dweb:/ipfs/QmcUFsXPMs9Yt3ztg9wHZskbpezuRVtTGs17uKzbmi5Y5p\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b50610227806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a72315820c056be556868de9f9cde4c1811585c7b2b0f6f49dc2afeae58ba75b952d904c164736f6c63430005110032",
-  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a72315820c056be556868de9f9cde4c1811585c7b2b0f6f49dc2afeae58ba75b952d904c164736f6c63430005110032",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"Success\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{\"onTokenTransfer(address,uint256,bytes)\":{\"notice\":\"ERC-677's only method implementation See https://github.com/ethereum/EIPs/issues/677 for details\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":\"mockERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":{\"keccak256\":\"0xc61878df5b9acab335a044033ec508bcc4217d519ca7eb3d9f1d790d9e78b8fc\",\"urls\":[\"bzz-raw://b964def7d555be9c0dcc7c8a1d276f70bf96d4a9e2e17162b9a2d1501532848b\",\"dweb:/ipfs/QmcUFsXPMs9Yt3ztg9wHZskbpezuRVtTGs17uKzbmi5Y5p\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610227806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a7231582075c158015289aae2764dc9b209e8025cfde7fb1ac22ae77da019a24a251467b964736f6c63430005110032",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a7231582075c158015289aae2764dc9b209e8025cfde7fb1ac22ae77da019a24a251467b964736f6c63430005110032",
   "sourceMap": "155:379:24:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:24;;;;;;;",
   "deployedSourceMap": "155:379:24:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:24;;;;;;;;;;;;;;;;;;;397:135;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;397:135:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;21:11:-1;8;5:28;2:2;;;46:1;43;36:12;2:2;397:135:24;;35:9:-1;28:4;12:14;8:25;5:40;2:2;;;58:1;55;48:12;2:2;397:135:24;;;;;;100:9:-1;95:1;81:12;77:20;67:8;63:35;60:50;39:11;25:12;22:29;11:107;8:2;;;131:1;128;121:12;8:2;397:135:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;30:3:-1;22:6;14;1:33;99:1;93:3;85:6;81:16;74:27;137:4;133:9;126:4;121:3;117:14;113:30;106:37;;169:3;161:6;157:16;147:26;;397:135:24;;;;;;;;;;;;;;;:::i;:::-;;;494:31;502:7;511:6;519:5;494:31;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;23:1:-1;8:100;33:3;30:1;27:10;8:100;;;99:1;94:3;90:11;84:18;80:1;75:3;71:11;64:39;52:2;49:1;45:10;40:15;;8:100;;;12:14;494:31:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;397:135;;;:::o",
   "source": "pragma solidity ^0.5.0;\n\nimport \"../zeppelin/token/ERC20/ERC20Detailed.sol\";\nimport \"../zeppelin/token/ERC20/ERC20.sol\";\nimport \"../IERC677Receiver.sol\";\n\ncontract mockERC677Receiver is IERC677Receiver {\n    event Success(address _sender, uint _value, bytes _data);\n    /**\n     * ERC-677's only method implementation\n     * See https://github.com/ethereum/EIPs/issues/677 for details\n     */\n    function onTokenTransfer(address _sender, uint _value, bytes memory _data) public {\n        emit Success(_sender, _value, _data);\n    }\n}",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
     "exportedSymbols": {
       "mockERC677Receiver": [
         8229
@@ -81,7 +81,7 @@
         "src": "0:23:24"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
         "id": 8200,
         "nodeType": "ImportDirective",
@@ -92,7 +92,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
         "id": 8201,
         "nodeType": "ImportDirective",
@@ -103,7 +103,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
         "file": "../IERC677Receiver.sol",
         "id": 8202,
         "nodeType": "ImportDirective",
@@ -454,7 +454,7 @@
     "src": "0:534:24"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
     "exportedSymbols": {
       "mockERC677Receiver": [
         8229
@@ -475,7 +475,7 @@
         "src": "0:23:24"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
         "id": 8200,
         "nodeType": "ImportDirective",
@@ -486,7 +486,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
         "id": 8201,
         "nodeType": "ImportDirective",
@@ -497,7 +497,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ETH-Ropsten-test/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
         "file": "../IERC677Receiver.sol",
         "id": 8202,
         "nodeType": "ImportDirective",
@@ -853,7 +853,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-03-25T18:25:16.726Z",
+  "updatedAt": "2021-04-07T12:26:09.946Z",
   "devdoc": {
     "methods": {}
   },
