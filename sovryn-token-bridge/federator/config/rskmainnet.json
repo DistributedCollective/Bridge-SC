@@ -1,8 +1,8 @@
 {
-    "bridge": "0x3abc4fc0059765fab5b9d2fbfc25e7e962c3720a",
-    "federation": "0x3d898513795325a36b47bbc84c831e5bec424a77",
-    "multiSig": "0x7d4a85c8d823bb027eb61de5cf80c9115fb77532",
-    "allowTokens": "0x514ac3fcc6dab48c2817214dd0f3a08116b27c3c",
+    "bridge": "0x1ccad820b6d031b41c54f1f3da11c0d48b399581",
+    "federation": "0x99896b7e917ff9c130bb86cde0d778be37e3464c",
+    "multiSig": "0xb64322e10b5ae1be121b8bb0dead560c53d9dbc3",
+    "allowTokens": "0x3e58bc4dff75ac8a9d53acdfef752debee3700d1",
     "host": "",
-    "fromBlock": 3213781
+    "fromBlock": 3258725
 }
