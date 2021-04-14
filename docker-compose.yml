@@ -3,7 +3,7 @@ services:
   federation:
     image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/fed-tokenbridge:1.0
     volumes:
-      - /home/ubuntu/federator-env/${FED_ENV}/:/app/federator/config
+      - /home/ubuntu/federator-env/${FED_ENV}/config:/app/federator/config
       - /home/ubuntu/federator-env/${FED_ENV}/db:/app/federator/db
   frontend:
     image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/federation-ui:1.0
@@ -46,3 +46,5 @@ services:
       - "/var/lib/docker/:/var/lib/docker:ro"
     ports:
       - "127.0.0.1:9000:8080"
+
+
