@@ -1,2 +1,2 @@
-FED_ENV=$1
+export FED_ENV=$1
 docker-compose up
