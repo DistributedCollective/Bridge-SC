@@ -1,2 +1,1 @@
-FED_ENV=$1
-docker-compose up
+docker rm -f `docker ps -qa`
