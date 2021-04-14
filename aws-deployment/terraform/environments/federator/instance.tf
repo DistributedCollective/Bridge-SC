@@ -14,7 +14,7 @@ module "federator" {
   ssh_key             = var.ssh_admin_key
   instance_type       = var.federator_instance_type
   instance_block_size = 50
-  server_count        = 1
+  server_count        = 3
   tags                = {
     "Name" = "${var.basename}-instance"
   }
@@ -39,7 +39,7 @@ module "jumpbox" {
   ssh_key             = var.ssh_admin_key
   instance_type       = var.jump_instance_type
   instance_block_size = 50
-  server_count        = 2
+  server_count        = 1
   tags                = {
     "Name" = "${var.basename}-instance"
   }

@@ -31,7 +31,10 @@ module "worker-subnets" {
   prefix = var.vpc_cidr
   base   = 40
 
-  route_table = module.vpc.rt_default
+  route_table = module.vpc.rt_private
+   tags =  {
+    Tier = "Private"
+  }
 }
 
 ### Security Group for ec2 VPC endpoint
