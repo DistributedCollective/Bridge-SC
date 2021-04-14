@@ -15,7 +15,7 @@ FED_KEY=`aws secretsmanager get-secret-value --secret-id $FED_KEY_NAME --region 
 cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
-echo "starting federator:"
+echo "starting federator please wait..."
 nohup docker-compose up > federator.log 2>$1 &
 sleep 30
 echo "federator logs: /home/ubuntu/Bridge-SC/federator.log"
