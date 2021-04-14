@@ -1,7 +1,7 @@
 const fs = require('fs');
 module.exports = {
-    mainchain: require('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
-    sidechain: require('./mainnet.json'), //the json containing the smart contract addresses in eth
+    mainchain: require('./rsktestnet.json'), //the json containing the smart contract addresses in rsk
+    sidechain: require('./btestnet.json'), //the json containing the smart contract addresses in eth
     runEvery: 2, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
@@ -186,7 +186,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "DAI": [
+            "DAIes": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -200,7 +200,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDC": [
+            "USDCes": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -214,7 +214,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-	        "USDT": [
+	        "USDTes": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -274,7 +274,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "DAI": [
+            "DAIbs": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -288,7 +288,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDC": [
+            "USDCbs": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -302,7 +302,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-	        "USDT": [
+	        "USDTbs": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -390,7 +390,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "renBTC": [
+            "USDC": [
                 {
                     "amount": 0,
                     "confirmations": 10
