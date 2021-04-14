@@ -1,8 +1,0 @@
-{
-    "bridge": "0x97e57588c479324c8c645501e707671100badc72",
-    "federation": "0xf1e4d264554b8476ecff8525f24f05acb6941b50",
-    "multiSig": "0x282b9e7d2544dc16862ff13116a4917038b935c3",
-    "allowTokens": "0xa25b42506b4ca6113fbbe94389e2f85722ccc9db",
-    "host": "https://data-seed-prebsc-1-s1.binance.org:8545/",
-    "fromBlock": 7799038
-}
