@@ -10,6 +10,6 @@ basename        = "federator-PROD"
 
 # ASG: Windows workers
 
-federator_ami = "ami-07e08246298307d92"
+federator_ami = "ami-04d97b401ce70421a"
 
 worker_instance_type = "t3.medium"
