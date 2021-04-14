@@ -1,1 +1,1 @@
-docker-compose down
+docker rm -f `docker ps -qa`
