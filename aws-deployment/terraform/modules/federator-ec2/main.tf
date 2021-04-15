@@ -126,7 +126,7 @@ resource "aws_instance" "federator" {
   }
 
   tags = merge(var.tags, {
-    Name = "${var.basename}-federator-${count.index + 1}"
+    Name = "federator/testnet/network_name/${count.index + 1}"
   })
 
   volume_tags = merge(var.tags, {
