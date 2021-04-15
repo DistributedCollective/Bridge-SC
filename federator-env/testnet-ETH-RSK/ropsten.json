@@ -1,0 +1,8 @@
+{
+    "bridge": "0x2b456e230225c4670fbf10b9da506c019a24cac7",
+    "federation": "0x48a8f0efc6406674d4b3067ea49bda41f7ac2621",
+    "multiSig": "0x75ea52ac8219a8f16a2dc6778874943ef2c24c45",
+    "allowTokens": "0x53eb18dff8890813ceceab96b436e61580868b85",
+    "host": "wss://ropsten.infura.io/ws/v3/4fe5ff5edc5c49478fb19383cff276dd",
+    "fromBlock": 9998790
+}
