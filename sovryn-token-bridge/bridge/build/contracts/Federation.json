@@ -19540,6 +19540,170 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x9775531310b2880b61484ed85cbb0b491c8fde3a07f289c63b92551782794497": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "bridge",
+              "type": "address"
+            }
+          ],
+          "name": "BridgeChanged",
+          "type": "event"
+        },
+        "0xa74c8847d513feba22a0f0cb38d53081abf97562cdb293926ba243689e7c41ca": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "transactionId",
+              "type": "bytes32"
+            }
+          ],
+          "name": "Executed",
+          "type": "event"
+        },
+        "0x72114e270de66b9d2710ecf140403e5e99b1574767d6a8197bdc8d807a46e7c7": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "member",
+              "type": "address"
+            }
+          ],
+          "name": "MemberAddition",
+          "type": "event"
+        },
+        "0x270bfc616dd36d5cb6b35aac93e6ef22b089c34e6f6ad6f0892797424840897b": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "member",
+              "type": "address"
+            }
+          ],
+          "name": "MemberRemoval",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0xa3f1ee9126a074d9326c682f561767f710e927faa811f7a99829d49dc421797a": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "required",
+              "type": "uint256"
+            }
+          ],
+          "name": "RequirementChange",
+          "type": "event"
+        },
+        "0x4237ab39e8496b350fbe760f4402abe992fc5d7e175824b087182422d347cf8a": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "transactionId",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "originalTokenAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "blockHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "transactionHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint32",
+              "name": "logIndex",
+              "type": "uint32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "decimals",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "granularity",
+              "type": "uint256"
+            }
+          ],
+          "name": "Voted",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x2493B92b3b958C8d1e93899cAe00bFC4854cBd18",
+      "transactionHash": "0xc1340cec035268ba47b6e9f3ffee42a83926eb4804572a13da6fb885dbd22065"
+    },
     "5777": {
       "events": {
         "0x9775531310b2880b61484ed85cbb0b491c8fde3a07f289c63b92551782794497": {
@@ -19705,8 +19869,8 @@
       "transactionHash": "0x5b459b94588f9e8c767575e9a7c0f2d89b5ab7a51b7c0df8682115c35a4cb0c4"
     }
   },
-  "schemaVersion": "3.2.4",
-  "updatedAt": "2021-03-25T18:25:33.727Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-04-10T09:41:15.561Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {

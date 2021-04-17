@@ -1295,6 +1295,51 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            }
+          ],
+          "name": "PrimaryTransferred",
+          "type": "event"
+        },
+        "0xf57d2ded8330a4affd2fa52378069be534fe22288536537d1a1cfc0615184507": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sideToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "granularity",
+              "type": "uint256"
+            }
+          ],
+          "name": "SideTokenCreated",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x67Bb746ECc46EB3cF80B69191C18d0d098477880",
+      "transactionHash": "0xd0e90bab3a785629692813e0eeda3695ed8fe0776f4623fe1c30dc115e954413"
+    },
     "5777": {
       "events": {
         "0x4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9": {
@@ -1341,8 +1386,8 @@
       "transactionHash": "0xca1ffe10648568a73a42db4ac85b4018f56b59fed3142dfd25d56f90b94330a3"
     }
   },
-  "schemaVersion": "3.2.4",
-  "updatedAt": "2021-03-25T18:25:31.476Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-04-10T09:34:39.262Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {

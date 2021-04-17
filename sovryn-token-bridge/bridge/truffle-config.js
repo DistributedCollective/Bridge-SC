@@ -87,12 +87,15 @@ module.exports = {
       gasPrice: 10000000000,
       skipDryRun: true
     },
-    ethmainnet: {
+    mainnet: {
       //provider: () => new HDWalletProvider(MNEMONIC, "https://mainnet.infura.io/v3/" + INFURA_API_KEY),
-      provider: () => new HDWalletProvider(secrets.seed, "https://mainnet.infura.io/v3/" + secrets.projectId),
+      //provider: () => new HDWalletProvider(secrets.seed, "https://mainnet.infura.io/v3/" + secrets.projectId),
+      provider: () => new HDWalletProvider(secrets.seed, "wss://mainnet.infura.io/ws/v3/" + secrets.projectId),
       network_id: 1,
+      networkCheckTimeout: 1e9,
+      timeoutBlocks: 500000,
       gas: 6700000,
-      gasPrice: 140000000000,  //140 GWei
+      gasPrice: 101000000000,  //101 GWei
       skipDryRun: true
     },
     //Binance
