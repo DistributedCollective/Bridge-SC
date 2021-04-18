@@ -33,15 +33,15 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"tokenFallback\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol\":\"ERC677TransferReceiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol\":{\"keccak256\":\"0xe4ff7dd6917979a02ac7832e051dad43ae3b6fd0ce354efba30af2a56f4ac398\",\"urls\":[\"bzz-raw://f2343aaf6ff6d0ed3a998d0a46994354c3a1d5c25eeba1af3f13262eac8de005\",\"dweb:/ipfs/QmNwgxJ8viaRun57P3adQ2QrHSrbHGuE9mEpCsVFLjiTh1\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"tokenFallback\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol\":\"ERC677TransferReceiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol\":{\"keccak256\":\"0xe4ff7dd6917979a02ac7832e051dad43ae3b6fd0ce354efba30af2a56f4ac398\",\"urls\":[\"bzz-raw://f2343aaf6ff6d0ed3a998d0a46994354c3a1d5c25eeba1af3f13262eac8de005\",\"dweb:/ipfs/QmNwgxJ8viaRun57P3adQ2QrHSrbHGuE9mEpCsVFLjiTh1\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.5.0;\n\nimport \"../zeppelin/token/ERC20/ERC20Detailed.sol\";\nimport \"../zeppelin/token/ERC20/ERC20.sol\";\n\ncontract MainToken is ERC20Detailed, ERC20 {\n    constructor(string memory name, string memory symbol, uint8 decimals, uint totalSupply)\n        ERC20Detailed(name, symbol, decimals) public\n    {\n        _mint(msg.sender, totalSupply);\n    }\n\n    /**\n     * ERC-677's only method implementation\n     * See https://github.com/ethereum/EIPs/issues/677 for details\n     */\n    function transferAndCall(address _to, uint _value, bytes memory _data) public returns (bool) {\n        bool result = transfer(_to, _value);\n        if (!result) return false;\n\n        ERC677TransferReceiver receiver = ERC677TransferReceiver(_to);\n        receiver.tokenFallback(msg.sender, _value, _data);\n\n        // IMPORTANT: the ERC-677 specification does not say\n        // anything about the use of the receiver contract's\n        // tokenFallback method return value. Given\n        // its return type matches with this method's return\n        // type, returning it could be a possibility.\n        // We here take the more conservative approach and\n        // ignore the return value, returning true\n        // to signal a succesful transfer despite tokenFallback's\n        // return value -- fact being tokens are transferred\n        // in any case.\n        return true;\n    }\n}\n\ninterface ERC677TransferReceiver {\n    function tokenFallback(address from, uint256 amount, bytes calldata data) external returns (bool);\n}",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
     "exportedSymbols": {
       "ERC677TransferReceiver": [
         8160
@@ -65,7 +65,7 @@
         "src": "0:23:22"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
         "id": 8078,
         "nodeType": "ImportDirective",
@@ -76,7 +76,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
         "id": 8079,
         "nodeType": "ImportDirective",
@@ -1121,7 +1121,7 @@
     "src": "0:1522:22"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/MainToken.sol",
     "exportedSymbols": {
       "ERC677TransferReceiver": [
         8160
@@ -1145,7 +1145,7 @@
         "src": "0:23:22"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
         "id": 8078,
         "nodeType": "ImportDirective",
@@ -1156,7 +1156,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-BSC-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
         "id": 8079,
         "nodeType": "ImportDirective",
@@ -2206,7 +2206,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-18T08:37:15.210Z",
+  "updatedAt": "2021-04-18T09:24:19.842Z",
   "devdoc": {
     "methods": {}
   },
