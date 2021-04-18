@@ -1,15 +1,15 @@
 {
   "contractName": "SafeERC20",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"details\":\"Wrappers around ERC20 operations that throw on failure (when the token contract returns false). Tokens that return no value (and instead revert or throw on failure) are also supported, non-reverting calls are assumed to be successful. To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract, which allows you to call the safe operations as `token.safeTransfer(...)`, etc.\",\"methods\":{},\"title\":\"SafeERC20\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol\":\"SafeERC20\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol\":{\"keccak256\":\"0xaa195c4eec08709d3d8e6ae0cdc61a036a71944623cacd401ec810723cd082ab\",\"urls\":[\"bzz-raw://b10882042c25b45236a6373661a7630b05f3ca6436cffb60f94e5eecc9cb2863\",\"dweb:/ipfs/QmNa668TV5YEXbKkTWZ2fHkWz7dYg6cRCZ5UEBwTBZ5Cf2\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol\":{\"keccak256\":\"0x5194de115abdbf9cec4587192c26bb603be5bce319ee6a329cd021a13a896aa1\",\"urls\":[\"bzz-raw://a34744e5c29a171eb47e852f7ef8167917ba68c26fceb4d31e361873ce8676fb\",\"dweb:/ipfs/QmZtMmMwrFAhVFBnUkX3fb6n8SK7g6r2m8fvXcvzLKimmS\"]}},\"version\":1}",
-  "bytecode": "0x60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820e057ca2a50b21bf249720c181393c6494de2607bc024011f8dad800538929f5064736f6c63430005110032",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820e057ca2a50b21bf249720c181393c6494de2607bc024011f8dad800538929f5064736f6c63430005110032",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"details\":\"Wrappers around ERC20 operations that throw on failure (when the token contract returns false). Tokens that return no value (and instead revert or throw on failure) are also supported, non-reverting calls are assumed to be successful. To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract, which allows you to call the safe operations as `token.safeTransfer(...)`, etc.\",\"methods\":{},\"title\":\"SafeERC20\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol\":\"SafeERC20\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol\":{\"keccak256\":\"0xaa195c4eec08709d3d8e6ae0cdc61a036a71944623cacd401ec810723cd082ab\",\"urls\":[\"bzz-raw://b10882042c25b45236a6373661a7630b05f3ca6436cffb60f94e5eecc9cb2863\",\"dweb:/ipfs/QmNa668TV5YEXbKkTWZ2fHkWz7dYg6cRCZ5UEBwTBZ5Cf2\"]},\"/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol\":{\"keccak256\":\"0x5194de115abdbf9cec4587192c26bb603be5bce319ee6a329cd021a13a896aa1\",\"urls\":[\"bzz-raw://a34744e5c29a171eb47e852f7ef8167917ba68c26fceb4d31e361873ce8676fb\",\"dweb:/ipfs/QmZtMmMwrFAhVFBnUkX3fb6n8SK7g6r2m8fvXcvzLKimmS\"]}},\"version\":1}",
+  "bytecode": "0x60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a7231582018f93986cb6c7f4e71f2932d6b2fd029fe7f22bfc84f47790403d18f7e201c3364736f6c63430005110032",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a7231582018f93986cb6c7f4e71f2932d6b2fd029fe7f22bfc84f47790403d18f7e201c3364736f6c63430005110032",
   "sourceMap": "574:3184:41:-;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
   "deployedSourceMap": "574:3184:41:-;;;;;;;;",
   "source": "pragma solidity ^0.5.0;\n\nimport \"./IERC20.sol\";\nimport \"../../math/SafeMath.sol\";\nimport \"../../utils/Address.sol\";\n\n/**\n * @title SafeERC20\n * @dev Wrappers around ERC20 operations that throw on failure (when the token\n * contract returns false). Tokens that return no value (and instead revert or\n * throw on failure) are also supported, non-reverting calls are assumed to be\n * successful.\n * To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract,\n * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.\n */\nlibrary SafeERC20 {\n    using SafeMath for uint256;\n    using Address for address;\n\n    function safeTransfer(IERC20 token, address to, uint256 value) internal {\n        callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));\n    }\n\n    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {\n        callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));\n    }\n\n    function safeApprove(IERC20 token, address spender, uint256 value) internal {\n        // safeApprove should only be called when setting an initial allowance,\n        // or when resetting it to zero. To increase and decrease it, use\n        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'\n        // solhint-disable-next-line max-line-length\n        require((value == 0) || (token.allowance(address(this), spender) == 0),\n            \"SafeERC20: approve non-zero to non-zero allowance\"\n        );\n        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));\n    }\n\n    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {\n        uint256 newAllowance = token.allowance(address(this), spender).add(value);\n        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));\n    }\n\n    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {\n        uint256 newAllowance = token.allowance(address(this), spender).sub(value, \"SafeERC20: decreased allowance below zero\");\n        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));\n    }\n\n    /**\n     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement\n     * on the return value: the return value is optional (but if data is returned, it must not be false).\n     * @param token The token targeted by the call.\n     * @param data The call data (encoded using abi.encode or one of its variants).\n     */\n    function callOptionalReturn(IERC20 token, bytes memory data) private {\n        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since\n        // we're implementing it ourselves.\n\n        // A Solidity high level call has three parts:\n        //  1. The target address is checked to verify it contains contract code\n        //  2. The call itself is made, and success asserted\n        //  3. The return value is decoded, which in turn checks the size of the returned data.\n        // solhint-disable-next-line max-line-length\n        require(address(token).isContract(), \"SafeERC20: call to non-contract\");\n\n        // solhint-disable-next-line avoid-low-level-calls\n        (bool success, bytes memory returndata) = address(token).call(data);\n        require(success, \"SafeERC20: low-level call failed\");\n\n        if (returndata.length > 0) { // Return data is optional\n            // solhint-disable-next-line max-line-length\n            require(abi.decode(returndata, (bool)), \"SafeERC20: ERC20 operation did not succeed\");\n        }\n    }\n}\n",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
     "exportedSymbols": {
       "SafeERC20": [
         10039
@@ -30,7 +30,7 @@
         "src": "0:23:41"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol",
         "file": "./IERC20.sol",
         "id": 9822,
         "nodeType": "ImportDirective",
@@ -41,7 +41,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol",
         "file": "../../math/SafeMath.sol",
         "id": 9823,
         "nodeType": "ImportDirective",
@@ -52,7 +52,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol",
         "file": "../../utils/Address.sol",
         "id": 9824,
         "nodeType": "ImportDirective",
@@ -3195,7 +3195,7 @@
     "src": "0:3759:41"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/SafeERC20.sol",
     "exportedSymbols": {
       "SafeERC20": [
         10039
@@ -3216,7 +3216,7 @@
         "src": "0:23:41"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol",
         "file": "./IERC20.sol",
         "id": 9822,
         "nodeType": "ImportDirective",
@@ -3227,7 +3227,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol",
         "file": "../../math/SafeMath.sol",
         "id": 9823,
         "nodeType": "ImportDirective",
@@ -3238,7 +3238,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/BSC-RSK-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/utils/Address.sol",
         "file": "../../utils/Address.sol",
         "id": 9824,
         "nodeType": "ImportDirective",
@@ -6386,7 +6386,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-11T06:17:30.062Z",
+  "updatedAt": "2021-04-18T08:37:15.234Z",
   "devdoc": {
     "details": "Wrappers around ERC20 operations that throw on failure (when the token contract returns false). Tokens that return no value (and instead revert or throw on failure) are also supported, non-reverting calls are assumed to be successful. To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract, which allows you to call the safe operations as `token.safeTransfer(...)`, etc.",
     "methods": {},

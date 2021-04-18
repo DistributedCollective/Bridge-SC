@@ -28,7 +28,7 @@ module.exports = function(deployer, networkName, accounts) {
         symbol = 'b';
 
     if(networkName == 'rskregtest' || networkName == 'rsktestnet' || networkName == 'rskmainnet')
-        symbol = 'es';
+        symbol = 'bs';
 
     deployer.then(async () => {
         const multiSig = await MultiSigWallet.deployed();
