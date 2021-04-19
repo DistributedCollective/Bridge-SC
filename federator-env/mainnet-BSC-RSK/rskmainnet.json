@@ -3,6 +3,6 @@
     "federation": "0xa3a8f6fbbc5cc1b75c2bad1bdee6d6b6a7fcb36c",
     "multiSig": "0xffc9066a46b9932edd668372f87bdd8ba63f4e75",
     "allowTokens": "0xd4c2e9762628ddc07cd43c22ec455c9fbe468ba5",
-    "host": "",
+    "host": "https://mainnet.sovryn.app/rpc",
     "fromBlock": 3279235
 }
