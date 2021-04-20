@@ -14,7 +14,7 @@ module "federator" {
   ssh_key             = var.ssh_admin_key
   instance_type       = var.federator_instance_type
   instance_block_size = 50
-  server_count        = 3
+  server_count        = 6
   tags                = {
     "Name" = "${var.basename}-instance"
   }
