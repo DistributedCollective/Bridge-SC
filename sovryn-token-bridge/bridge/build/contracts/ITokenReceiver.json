@@ -116,15 +116,15 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"userData\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"operatorData\",\"type\":\"bytes\"}],\"name\":\"onTokenReceivedCall\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_orderAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_userData\",\"type\":\"bytes\"}],\"name\":\"onTokensMinted\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"userData\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"operatorData\",\"type\":\"bytes\"}],\"name\":\"tokensReceived\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{},\"title\":\"interface for contracts called from the bridge\"},\"userdoc\":{\"methods\":{\"onTokensMinted(uint256,address,bytes)\":{\"notice\":\"this function is used in the Converter to be called from the bridge contract\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol\":\"ITokenReceiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol\":{\"keccak256\":\"0xf38596ef637ca69cd0de3f9ce842f9a04906970d7f3caf1e8736434fc75fbce7\",\"urls\":[\"bzz-raw://58c3e6f53484518c7277582280b98ecedec74d07b9bc22f327cdb2ee7270fd2e\",\"dweb:/ipfs/QmfUdhqYcWSee49L33RwCZoeYWKuHnUjZDcpwx2F13Javh\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol\":{\"keccak256\":\"0x03c69b91f23efafb5d460b32520ac5066a084347733de3078cf2ba9b33397945\",\"urls\":[\"bzz-raw://2bed1580fb9b2ea946b2709cfccdc43aa2ed0089f61fb94201f385b297d027c2\",\"dweb:/ipfs/QmR2ogAcEAAiM5A4gHFTiQemYuZpVriei5Ud26j4YSQcfc\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol\":{\"keccak256\":\"0x6a5862ca0e69a6b4a9f0a93c7b08c163258e2dfc27c646524cfc3fa68f8b7355\",\"urls\":[\"bzz-raw://dfd7c54b525ca3b3356e491df6b1ebadfeb7774dc6a8c9a53d840b6fc47325fd\",\"dweb:/ipfs/QmTid6KF3qwEypccCX473Qb7y6FeuSZqt6FxUfXigiXuLL\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"userData\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"operatorData\",\"type\":\"bytes\"}],\"name\":\"onTokenReceivedCall\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_orderAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_userData\",\"type\":\"bytes\"}],\"name\":\"onTokensMinted\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"userData\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"operatorData\",\"type\":\"bytes\"}],\"name\":\"tokensReceived\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{},\"title\":\"interface for contracts called from the bridge\"},\"userdoc\":{\"methods\":{\"onTokensMinted(uint256,address,bytes)\":{\"notice\":\"this function is used in the Converter to be called from the bridge contract\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol\":\"ITokenReceiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol\":{\"keccak256\":\"0xf38596ef637ca69cd0de3f9ce842f9a04906970d7f3caf1e8736434fc75fbce7\",\"urls\":[\"bzz-raw://58c3e6f53484518c7277582280b98ecedec74d07b9bc22f327cdb2ee7270fd2e\",\"dweb:/ipfs/QmfUdhqYcWSee49L33RwCZoeYWKuHnUjZDcpwx2F13Javh\"]},\"/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol\":{\"keccak256\":\"0x03c69b91f23efafb5d460b32520ac5066a084347733de3078cf2ba9b33397945\",\"urls\":[\"bzz-raw://2bed1580fb9b2ea946b2709cfccdc43aa2ed0089f61fb94201f385b297d027c2\",\"dweb:/ipfs/QmR2ogAcEAAiM5A4gHFTiQemYuZpVriei5Ud26j4YSQcfc\"]},\"/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol\":{\"keccak256\":\"0x6a5862ca0e69a6b4a9f0a93c7b08c163258e2dfc27c646524cfc3fa68f8b7355\",\"urls\":[\"bzz-raw://dfd7c54b525ca3b3356e491df6b1ebadfeb7774dc6a8c9a53d840b6fc47325fd\",\"dweb:/ipfs/QmTid6KF3qwEypccCX473Qb7y6FeuSZqt6FxUfXigiXuLL\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.5.0;\n\nimport \"../zeppelin/token/ERC777/IERC777Recipient.sol\";\nimport \"../zeppelin/introspection/IERC1820Registry.sol\";\n\n\n/// @title interface for contracts called from the bridge\ncontract ITokenReceiver is IERC777Recipient {\n    IERC1820Registry constant private _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);\n\n    event onTokenReceivedCall(\n        address operator,\n        address from,\n        address to,\n        uint amount,\n        bytes userData,\n        bytes operatorData\n    );\n\n    constructor() public {\n        _erc1820.setInterfaceImplementer(address(this), keccak256(\"ERC777TokensRecipient\"), address(this));\n    }\n\n    /// @notice this function is used in the Converter to be called from the bridge contract\n    function onTokensMinted(\n        uint256 _orderAmount,\n        address _tokenAddress,\n        bytes calldata _userData\n    ) external;\n\n\n    function tokensReceived(\n        address operator,\n        address from,\n        address to,\n        uint amount,\n        bytes calldata userData,\n        bytes calldata operatorData\n    ) external {\n        emit onTokenReceivedCall(\n            operator,\n            from,\n            to,\n            amount,\n            userData,\n            operatorData\n        );\n    }\n}\n",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
     "exportedSymbols": {
       "ITokenReceiver": [
         8075
@@ -145,7 +145,7 @@
         "src": "0:23:21"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol",
         "file": "../zeppelin/token/ERC777/IERC777Recipient.sol",
         "id": 8000,
         "nodeType": "ImportDirective",
@@ -156,7 +156,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol",
         "file": "../zeppelin/introspection/IERC1820Registry.sol",
         "id": 8001,
         "nodeType": "ImportDirective",
@@ -1163,7 +1163,7 @@
     "src": "0:1291:21"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/ITokenReceiver.sol",
     "exportedSymbols": {
       "ITokenReceiver": [
         8075
@@ -1184,7 +1184,7 @@
         "src": "0:23:21"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC777/IERC777Recipient.sol",
         "file": "../zeppelin/token/ERC777/IERC777Recipient.sol",
         "id": 8000,
         "nodeType": "ImportDirective",
@@ -1195,7 +1195,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-BSC/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/RSK-BSC-Prefix/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/introspection/IERC1820Registry.sol",
         "file": "../zeppelin/introspection/IERC1820Registry.sol",
         "id": 8001,
         "nodeType": "ImportDirective",
@@ -2207,7 +2207,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-18T10:07:52.745Z",
+  "updatedAt": "2021-04-20T10:54:06.684Z",
   "devdoc": {
     "methods": {},
     "title": "interface for contracts called from the bridge"
