@@ -4,6 +4,7 @@ build
 .openzeppelin/dev-*.json
 .openzeppelin/kovan.json
 .openzeppelin/mainnet.json
+.openzeppelin/ropsten.json
 coverage/
 coverage.json
 .coverage_contracts
