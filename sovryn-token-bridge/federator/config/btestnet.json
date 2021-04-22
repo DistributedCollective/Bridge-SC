@@ -1,8 +1,8 @@
 {
-    "bridge": "0x748e82fed1a100464caa62dba1dff176ff2c568d",
-    "federation": "0x4bf9d1b28a5439746a57276f568ae5377a2b1c02",
-    "multiSig": "0x478274e2ec3e2d02a075e6151c0bf707ed080d86",
-    "allowTokens": "0x553b0bba9f004f1b323732f3e86b5b774e8dd96b",
-    "host": "",
-    "fromBlock": 8082140
+    "bridge": "0x4ff0e83e443467a1723fc2f0b74c91f31ceacb83",
+    "federation": "0x8e601c27f74f6d6512b4a0da6fea56c3db60e92a",
+    "multiSig": "0x314d9163dd122368b3c6329b081d2400a9f238d1",
+    "allowTokens": "0x2109a0ddd18f42c8c06ad96b02bb5a4e0b1502e6",
+    "host": "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    "fromBlock": 8195098
 }

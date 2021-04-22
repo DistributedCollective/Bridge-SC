@@ -45,7 +45,7 @@ module.exports = class Federator {
 
                 if (!fromBlock) return false;
 
-                await this._processBlocks(ctr, fromBlock, toBlock)
+                await this._processBlocks(ctr, fromBlock, toBlock.toString())
 
                 return true;
             } catch (err) {
