@@ -30,6 +30,7 @@ module.exports = class Federator {
     }
 
     async run() {
+        this.logger.info('Starting federator run');
         const maxAttempts = 20;
         for(let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
@@ -49,6 +50,7 @@ module.exports = class Federator {
 
                 await this._processBlocks(ctr, fromBlock, toBlock)
 
+                this.logger.info('Federator run finished');
                 return true;
             } catch (err) {
                 this.logger.error(new Error('Exception Running Federator'), err);
