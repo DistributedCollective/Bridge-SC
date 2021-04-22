@@ -35,6 +35,10 @@ methods.hasVoted = () => ({
     call: () => false
 });
 
+methods.voteTransactionAt = () => ({
+    encodeABI: () => '0x0',
+});
+
 class MultiSig extends Contract {
     constructor() {
         super();
