@@ -6,6 +6,10 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
+    telegramBot: {
+        token: fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim(),
+        groupId: 0, // ADD YOUR GROUP ID HERE
+    },
     confirmationTable: {
         "1": {
             "default": 5760,
