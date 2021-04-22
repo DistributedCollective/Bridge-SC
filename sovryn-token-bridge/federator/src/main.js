@@ -1,4 +1,5 @@
 const log4js = require('log4js');
+const web3 = require('web3');
 
 // Configurations
 const config = require('../config/config.js');
@@ -8,6 +9,7 @@ log4js.configure(logConfig);
 // Services
 const Scheduler = require('./services/Scheduler.js');
 const Federator = require('./lib/Federator.js');
+const {TelegramBot, NullBot} = require('./lib/chatBots.js');
 
 const logger = log4js.getLogger('Federators');
 logger.info('RSK Host', config.mainchain.host);
@@ -18,13 +20,36 @@ if(!config.mainchain || !config.sidechain) {
     process.exit();
 }
 
-const mainFederator = new Federator(config, log4js.getLogger('MAIN-FEDERATOR'));
-const sideFederator = new Federator({
-    ...config,
-    mainchain: config.sidechain,
-    sidechain: config.mainchain,
-    storagePath: `${config.storagePath}/side-fed`
-}, log4js.getLogger('SIDE-FEDERATOR'));
+let chatBot;
+if(config.telegramBot && config.telegramBot.token && config.telegramBot.groupId) {
+    chatBot = new TelegramBot(
+        config.telegramBot.token,
+        config.telegramBot.groupId,
+        log4js.getLogger('CHATBOT')
+    );
+} else {
+    chatBot = new NullBot(
+        log4js.getLogger('CHATBOT')
+    );
+}
+
+const mainFederator = new Federator(
+    config,
+    log4js.getLogger('MAIN-FEDERATOR'),
+    web3,
+    chatBot,
+);
+const sideFederator = new Federator(
+    {
+        ...config,
+        mainchain: config.sidechain,
+        sidechain: config.mainchain,
+        storagePath: `${config.storagePath}/side-fed`
+    },
+    log4js.getLogger('SIDE-FEDERATOR'),
+    web3,
+    chatBot,
+);
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes
 let scheduler = new Scheduler(pollingInterval, logger, { run: () => run() });
