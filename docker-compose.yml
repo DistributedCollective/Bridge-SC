@@ -3,40 +3,8 @@ services:
   federation:
     image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/fed-tokenbridge:1.0
     volumes:
-      - /home/ubuntu/Bridge-SC/federator-env/${FED_ENV}/:/app/federator/config
-      - /home/ubuntu/Bridge-SC/federator-env/${FED_ENV}/db:/app/federator/db
-  frontend:
-    image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/federation-ui:1.0
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${BRIDGE_UI_HOST}`)"
-      - "traefik.http.routers.frontend.entrypoints=web-secure"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certresolver=le"
-  proxy:
-    image: traefik:v2.2.0
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web-secure.address=:443"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=web-secure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--certificatesResolvers.le.acme.email=mushon@codely.sh"
-      - "--certificatesResolvers.le.acme.storage=/certs/acme.json"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "127.0.0.1:8080:8080"
-    volumes:
-      # Uncomment if you want to use a file instead of labels
-      # - ./trafeik-${ENVIRONMENT}.toml:/etc/traefik/traefik.toml
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./certs:/certs"
-    depends_on:
-      - frontend
+      - ./federator-env/${FED_ENV}/:/app/federator/config
+      - ./federator-env/${FED_ENV}/db:/app/federator/db
   monitoring:
     image: google/cadvisor:latest
     volumes:
@@ -45,6 +13,4 @@ services:
       - "/sys:/sys:ro"
       - "/var/lib/docker/:/var/lib/docker:ro"
     ports:
-      - "127.0.0.1:9000:8080"
-
-
+      - "8080:8080"
