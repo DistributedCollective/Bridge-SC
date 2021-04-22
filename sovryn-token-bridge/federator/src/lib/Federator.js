@@ -27,9 +27,8 @@ module.exports = class Federator {
     }
 
     async run() {
-        let retries = 3;
-        const sleepAfterRetrie = 3000;
-        while (retries > 0) {
+        const maxAttempts = 20;
+        for(let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
@@ -49,14 +48,14 @@ module.exports = class Federator {
 
                 return true;
             } catch (err) {
-                console.log(err)
                 this.logger.error(new Error('Exception Running Federator'), err);
-                retries--;
-                this.logger.debug(`Run ${3 - retries} retrie`);
-                if (retries > 0) {
-                    await utils.sleep(sleepAfterRetrie);
+                if(attempt === maxAttempts) {
+                    this.logger.error('All attempts exhausted and still no success. Proceeding on as normal.')
+                    // TODO: send error to telegram group
+                    return;
                 } else {
-                    process.exit();
+                    this.logger.debug(`Retrying. Attempt ${attempt}/${maxAttempts}.`);
+                    await utils.exponentialSleep(attempt, { logger: this.logger });
                 }
             }
         }
