@@ -5,10 +5,11 @@ const abiFederation = require('../../../abis/Federation.json');
 const TransactionSender = require('./TransactionSender');
 const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
 const CustomError = require('./CustomError');
+const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3) {
+    constructor(config, logger, Web3 = web3, chatBot = null) {
         this.config = config;
         this.logger = logger;
 
@@ -24,6 +25,8 @@ module.exports = class Federator {
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
 
         this.confirmationTable = config.confirmationTable;
+
+        this.chatBot = chatBot || new NullBot(this.logger);
     }
 
     async run() {
@@ -51,7 +54,10 @@ module.exports = class Federator {
                 this.logger.error(new Error('Exception Running Federator'), err);
                 if(attempt === maxAttempts) {
                     this.logger.error('All attempts exhausted and still no success. Proceeding on as normal.')
-                    // TODO: send error to telegram group
+                    const truncatedError = err.toString().slice(0, 200);
+                    await this.chatBot.sendMessage(
+                        `Error running federator after ${maxAttempts} attempts: ${truncatedError}`
+                    )
                     return;
                 } else {
                     this.logger.debug(`Retrying. Attempt ${attempt}/${maxAttempts}.`);
