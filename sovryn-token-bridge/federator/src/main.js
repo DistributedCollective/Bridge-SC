@@ -25,7 +25,8 @@ if(config.telegramBot && config.telegramBot.token && config.telegramBot.groupId)
     chatBot = new TelegramBot(
         config.telegramBot.token,
         config.telegramBot.groupId,
-        log4js.getLogger('CHATBOT')
+        log4js.getLogger('CHATBOT'),
+        config.federatorInstanceId,
     );
 } else {
     chatBot = new NullBot(
