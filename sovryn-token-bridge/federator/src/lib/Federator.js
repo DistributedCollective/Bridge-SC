@@ -5,10 +5,11 @@ const abiFederation = require('../../../abis/Federation.json');
 const TransactionSender = require('./TransactionSender');
 const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
 const CustomError = require('./CustomError');
+const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3) {
+    constructor(config, logger, Web3 = web3, chatBot = null) {
         this.config = config;
         this.logger = logger;
 
@@ -24,12 +25,14 @@ module.exports = class Federator {
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
 
         this.confirmationTable = config.confirmationTable;
+
+        this.chatBot = chatBot || new NullBot(this.logger);
     }
 
     async run() {
-        let retries = 3;
-        const sleepAfterRetrie = 3000;
-        while (retries > 0) {
+        this.logger.info('Starting federator run');
+        const maxAttempts = 20;
+        for(let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
@@ -47,16 +50,20 @@ module.exports = class Federator {
 
                 await this._processBlocks(ctr, fromBlock, toBlock)
 
+                this.logger.info('Federator run finished');
                 return true;
             } catch (err) {
-                console.log(err)
                 this.logger.error(new Error('Exception Running Federator'), err);
-                retries--;
-                this.logger.debug(`Run ${3 - retries} retrie`);
-                if (retries > 0) {
-                    await utils.sleep(sleepAfterRetrie);
+                if(attempt === maxAttempts) {
+                    this.logger.error('All attempts exhausted and still no success. Proceeding on as normal.')
+                    const truncatedError = err.toString().slice(0, 200);
+                    await this.chatBot.sendMessage(
+                        `Error running federator after ${maxAttempts} attempts: ${truncatedError}`
+                    )
+                    return;
                 } else {
-                    process.exit();
+                    this.logger.debug(`Retrying. Attempt ${attempt}/${maxAttempts}.`);
+                    await utils.exponentialSleep(attempt, { logger: this.logger });
                 }
             }
         }
