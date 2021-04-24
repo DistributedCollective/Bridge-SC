@@ -14,10 +14,9 @@ module.exports = {
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
 	telegramBot: {
-           //token: fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim(),
 		token: telegramToken,
 		groupId: -572987924,
-    	},
+    },
 	confirmationTable: {
         "1": {
             "default": 5760,
