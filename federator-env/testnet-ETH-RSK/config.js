@@ -1,4 +1,11 @@
 const fs = require('fs');
+let telegramToken;
+try {
+    telegramToken = fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim();
+} catch(e) {
+    console.debug(`Cannot load telegram token from ${__dirname}/telegram.key, bot disabled`);
+    telegramToken = '';
+}
 module.exports = {
     mainchain: require('./rsktestnet.json'), //the json containing the smart contract addresses in rsk
     sidechain: require('./ropsten.json'), //the json containing the smart contract addresses in eth
@@ -6,7 +13,12 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
-    confirmationTable: {
+	telegramBot: {
+           //token: fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim(),
+		token: telegramToken,
+		groupId: -572987924,
+    	},
+	confirmationTable: {
         "1": {
             "default": 5760,
             "minConfirmation": 10,
@@ -79,7 +91,7 @@ module.exports = {
                     "amount": 0.5,
                     "confirmations": 50
                 }
-            ],	
+            ],
             "renBTC": [
                 {
                     "amount": 0,
@@ -167,7 +179,7 @@ module.exports = {
                     "amount": 0.5,
                     "confirmations": 50
                 }
-            ],	
+            ],
             "renBTC": [
                 {
                     "amount": 0,
@@ -432,7 +444,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-        },    
+        },
         "42": {
             "default": 10,
             "minConfirmation": 10,
@@ -495,4 +507,3 @@ module.exports = {
         }
     }
 }
-

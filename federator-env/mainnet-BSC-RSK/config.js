@@ -1,11 +1,23 @@
 const fs = require('fs');
+let telegramToken;
+try {
+    telegramToken = fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim();
+} catch(e) {
+    console.debug(`Cannot load telegram token from ${__dirname}/telegram.key, bot disabled`);
+    telegramToken = '';
+}
 module.exports = {
-    mainchain: require('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
-    sidechain: require('./bmainnet.json'), //the json containing the smart contract addresses in eth
+    mainchain: require('./rsktestnet.json'), //the json containing the smart contract addresses in rsk
+    sidechain: require('./ropsten.json'), //the json containing the smart contract addresses in eth
     runEvery: 2, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
+	telegramBot: {
+           //token: fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim(),
+		token: telegramToken,
+		groupId: -572987924,
+    	},
     confirmationTable: {
         "1": {
             "default": 5760,
