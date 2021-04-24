@@ -62,7 +62,21 @@ module.exports = {
                     "amount": 0.5,
                     "confirmations": 50
                 }
-            ],	
+            ],
+            "eSOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
         },
         "3": {
             "default": 5760,
@@ -81,7 +95,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDC": [
+	        "USDC": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -95,7 +109,21 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDT": [
+	        "USDT": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "eSOV": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -113,6 +141,48 @@ module.exports = {
         "30": {
             "default": 2880,
             "minConfirmation": 10,
+            "DAIes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "USDCes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+	        "USDTes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
             "DAIbs": [
                 {
                     "amount": 0,
@@ -142,6 +212,20 @@ module.exports = {
                 }
             ],
 	        "USDTbs": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "SOV": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -159,6 +243,48 @@ module.exports = {
         "31": {
             "default": 10,
             "minConfirmation": 10,
+            "DAIes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "USDCes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+	        "USDTes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
             "DAIbs": [
                 {
                     "amount": 0,
@@ -201,11 +327,25 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
+            "SOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
           },
 	    "97": {
                "default": 10,
                "minConfirmation": 10,
-            "DAI": [
+               "DAI": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -219,7 +359,7 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDT": [
+	        "USDC": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -233,7 +373,21 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-            "USDC": [
+	        "USDT": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "bSOV": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -251,7 +405,7 @@ module.exports = {
         "56": {
             "default": 10,
             "minConfirmation": 10,
-            "DAI": [
+        "DAI": [
              {
                  "amount": 0,
                  "confirmations": 10
@@ -264,8 +418,8 @@ module.exports = {
                  "amount": 0.5,
                  "confirmations": 50
              }
-            ],
-            "USDT": [
+         ],
+         "USDC": [
              {
                  "amount": 0,
                  "confirmations": 10
@@ -278,8 +432,8 @@ module.exports = {
                  "amount": 0.5,
                  "confirmations": 50
              }
-            ],
-            "USDC": [
+         ],
+         "USDT": [
              {
                  "amount": 0,
                  "confirmations": 10
@@ -292,54 +446,68 @@ module.exports = {
                  "amount": 0.5,
                  "confirmations": 50
              }
-            ],
-        },     
+         ],
+         "bSOV": [
+             {
+                 "amount": 0,
+                 "confirmations": 10
+             },
+             {
+                 "amount": 0.2,
+                 "confirmations": 30
+             },
+             {
+                 "amount": 0.5,
+                 "confirmations": 50
+             }
+         ],
+        },
         "42": {
             "default": 10,
             "minConfirmation": 10,
-            "WETH": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
-            "WBTC": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
             "DAI": [
                 {
                     "amount": 0,
                     "confirmations": 10
                 },
                 {
-                    "amount": 50,
+                    "amount": 0.2,
                     "confirmations": 30
                 },
                 {
-                    "amount": 100,
+                    "amount": 0.5,
                     "confirmations": 50
                 }
             ],
-            "renBTC": [
+	        "USDC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+	        "USDT": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 0.2,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 0.5,
+                    "confirmations": 50
+                }
+            ],
+            "eSOV": [
                 {
                     "amount": 0,
                     "confirmations": 10
