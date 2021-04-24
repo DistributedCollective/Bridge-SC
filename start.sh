@@ -7,7 +7,7 @@ then
 fi
 
 echo "start fed on $ED_ENV.."
-mkdir /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
+mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
 echo "getting fed secret:"
 FED_KEY_NAME=`aws ec2 describe-instances --filters Name=instance-id,Values=$(wget -qO- http://instance-data/latest/meta-data/instance-id
