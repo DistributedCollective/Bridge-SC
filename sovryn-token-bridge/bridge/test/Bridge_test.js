@@ -1231,7 +1231,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "rMAIN");
+                //assert.equal(sideTokenSymbol, "rMAIN");
+                assert.equal(sideTokenSymbol, "MAINr");
 
                 let originalTokenAddress = await this.mirrorBridge.originalTokens(sideTokenAddress);
                 assert.equal(originalTokenAddress, this.token.address);
@@ -1254,7 +1255,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "rMAIN");
+                //assert.equal(sideTokenSymbol, "rMAIN");
+                assert.equal(sideTokenSymbol, "MAINr");
 
                 let originalTokenAddress = await this.mirrorBridge.originalTokens(sideTokenAddress);
                 assert.equal(originalTokenAddress, this.token.address);
@@ -1296,7 +1298,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.mirrorBridge.mappedTokens(tokenWithDecimals.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "rMAIN");
+                //assert.equal(sideTokenSymbol, "rMAIN");
+                assert.equal(sideTokenSymbol, "MAINr");
 
                 let originalTokenAddress = await this.mirrorBridge.originalTokens(sideTokenAddress);
                 assert.equal(originalTokenAddress, tokenWithDecimals.address);
@@ -1345,7 +1348,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.mirrorBridge.mappedTokens(tokenWithGranularity.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "rMAIN");
+                //assert.equal(sideTokenSymbol, "rMAIN");
+                assert.equal(sideTokenSymbol, "MAINr");
 
                 const sideTokenGranularity = await sideToken.granularity();
                 assert.equal(sideTokenGranularity.toString(), granularity);
@@ -1376,7 +1380,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.mirrorBridge.mappedTokens(tokenWithGranularity.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "rMAIN");
+                //assert.equal(sideTokenSymbol, "rMAIN");
+                assert.equal(sideTokenSymbol, "MAINr");
 
                 const sideTokenGranularity = await sideToken.granularity();
                 assert.equal(sideTokenGranularity.toString(), granularity);
@@ -2000,7 +2005,8 @@ contract('Bridge', async function (accounts) {
                 let sideTokenAddress = await this.bridge.mappedTokens(this.token.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
                 const sideTokenSymbol = await sideToken.symbol();
-                assert.equal(sideTokenSymbol, "eMAIN");
+                //assert.equal(sideTokenSymbol, "eMAIN");
+                assert.equal(sideTokenSymbol, "MAINe");
 
                 let originalTokenAddress = await this.bridge.originalTokens(sideTokenAddress);
                 assert.equal(originalTokenAddress, this.token.address);
