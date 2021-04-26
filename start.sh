@@ -1,5 +1,11 @@
 export FED_ENV=$1
 
+aws ecr get-login-password \
+    --region us-east-2 \
+| docker login \
+    --username AWS \
+    --password-stdin 500674654096.dkr.ecr.us-east-2.amazonaws.com
+    
 if [ -z "$FED_ENV" ]
 then
         echo "ERROR: please choose the federator env config."
