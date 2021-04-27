@@ -13,10 +13,7 @@ variable "tags" { default = {} }
 variable "encryption_enabled" {
   default = "false"
 }
-variable "kms_key_id" { 
-  type = string 
-  default = ""
-}
+
 variable "eip" { default = false }
 
 # Choose random pool subnets of all for SFTP
@@ -61,38 +58,31 @@ data "template_cloudinit_config" "config" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "ec2-read-only-policy-attachment" {
-    role = "${aws_iam_role.main.name}"
-    policy_arn = "arn:aws:iam::500674654096:policy/getFedSecret"
+
+
+resource "aws_iam_role" "secret_mng" {
+  name               = "fed-role"
+  assume_role_policy = "${file("assumerolepolicy.json")}"
 }
 
-### IAM Role
-resource "aws_iam_role" "main" {
-  name = "${var.basename}-federator-ROLE"
-
-  # Allow EC2 Instances to assume the role
-  assume_role_policy = <<-EOF
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": "sts:AssumeRole",
-          "Principal": {"Service": "ec2.amazonaws.com"}
-        }
-      ]
-    }
-    EOF
-
-  tags = merge(var.tags, {
-    Name = "${var.basename}-federator-ROLE"
-  })
+resource "aws_iam_policy" "policy" {
+  name        = "fed-policy"
+  description = "fed-policy"
+  policy      = "${file("secret_mng.json")}"
 }
-# # IAM Instance profile
+
+resource "aws_iam_policy_attachment" "test-attach" {
+  name       = "fed-profile-attachment"
+  roles      = ["${aws_iam_role.secret_mng.name}"]
+  policy_arn = "${aws_iam_policy.policy.arn}"
+}
+
 resource "aws_iam_instance_profile" "main" {
-  name = "${var.basename}-EC2-ROLE"
-  role = aws_iam_role.main.name
+  name  = "fed-profile"
+  role = "${aws_iam_role.secret_mng.name}"
 }
+
+
 
 
 ### EC2 Instances: federator servers
@@ -115,8 +105,8 @@ resource "aws_instance" "federator" {
   root_block_device {
     volume_type = "gp2"
     volume_size = var.instance_block_size
-    encrypted = var.encryption_enabled == "enabled" ? true : false
-    kms_key_id = var.encryption_enabled == "enabled" ? var.kms_key_id : null
+    encrypted = false
+    
   }
 
   user_data = data.template_cloudinit_config.config.rendered
@@ -126,7 +116,7 @@ resource "aws_instance" "federator" {
   }
 
   tags = merge(var.tags, {
-    Name = "federator/testnet/network_name/${count.index + 1}"
+    Name = "${var.basename}"
   })
 
   volume_tags = merge(var.tags, {
