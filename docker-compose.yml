@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: 500674654096.dkr.ecr.us-east-2.amazonaws.com/fed-tokenbridge:2.0
+    image: sovryn/fed-tokenbridge:2.0
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
       - ./federator-env/${FED_ENV}/db:/app/federator/db
