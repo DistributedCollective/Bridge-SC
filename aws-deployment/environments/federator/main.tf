@@ -4,9 +4,4 @@ provider "aws" {
 }
 
 terraform {
-  backend "s3" {
-    bucket = "sov-devops-terraform"
-    key    = "sov-terr-key"
-    region = "us-east-2"
-  }
 }
