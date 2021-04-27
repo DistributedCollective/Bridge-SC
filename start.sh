@@ -1,16 +1,19 @@
 export FED_ENV=$1
+export FED_ID=$2
 
-aws ecr get-login-password \
-    --region us-east-2 \
-| docker login \
-    --username AWS \
-    --password-stdin 500674654096.dkr.ecr.us-east-2.amazonaws.com
-    
 if [ -z "$FED_ENV" ]
 then
-        echo "ERROR: please choose the federator env config."
+        echo "ERROR: please choose the federator env config as first cmd arg."
         exit
 fi
+
+if [ -z "$FED_ID" ]
+then
+        echo "ERROR: please provide uniqe id for this federator as second cmd arg."
+        exit
+fi
+
+sed -i 's/federatorInstanceId_replace_this/'"$FED_OWNER"'/g' /Users/dev/sovryn/Bridge-SC/federator-env/$FED_ENV/config.js
 
 echo "start fed on $ED_ENV.."
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
@@ -24,7 +27,7 @@ cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
 echo "starting federator please wait..."
-nohup docker-compose up > federator.log 2>$1 &
+nohup 2>&1 docker-compose up > federator.log  &
 sleep 30
 echo "federator logs: /home/ubuntu/Bridge-SC/federator.log"
 rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
