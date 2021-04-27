@@ -13,6 +13,7 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
+    federatorInstanceId: 'federatorInstanceId_replace_this',
 	telegramBot: {
 		token: telegramToken,
         groupId: -543088999,
