@@ -13,8 +13,8 @@ then
         exit
 fi
 
-sed -i 's/federatorInstanceId_replace_this/'"$FED_OWNER"'/g' /Users/dev/sovryn/Bridge-SC/federator-env/$FED_ENV/config.js
-
+sed -i 's/federatorInstanceId_replace_this/'"$FED_OWNER"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
+    
 echo "start fed on $ED_ENV.."
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
