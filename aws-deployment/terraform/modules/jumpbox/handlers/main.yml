@@ -1,7 +1,0 @@
----
-- name: restart-cw-agent
-  service:
-    name:  amazon-cloudwatch-agent
-    state: restarted
-
-# vim:filetype=yaml ts=2 sw=2 et:
