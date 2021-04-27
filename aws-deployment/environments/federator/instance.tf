@@ -20,7 +20,7 @@ module "federator" {
   }
 
   encryption_enabled  = "enabled"
-  kms_key_id          = aws_kms_key.main.arn
+
 }
 
 module "jumpbox" {
@@ -45,7 +45,6 @@ module "jumpbox" {
   }
 
   encryption_enabled  = "enabled"
-  kms_key_id          = aws_kms_key.main.arn
 }
 
 ### Output endpoints

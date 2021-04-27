@@ -10,13 +10,12 @@ variable "instance_block_size" { type = number }
 variable "ssh_key" { type = string }
 variable "server_count" { default = 2 }
 variable "tags" { default = {} }
+
+
 variable "encryption_enabled" {
   default = "false"
 }
-variable "kms_key_id" { 
-  type = string 
-  default = ""
-}
+
 variable "eip" { default = false }
 
 # Choose random pool subnets of all for SFTP
@@ -87,8 +86,7 @@ resource "aws_instance" "fed-jumpbox" {
   root_block_device {
     volume_type = "gp2"
     volume_size = var.instance_block_size
-    encrypted = var.encryption_enabled == "enabled" ? true : false
-    kms_key_id = var.encryption_enabled == "enabled" ? var.kms_key_id : null
+    encrypted = false
   }
 
   user_data = data.template_cloudinit_config.config.rendered
@@ -97,9 +95,9 @@ resource "aws_instance" "fed-jumpbox" {
     ignore_changes = [ami]
   }
 
-  tags = merge(var.tags, {
-    Name = "${var.basename}-fed-jumpbox-${count.index + 1}"
-  })
+  tags = {
+    Name = "fed-jumpbox"
+  }
 
   volume_tags = merge(var.tags, {
     Name = "${var.basename}-fed-jumpbox-vol-${count.index + 1}"
