@@ -2,3 +2,7 @@
 ## history plugin
 .history
 /.idea/
+aws-deployment/environments/federator/.terraform
+aws-deployment/environments/federator/terraform.tfstate
+aws-deployment/environments/federator/terraform.tfstate.backup
+aws-deployment/environments/federator/.terraform.tfstate.lock.info
