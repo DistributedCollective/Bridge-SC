@@ -16,8 +16,7 @@ then
         echo "ERROR: please provide uniqe id for this federator as second cmd arg."
         exit
 fi
-
-sed -i 's/federatorInstanceId_replace_this/'"$FED_ID"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
+sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
 
 echo "start fed on $ED_ENV.."
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
