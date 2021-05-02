@@ -5,14 +5,13 @@ const Bridge_v1 = artifacts.require("Bridge");
 
 module.exports = async callback => {
     try {
-        const minTokenAmount = process.argv[6];
-        if (!minTokenAmount) {
-            console.error('You need to pass the minimum token amount allowed');
+        const maxTokenAmount = process.argv[6];
+        if (!maxTokenAmount) {
+            console.error('You need to pass the max token amount allowed');
             callback();
             return;
         }
-        //const minimumTokenAmount = Number.parseInt(minTokenAmount);
-        
+        //const maximumTokenAmount = Number.parseInt(maxTokenAmount);
         const net = process.argv[5];
         console.log("net is:"+ net);
 
@@ -23,8 +22,8 @@ module.exports = async callback => {
             gasPriceNow = Number.parseInt(gasPrice * 1.5);
         }
         console.log("gas price now is: " + gasPriceNow); 
-
-        const minimumTokenAmount = web3.utils.toWei(minTokenAmount);
+        
+        const maximumTokenAmount = web3.utils.toWei(maxTokenAmount);
         
         //const deployer = (await web3.eth.getAccounts())[0];
         const deployer = (await web3.eth.getAccounts())[3];
@@ -41,11 +40,11 @@ module.exports = async callback => {
         const multiSigAddress = await allowTokens.contract.methods.owner().call();
         const multiSig = new web3.eth.Contract(MultiSigWallet.abi, multiSigAddress);
 
-        const setMinTokensAllowedData =
-            allowTokens.contract.methods.setMinTokensAllowed(minimumTokenAmount).encodeABI();
+        const setMaxTokensAllowedData =
+            allowTokens.contract.methods.setMaxTokensAllowed(maximumTokenAmount).encodeABI();
 
-        console.log(`Setting min tokens allowed in ${minimumTokenAmount}`)
-        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setMinTokensAllowedData).send({ from: deployer , gasPrice: gasPriceNow});
+        console.log(`Setting max tokens allowed in ${maximumTokenAmount}`)
+        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setMaxTokensAllowedData).send({ from: deployer , gasPrice: gasPriceNow});
         console.log(result)
     } catch (e) {
         console.error(e);

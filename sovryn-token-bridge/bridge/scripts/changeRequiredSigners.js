@@ -2,10 +2,10 @@ const MultiSigWallet = artifacts.require("MultiSigWallet");
 
 module.exports = async callback => {
     try {
-        const rmOwnerAddress = process.argv[6];
-        if (!rmOwnerAddress)
-            console.error('You need to pass owner address');
-        console.log(`The owner address ${rmOwnerAddress} will be removed`);
+        const newRequired = Number.parseInt(process.argv[6]);
+        if (!newRequired)
+            console.error('You need to pass new required');
+        console.log(`newRequired is: ${newRequired}`);
 
         const net = process.argv[5];
         console.log("net is:"+ net);
@@ -25,12 +25,16 @@ module.exports = async callback => {
         const multiSig = await MultiSigWallet.deployed();
         console.log(`MultiSig address: ${multiSig.address}`);
         const multiSigAddress = multiSig.address;
+        //const multiSigAddress = await federation.contract.methods.owner().call();
+        //const multiSigi = new web3.eth.Contract(MultiSigWallet.abi, multiSigAddress);
 
-        console.log('Removing owner from multisig')
-        const removeOwnerData = multiSig.contract.methods.removeOwner(rmOwnerAddress).encodeABI();
-        console.log(removeOwnerData);
-        const result = await multiSig.contract.methods.submitTransaction(multiSigAddress, 0, removeOwnerData).send({ from: deployer, gas: 300000 , gasPrice: gasPriceNow});
-        console.log('Owner was removed')
+        //console.log(multiSigi.address);
+        console.log('Changing Required of multisig')
+        const newRequiredData = multiSig.contract.methods.changeRequirement(newRequired).encodeABI();
+        
+        console.log(newRequiredData);
+        const result = await multiSig.contract.methods.submitTransaction(multiSigAddress, 0, newRequiredData).send({ from: deployer, gas: 300000, gasPrice: gasPriceNow });
+        console.log('Required of multisig has changed')
         console.log(result)
     } catch (e) {
         callback(e);
