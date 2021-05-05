@@ -17,8 +17,9 @@ import "./zeppelin/math/SafeMath.sol";
 import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
-import "./AllowTokens.sol";
+import "./IAllowTokens.sol";
 import "./Utils.sol";
+import "./WETH9.sol";
 
 contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -39,16 +40,23 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     mapping (address => address) public originalTokens; // SideToken => OriginalToken
     mapping (address => bool) public knownTokens; // OriginalToken => true
     mapping(bytes32 => bool) public processed; // ProcessedHash => true
-    AllowTokens public allowTokens;
+    IAllowTokens public allowTokens;
     ISideTokenFactory public sideTokenFactory;
     //Bridge_v1 variables
     bool public isUpgrading;
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
-
+    //Bridge_v3 variables
+    WETH9 internal WETH;
+    address payable public WETHAddr;
+    bool public initialPrefixSetup;
+    bool public isSuffix;
+    
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
+    event AllowTokenChanged(address _newAllowToken);
+    event PrefixUpdated(bool _isSuffix, string _prefix);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -61,15 +69,17 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //        UpgradableOwnable.initialize(_manager);
 //        UpgradablePausable.initialize(_manager);
 //        symbolPrefix = _symbolPrefix;
-//        allowTokens = AllowTokens(_allowTokens);
+//        //allowTokens = AllowTokens(_allowTokens);
+//        _changeAllowTokens(_allowTokens);
 //        _changeSideTokenFactory(_sideTokenFactory);
 //        _changeFederation(_federation);
+//        
 //        //keccak256("ERC777TokensRecipient")
 //        erc1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
 //    }
 
     function version() external pure returns (string memory) {
-        return "v2";
+        return "v3";
     }
 
     modifier onlyFederation() {
@@ -176,7 +186,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         require(decimals == 18, "Bridge: Invalid decimals cross back");
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
-        IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
+        //// Bridge v3 upgrade functions
+        if (tokenAddress == WETHAddr) {
+            WETH.withdraw(amount);
+            address payable payableReceiver = address(uint160(receiver));
+            payableReceiver.transfer(amount);
+        }
+        else {
+            IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
+        }
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, "");
     }
 
@@ -211,6 +229,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address receiver,
         bytes memory extraData
     ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
+        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, extraData);
@@ -218,7 +237,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     /**
-     *  allows to send tokens to a contract and notify it in a single transaction
+     * ERC-777 tokensReceived hook allows to send tokens to a contract and notify it in a single transaction
      * See https://eips.ethereum.org/EIPS/eip-777#motivation for details
      */
     function tokensReceived (
@@ -233,6 +252,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
         require(to == address(this), "Bridge: Not to address");
         address tokenToUse = _msgSender();
+        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
         //This can only be used with trusted contracts
         crossTokens(tokenToUse, from, amount, userData);
     }
@@ -240,7 +260,10 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
         //Send the payment to the MultiSig of the Federation
-        uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+        //uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+    //V3 upgrade change global token fee to per token fee
+        uint256 fee = allowTokens.getFeePerToken(tokenToUse);
+        
         uint256 amountMinusFees = amount.sub(fee);
         if (isASideToken) {
             uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
@@ -271,7 +294,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
-        string memory newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
+        initialPrefixSetup = true;
+        string memory newSymbol;
+        if(!isSuffix) {
+             newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
+        }
+        else {
+             newSymbol = string(abi.encodePacked(symbol, symbolPrefix));    
+        }
+        
         address sideTokenAddress = sideTokenFactory.createSideToken(newSymbol, newSymbol, granularity);
         sideToken = ISideToken(sideTokenAddress);
         mappedTokens[token] = sideToken;
@@ -370,6 +401,44 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         isUpgrading = false;
         emit Upgrading(isUpgrading);
     }
+
+//// Bridge v3 upgrade functions
+    function recieveEth() external payable {
+        require(msg.value > 0, "Eth amount send should be > 0");
+        require(WETHAddr != address(0), "WETH is the zero address");
+        if (msg.sender != address(this)) {
+            WETH.deposit.value(msg.value)();
+            bytes memory _userData = "";
+            if(msg.data.length > 0) {
+                _userData = msg.data;
+            }
+            crossTokens(WETHAddr, msg.sender, msg.value, _userData);
+        }
+    }
+
+    function setWETHAddress(address payable _WETHAddr) external onlyOwner {
+        require(_WETHAddr != address(0), "WETH is the zero address");
+        WETHAddr = _WETHAddr;
+        WETH = WETH9(_WETHAddr);
+    }
+
+    function changeAllowTokens(address newAllowTokens) external onlyOwner returns(bool) {
+        _changeAllowTokens(newAllowTokens);
+        return true;
+    }
+
+    function _changeAllowTokens(address newAllowTokens) internal {
+        require(newAllowTokens != NULL_ADDRESS, "Bridge: newAllowTokens is empty");
+        allowTokens = IAllowTokens(newAllowTokens);
+        emit AllowTokenChanged(newAllowTokens);
+    }
+    function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
+        require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
+        isSuffix = _isSuffix;
+        symbolPrefix = _prefix;
+        emit PrefixUpdated(isSuffix, _prefix);
+    }
+
 
     // Commented because it is unused for us and need decrease contract size
     //This method is only to recreate the USDT and USDC tokens on rsk without granularity restrictions.

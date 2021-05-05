@@ -19,11 +19,14 @@ async function _upgradeBridge(bridge, networkName, accounts) {
         jsonName = `dev-${chainId}`;
     }
     const networkConfig = require(`../.openzeppelin/${jsonName}.json`);
-
+console.log(networkConfig);
     const proxyAdminAddress = networkConfig.proxyAdmin.address;
     const proxyAdmin = new web3.eth.Contract(proxyAdminAbi, proxyAdminAddress);
+console.log(proxyAdminAddress);
 
     const upgradeBridgeData = proxyAdmin.methods.upgrade(bridgeProxy.address, bridge._address).encodeABI();
+console.log(upgradeBridgeData);
+
     await multiSig.submitTransaction(proxyAdmin.options.address, 0, upgradeBridgeData, { from: accounts[0] });
 }
 

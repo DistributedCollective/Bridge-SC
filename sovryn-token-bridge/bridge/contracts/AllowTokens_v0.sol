@@ -3,7 +3,7 @@ pragma solidity >=0.4.21 <0.6.0;
 import "./zeppelin/math/SafeMath.sol";
 import "./zeppelin/ownership/Ownable.sol";
 
-contract AllowTokens is Ownable {
+contract AllowTokens_v0 is Ownable {
     using SafeMath for uint256;
 
     address constant private NULL_ADDRESS = address(0);
@@ -14,22 +14,12 @@ contract AllowTokens is Ownable {
     uint256 private minTokensAllowed;
     uint256 public dailyLimit;
 
-// Bridge v3 upgrade variables
-// minimum amount allowed per token
-    mapping (address => uint) public minAllowedToken;
-// constant fee per token
-    mapping (address => uint) public feeConstToken;
-
     event AllowedTokenAdded(address indexed _tokenAddress);
     event AllowedTokenRemoved(address indexed _tokenAddress);
     event AllowedTokenValidation(bool _enabled);
     event MaxTokensAllowedChanged(uint256 _maxTokens);
     event MinTokensAllowedChanged(uint256 _minTokens);
     event DailyLimitChanged(uint256 dailyLimit);
-
-// Bridge v3 upgrade events
-    event MinPerTokenChanged(address _token, uint256 _minAmount);
-    event FeePerTokenChanged(address _token, uint256 _feeConst);
 
     modifier notNull(address _address) {
         require(_address != NULL_ADDRESS, "AllowTokens: Address cannot be empty");
@@ -113,13 +103,11 @@ contract AllowTokens is Ownable {
     function isValidTokenTransfer(address tokenToUse, uint amount, uint spentToday, bool isSideToken) external view returns (bool) {
         if(amount > maxTokensAllowed)
             return false;
-        if(amount < minAllowedToken[tokenToUse])
+        if(amount < minTokensAllowed)
             return false;
         if (spentToday + amount > dailyLimit || spentToday + amount < spentToday)
             return false;
         if(!isSideToken && !isTokenAllowed(tokenToUse))
-            return false;
-        if(feeConstToken[tokenToUse] == 0 )
             return false;
         return true;
     }
@@ -131,27 +119,6 @@ contract AllowTokens is Ownable {
         if(maxWithrow > maxTokensAllowed)
             maxWithrow = maxTokensAllowed;
         return maxWithrow;
-    }
-
-// Bridge v3 upgrade functions
-    function getMinPerToken(address token) external view returns(uint256) {
-        return minAllowedToken[token];
-    }
-
-    function getFeePerToken(address token) public view returns(uint256) {
-        return feeConstToken[token];
-    }
-
-    function setMinPerToken(address token, uint256 minAmount) external onlyOwner {
-        require(maxTokensAllowed >= minAmount, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
-        minAllowedToken[token] = minAmount;
-        emit MinPerTokenChanged(token, minAmount);
-    }
-
-    function setFeePerToken(address token, uint256 feeConst) external onlyOwner {
-        require(feeConst >= minAllowedToken[token], "AllowTokens: Fee per Token should be equal or bigger than Min allowed");
-        feeConstToken[token] = feeConst;
-        emit FeePerTokenChanged(token, feeConst);
     }
 
 }

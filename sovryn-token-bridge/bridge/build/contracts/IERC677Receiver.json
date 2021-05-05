@@ -27,25 +27,25 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":\"IERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":\"IERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.5.0;\n\ninterface IERC677Receiver {\n  function onTokenTransfer(address _sender, uint _value, bytes calldata _data) external;\n}",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
     "exportedSymbols": {
       "IERC677Receiver": [
-        5900
+        7972
       ]
     },
-    "id": 5901,
+    "id": 7973,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 5890,
+        "id": 7962,
         "literals": [
           "solidity",
           "^",
@@ -53,7 +53,7 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:10"
+        "src": "0:23:14"
       },
       {
         "baseContracts": [],
@@ -61,9 +61,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 5900,
+        "id": 7972,
         "linearizedBaseContracts": [
-          5900
+          7972
         ],
         "name": "IERC677Receiver",
         "nodeType": "ContractDefinition",
@@ -71,23 +71,23 @@
           {
             "body": null,
             "documentation": null,
-            "id": 5899,
+            "id": 7971,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "onTokenTransfer",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5897,
+              "id": 7969,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5892,
+                  "id": 7964,
                   "name": "_sender",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "80:15:10",
+                  "scope": 7971,
+                  "src": "80:15:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -95,10 +95,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5891,
+                    "id": 7963,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "80:7:10",
+                    "src": "80:7:14",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -110,11 +110,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 5894,
+                  "id": 7966,
                   "name": "_value",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "97:11:10",
+                  "scope": 7971,
+                  "src": "97:11:14",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -122,10 +122,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5893,
+                    "id": 7965,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "97:4:10",
+                    "src": "97:4:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -136,11 +136,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 5896,
+                  "id": 7968,
                   "name": "_data",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "110:20:10",
+                  "scope": 7971,
+                  "src": "110:20:14",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -148,10 +148,10 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 5895,
+                    "id": 7967,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
-                    "src": "110:5:10",
+                    "src": "110:5:14",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes_storage_ptr",
                       "typeString": "bytes"
@@ -161,182 +161,204 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "79:52:10"
+              "src": "79:52:14"
             },
             "returnParameters": {
-              "id": 5898,
+              "id": 7970,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "140:0:10"
+              "src": "140:0:14"
             },
-            "scope": 5900,
-            "src": "55:86:10",
+            "scope": 7972,
+            "src": "55:86:14",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 5901,
-        "src": "25:118:10"
+        "scope": 7973,
+        "src": "25:118:14"
       }
     ],
-    "src": "0:143:10"
+    "src": "0:143:14"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
-    "exportedSymbols": {
-      "IERC677Receiver": [
-        5900
-      ]
+    "attributes": {
+      "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+      "exportedSymbols": {
+        "IERC677Receiver": [
+          7972
+        ]
+      }
     },
-    "id": 5901,
-    "nodeType": "SourceUnit",
-    "nodes": [
+    "children": [
       {
-        "id": 5890,
-        "literals": [
-          "solidity",
-          "^",
-          "0.5",
-          ".0"
-        ],
-        "nodeType": "PragmaDirective",
-        "src": "0:23:10"
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.5",
+            ".0"
+          ]
+        },
+        "id": 7962,
+        "name": "PragmaDirective",
+        "src": "0:23:14"
       },
       {
-        "baseContracts": [],
-        "contractDependencies": [],
-        "contractKind": "interface",
-        "documentation": null,
-        "fullyImplemented": false,
-        "id": 5900,
-        "linearizedBaseContracts": [
-          5900
-        ],
-        "name": "IERC677Receiver",
-        "nodeType": "ContractDefinition",
-        "nodes": [
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "interface",
+          "documentation": null,
+          "fullyImplemented": false,
+          "linearizedBaseContracts": [
+            7972
+          ],
+          "name": "IERC677Receiver",
+          "scope": 7973
+        },
+        "children": [
           {
-            "body": null,
-            "documentation": null,
-            "id": 5899,
-            "implemented": false,
-            "kind": "function",
-            "modifiers": [],
-            "name": "onTokenTransfer",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 5897,
-              "nodeType": "ParameterList",
-              "parameters": [
-                {
-                  "constant": false,
-                  "id": 5892,
-                  "name": "_sender",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "80:15:10",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
-                  },
-                  "typeName": {
-                    "id": 5891,
-                    "name": "address",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "80:7:10",
-                    "stateMutability": "nonpayable",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                },
-                {
-                  "constant": false,
-                  "id": 5894,
-                  "name": "_value",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "97:11:10",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_uint256",
-                    "typeString": "uint256"
-                  },
-                  "typeName": {
-                    "id": 5893,
-                    "name": "uint",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "97:4:10",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_uint256",
-                      "typeString": "uint256"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                },
-                {
-                  "constant": false,
-                  "id": 5896,
-                  "name": "_data",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 5899,
-                  "src": "110:20:10",
-                  "stateVariable": false,
-                  "storageLocation": "calldata",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_bytes_calldata_ptr",
-                    "typeString": "bytes"
-                  },
-                  "typeName": {
-                    "id": 5895,
-                    "name": "bytes",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "110:5:10",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_bytes_storage_ptr",
-                      "typeString": "bytes"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                }
+            "attributes": {
+              "body": null,
+              "documentation": null,
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
               ],
-              "src": "79:52:10"
+              "name": "onTokenTransfer",
+              "scope": 7972,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "external"
             },
-            "returnParameters": {
-              "id": 5898,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "140:0:10"
-            },
-            "scope": 5900,
-            "src": "55:86:10",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "external"
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_sender",
+                      "scope": 7971,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 7963,
+                        "name": "ElementaryTypeName",
+                        "src": "80:7:14"
+                      }
+                    ],
+                    "id": 7964,
+                    "name": "VariableDeclaration",
+                    "src": "80:15:14"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_value",
+                      "scope": 7971,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 7965,
+                        "name": "ElementaryTypeName",
+                        "src": "97:4:14"
+                      }
+                    ],
+                    "id": 7966,
+                    "name": "VariableDeclaration",
+                    "src": "97:11:14"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_data",
+                      "scope": 7971,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "bytes",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes"
+                        },
+                        "id": 7967,
+                        "name": "ElementaryTypeName",
+                        "src": "110:5:14"
+                      }
+                    ],
+                    "id": 7968,
+                    "name": "VariableDeclaration",
+                    "src": "110:20:14"
+                  }
+                ],
+                "id": 7969,
+                "name": "ParameterList",
+                "src": "79:52:14"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 7970,
+                "name": "ParameterList",
+                "src": "140:0:14"
+              }
+            ],
+            "id": 7971,
+            "name": "FunctionDefinition",
+            "src": "55:86:14"
           }
         ],
-        "scope": 5901,
-        "src": "25:118:10"
+        "id": 7972,
+        "name": "ContractDefinition",
+        "src": "25:118:14"
       }
     ],
-    "src": "0:143:10"
+    "id": 7973,
+    "name": "SourceUnit",
+    "src": "0:143:14"
   },
   "compiler": {
     "name": "solc",
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-08T09:27:46.769Z",
+  "schemaVersion": "3.3.4",
+  "updatedAt": "2021-05-05T21:47:07.428Z",
   "devdoc": {
     "methods": {}
   },

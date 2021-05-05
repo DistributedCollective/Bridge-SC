@@ -51,15 +51,15 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}],\"name\":\"PrimaryTransferred\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[],\"name\":\"primary\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}],\"name\":\"transferPrimary\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"A Secondary contract can only be used by its primary account (the one that created it).\",\"methods\":{\"constructor\":{\"details\":\"Sets the primary account to the one that is creating the Secondary contract.\"},\"primary()\":{\"return\":\"the address of the primary.\"},\"transferPrimary(address)\":{\"details\":\"Transfers contract to a new primary.\",\"params\":{\"recipient\":\"The address of new primary.\"}}}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol\":\"Secondary\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol\":{\"keccak256\":\"0x30b9cfe5aeb07c96a3346cd27dcdc2f9f19d7f664166f9b71f1e9e50605d1d67\",\"urls\":[\"bzz-raw://06b02c6225f517572bcb8a506a9b5e272b716c8b27c574ee127b6be76cbedfd2\",\"dweb:/ipfs/Qmcg1aMd56zMX95gF1TxCMce7fUt2PneSGkzmD94xMtFXt\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}],\"name\":\"PrimaryTransferred\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[],\"name\":\"primary\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"}],\"name\":\"transferPrimary\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"A Secondary contract can only be used by its primary account (the one that created it).\",\"methods\":{\"constructor\":{\"details\":\"Sets the primary account to the one that is creating the Secondary contract.\"},\"primary()\":{\"return\":\"the address of the primary.\"},\"transferPrimary(address)\":{\"details\":\"Transfers contract to a new primary.\",\"params\":{\"recipient\":\"The address of new primary.\"}}}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol\":\"Secondary\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol\":{\"keccak256\":\"0x30b9cfe5aeb07c96a3346cd27dcdc2f9f19d7f664166f9b71f1e9e50605d1d67\",\"urls\":[\"bzz-raw://06b02c6225f517572bcb8a506a9b5e272b716c8b27c574ee127b6be76cbedfd2\",\"dweb:/ipfs/Qmcg1aMd56zMX95gF1TxCMce7fUt2PneSGkzmD94xMtFXt\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.5.0;\n\nimport \"../GSN/Context.sol\";\n/**\n * @dev A Secondary contract can only be used by its primary account (the one that created it).\n */\ncontract Secondary is Context {\n    address private _primary;\n\n    /**\n     * @dev Emitted when the primary contract changes.\n     */\n    event PrimaryTransferred(\n        address recipient\n    );\n\n    /**\n     * @dev Sets the primary account to the one that is creating the Secondary contract.\n     */\n    constructor () internal {\n        _primary = _msgSender();\n        emit PrimaryTransferred(_primary);\n    }\n\n    /**\n     * @dev Reverts if called from any account other than the primary.\n     */\n    modifier onlyPrimary() {\n        require(_msgSender() == _primary, \"Secondary: caller is not the primary account\");\n        _;\n    }\n\n    /**\n     * @return the address of the primary.\n     */\n    function primary() public view returns (address) {\n        return _primary;\n    }\n\n    /**\n     * @dev Transfers contract to a new primary.\n     * @param recipient The address of new primary.\n     */\n    function transferPrimary(address recipient) public onlyPrimary {\n        require(recipient != address(0), \"Secondary: new primary is the zero address\");\n        _primary = recipient;\n        emit PrimaryTransferred(_primary);\n    }\n}\n",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
     "exportedSymbols": {
       "Secondary": [
         9287
@@ -80,7 +80,7 @@
         "src": "0:23:37"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol",
         "file": "../GSN/Context.sol",
         "id": 9220,
         "nodeType": "ImportDirective",
@@ -922,7 +922,7 @@
     "src": "0:1300:37"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/ownership/Secondary.sol",
     "exportedSymbols": {
       "Secondary": [
         9287
@@ -943,7 +943,7 @@
         "src": "0:23:37"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/upgrade-ropsten/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol",
         "file": "../GSN/Context.sol",
         "id": 9220,
         "nodeType": "ImportDirective",
@@ -1790,7 +1790,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-08T09:27:46.812Z",
+  "updatedAt": "2021-05-05T21:22:56.936Z",
   "devdoc": {
     "details": "A Secondary contract can only be used by its primary account (the one that created it).",
     "methods": {
