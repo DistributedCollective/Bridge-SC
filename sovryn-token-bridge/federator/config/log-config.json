@@ -13,7 +13,12 @@
     },
     "categories": {
         "default": {
-            "appenders": ["file", "console"],
-            "level": "debug" }
-    }
+            "appenders": [
+                "console"
+            ],
+            "level": "info"
+        }
+    },
+    "pm2": true,
+    "pm2InstanceVar": "Federator"
 }
