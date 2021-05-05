@@ -58,15 +58,15 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sideToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"granularity\",\"type\":\"uint256\"}],\"name\":\"SideTokenCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"granularity\",\"type\":\"uint256\"}],\"name\":\"createSideToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol\":\"ISideTokenFactory\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol\":{\"keccak256\":\"0x8be5bed553e8e5a05af8b333402cfde336799980bad463d209174409288672c1\",\"urls\":[\"bzz-raw://ccad1d714d461c6f783c776761b5666b03f18b1a508612ba855f1c0f43f1e17b\",\"dweb:/ipfs/QmaLc7TbnU6BJ3tEZtPdjE7FeEVinsQ7uAgRnQN48eyoLe\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sideToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"granularity\",\"type\":\"uint256\"}],\"name\":\"SideTokenCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"granularity\",\"type\":\"uint256\"}],\"name\":\"createSideToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol\":\"ISideTokenFactory\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol\":{\"keccak256\":\"0x8be5bed553e8e5a05af8b333402cfde336799980bad463d209174409288672c1\",\"urls\":[\"bzz-raw://ccad1d714d461c6f783c776761b5666b03f18b1a508612ba855f1c0f43f1e17b\",\"dweb:/ipfs/QmaLc7TbnU6BJ3tEZtPdjE7FeEVinsQ7uAgRnQN48eyoLe\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.5.0;\n\ninterface ISideTokenFactory {\n\n    function createSideToken(string calldata name, string calldata symbol, uint256 granularity) external returns(address);\n\n    event SideTokenCreated(address indexed sideToken, string symbol, uint256 granularity);\n}",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
     "exportedSymbols": {
       "ISideTokenFactory": [
         6022
@@ -338,7 +338,7 @@
     "src": "0:272:12"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-ETH-RSK/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/ropsten_rerun/Bridge-SC/sovryn-token-bridge/bridge/contracts/ISideTokenFactory.sol",
     "exportedSymbols": {
       "ISideTokenFactory": [
         6022
@@ -615,7 +615,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-03-25T18:25:16.695Z",
+  "updatedAt": "2021-04-08T09:27:46.770Z",
   "devdoc": {
     "methods": {}
   },

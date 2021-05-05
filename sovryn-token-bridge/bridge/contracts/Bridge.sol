@@ -218,7 +218,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     /**
-     * ERC-777 tokensReceived hook allows to send tokens to a contract and notify it in a single transaction
+     *  allows to send tokens to a contract and notify it in a single transaction
      * See https://eips.ethereum.org/EIPS/eip-777#motivation for details
      */
     function tokensReceived (

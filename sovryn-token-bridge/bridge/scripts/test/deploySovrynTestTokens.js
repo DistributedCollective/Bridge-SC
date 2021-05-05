@@ -4,9 +4,9 @@ module.exports = async callback => {
     try {
         console.log('Deploying tokens ...')
         const tokens = [
-            ['Tether USD', 'USDT', 6, '1000000'],
-            ['USDC Token', 'USDC', 6, '1000000'],
-            ['DAI Token', 'DAI', 18, '1000000'],
+           // ['Tether USD', 'USDT', 6, '1'],
+            ['USDC Token', 'USDC', 6, '1'],
+            ['DAI Token', 'DAI', 18, '100000'],
         ];
 
         const deployer = (await web3.eth.getAccounts())[0];
