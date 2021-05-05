@@ -50,13 +50,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     WETH9 internal WETH;
     address payable public WETHAddr;
     bool public initialPrefixSetup;
-    bool public isPrefix = true;
+    bool public isSuffix;
     
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
     event AllowTokenChanged(address _newAllowToken);
-    event PrefixUpdated(bool _isPrefix, string _prefix);
+    event PrefixUpdated(bool _isSuffix, string _prefix);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -296,7 +296,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
         initialPrefixSetup = true;
         string memory newSymbol;
-        if(isPrefix) {
+        if(isSuffix) {
              newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
         }
         else {
@@ -432,11 +432,11 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         allowTokens = IAllowTokens(newAllowTokens);
         emit AllowTokenChanged(newAllowTokens);
     }
-    function initialSymbolPrefixSetup(bool _isPrefix, string calldata _prefix) external onlyOwner{
+    function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
         require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
-        isPrefix = _isPrefix;
+        isSuffix = _isSuffix;
         symbolPrefix = _prefix;
-        emit PrefixUpdated(isPrefix, _prefix);
+        emit PrefixUpdated(isSuffix, _prefix);
     }
 
 
