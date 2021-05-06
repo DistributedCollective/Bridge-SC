@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
 import "./zeppelin/token/ERC20/ERC20Detailed.sol";
-import "./WETH9.sol";
+//import "./IWETH9.sol";
 
 interface IBridge {
     function version() external pure returns (string memory);

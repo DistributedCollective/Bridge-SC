@@ -19,7 +19,7 @@ import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./IAllowTokens.sol";
 import "./Utils.sol";
-import "./WETH9.sol";
+import "./IWETH9.sol";
 
 contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -47,7 +47,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
     //Bridge_v3 variables
-    WETH9 internal WETH;
+    IWETH9 internal WETH;
     address payable public WETHAddr;
     bool public initialPrefixSetup;
     bool public isSuffix;
@@ -419,7 +419,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function setWETHAddress(address payable _WETHAddr) external onlyOwner {
         require(_WETHAddr != address(0), "WETH is the zero address");
         WETHAddr = _WETHAddr;
-        WETH = WETH9(_WETHAddr);
+        WETH = IWETH9(_WETHAddr);
     }
 
     function changeAllowTokens(address newAllowTokens) external onlyOwner returns(bool) {
