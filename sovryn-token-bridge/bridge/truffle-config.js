@@ -29,8 +29,8 @@ module.exports = {
       host: "127.0.0.1",
       port: 8545,
       network_id: "*",
-      gas: 6300000,
-      gasPrice: 20000000000
+      gas: 6721975,
+      gasPrice: 200000000
     },
     //RSK
     rskregtest: {

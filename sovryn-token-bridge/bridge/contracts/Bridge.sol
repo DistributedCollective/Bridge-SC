@@ -296,7 +296,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
         initialPrefixSetup = true;
         string memory newSymbol;
-        if(isSuffix) {
+        if(!isSuffix) {
              newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
         }
         else {
