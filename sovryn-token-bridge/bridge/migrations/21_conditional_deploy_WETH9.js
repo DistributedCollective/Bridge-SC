@@ -1,6 +1,6 @@
 
 const WETH = artifacts.require('WETH9');
-const Bridge = artifacts.require("Bridge_v0");
+const Bridge = artifacts.require("Bridge");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 
 function shouldDeployToken(network) {
@@ -11,7 +11,7 @@ function shouldDeployToken(network) {
 
 module.exports = function(deployer, networkName, accounts) {
     deployer
-    .then(() => {
+    .then(async () => {
 
         if(shouldDeployToken(networkName)) {
             const wETH = await deployer.deploy(WETH);
