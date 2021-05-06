@@ -2,8 +2,9 @@ pragma solidity >=0.4.21 <0.6.0;
 
 import "./zeppelin/math/SafeMath.sol";
 import "./zeppelin/ownership/Ownable.sol";
+import "./IAllowTokens.sol";
 
-contract AllowTokens is Ownable {
+contract AllowTokens is IAllowTokens, Ownable {
     using SafeMath for uint256;
 
     address constant private NULL_ADDRESS = address(0);

@@ -4,9 +4,10 @@ const Bridge = artifacts.require("Bridge");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 
 function shouldDeployToken(network) {
-    return !network.toLowerCase().includes('mainnet') &&
-    !network.toLowerCase().includes('kovan') &&
-    !network.toLowerCase().includes('testnet');
+   return true
+    // return !network.toLowerCase().includes('mainnet') &&
+   // !network.toLowerCase().includes('kovan') &&
+   // !network.toLowerCase().includes('testnet');
 }
 
 module.exports = function(deployer, networkName, accounts) {
