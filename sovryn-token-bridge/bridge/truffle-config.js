@@ -61,7 +61,7 @@ module.exports = {
       //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
       new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
       network_id: 30,
-      gas: 6300000,
+      gas: 6800000,
       gasPrice: 65000000, // 0.065 gwei
       skipDryRun: true
     },

@@ -15,7 +15,7 @@ module.exports = function(deployer, networkName, accounts) {
     .then(async () => {
 
         if(shouldDeployToken(networkName)) {
-            const wETH = await deployer.deploy(WETH);
+            const wETH = await WETH.deployed();
             const multiSig = await MultiSigWallet.deployed();
             const bridge = await Bridge.deployed();
             const setWETHAddressData = bridge.contract.methods.setWETHAddress(wETH.address).encodeABI();

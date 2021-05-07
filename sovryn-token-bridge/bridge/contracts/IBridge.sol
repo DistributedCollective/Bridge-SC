@@ -1,14 +1,14 @@
 pragma solidity ^0.5.0;
 
 import "./zeppelin/token/ERC20/ERC20Detailed.sol";
-//import "./IWETH9.sol";
+import "./IWETH9.sol";
 
 interface IBridge {
     function version() external pure returns (string memory);
 
-    function getFeePercentage() external view returns(uint);
+    //function getFeePercentage() external view returns(uint);
 
-    function calcMaxWithdraw() external view returns (uint);
+    //function calcMaxWithdraw() external view returns (uint);
 
     /**
      * ERC-20 tokens approve and transferFrom pattern

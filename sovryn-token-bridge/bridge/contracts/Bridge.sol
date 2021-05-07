@@ -47,7 +47,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
     //Bridge_v3 variables
-    IWETH9 internal WETH;
+    IWETH9 public WETH;
     address payable public WETHAddr;
     bool public initialPrefixSetup;
     bool public isSuffix;
@@ -348,23 +348,23 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
-    function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
-        require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
-        feePercentage = amount;
-        emit FeePercentageChanged(feePercentage);
-    }
+   // function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
+   //     require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
+   //     feePercentage = amount;
+   //     emit FeePercentageChanged(feePercentage);
+   // }
 
-    function getFeePercentage() external view returns(uint) {
-        return feePercentage;
-    }
+   // function getFeePercentage() external view returns(uint) {
+   //     return feePercentage;
+   // }
 
-    function calcMaxWithdraw() external view returns (uint) {
-        uint spent = spentToday;
-        // solium-disable-next-line security/no-block-members
-        if (now > lastDay + 24 hours)
-            spent = 0;
-        return allowTokens.calcMaxWithdraw(spent);
-    }
+    //function calcMaxWithdraw() external view returns (uint) {
+    //    uint spent = spentToday;
+    //    // solium-disable-next-line security/no-block-members
+    //    if (now > lastDay + 24 hours)
+    //        spent = 0;
+    //    return allowTokens.calcMaxWithdraw(spent);
+    //}
 
     function changeFederation(address newFederation) external onlyOwner returns(bool) {
         _changeFederation(newFederation);
