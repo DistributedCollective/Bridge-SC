@@ -46,17 +46,17 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
     //Bridge_v3 variables
-    uint256 public ethFeeCollected;
-    address public WETHAddr;
     bool public initialPrefixSetup;
     bool public isSuffix;
     bool public ethFirstTransfer;
-    
+    uint256 public ethFeeCollected;
+    address public WETHAddr;
+
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
-    event AllowTokenChanged(address _newAllowToken);
-    event PrefixUpdated(bool _isSuffix, string _prefix);
+    //event AllowTokenChanged(address _newAllowToken);
+    //event PrefixUpdated(bool _isSuffix, string _prefix);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -133,14 +133,14 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint256 granularity,
         bytes memory userData
     ) internal onlyFederation whenNotPaused nonReentrant returns(bool) {
-        require(tokenAddress != NULL_ADDRESS, "Bridge: Token is null");
-        require(receiver != NULL_ADDRESS, "Bridge: Receiver is null");
-        require(amount > 0, "Bridge: Amount 0");
-        require(bytes(symbol).length > 0, "Bridge: Empty symbol");
-        require(blockHash != NULL_HASH, "Bridge: BlockHash is null");
-        require(transactionHash != NULL_HASH, "Bridge: Transaction is null");
-        require(decimals <= 18, "Bridge: Decimals bigger 18");
-        require(Utils.granularityToDecimals(granularity) <= 18, "Bridge: invalid granularity");
+        require(tokenAddress != NULL_ADDRESS && receiver != NULL_ADDRESS, "Bridge: Token||Receiver is null");
+        //require(receiver != NULL_ADDRESS, "Bridge: Receiver is null");
+        require(amount > 0 && receiver != NULL_ADDRESS, "Bridge: Amount 0||empty symbol");
+        //require(bytes(symbol).length > 0, "Bridge: Empty symbol");
+        require(blockHash != NULL_HASH && transactionHash != NULL_HASH, "Bridge: BlockHash||txhash is null");
+        //require(transactionHash != NULL_HASH, "Bridge: Transaction is null");
+        require(decimals <= 18 && Utils.granularityToDecimals(granularity) <= 18, "Bridge: Decimals>18||invalid granularity");
+        //require(Utils.granularityToDecimals(granularity) <= 18, "Bridge: invalid granularity");
 
         _processTransaction(blockHash, transactionHash, receiver, amount, logIndex);
 
@@ -248,12 +248,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         bytes calldata
     ) external whenNotPaused whenNotUpgrading {
         //Hook from ERC777address
-        if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
-        require(to == address(this), "Bridge: Not to address");
-        address tokenToUse = _msgSender();
-        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
-        //This can only be used with trusted contracts
-        crossTokens(tokenToUse, from, amount, userData);
+      //  if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
+      //  require(to == address(this), "Bridge: Not to address");
+      //  address tokenToUse = _msgSender();
+      //  require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
+      //  //This can only be used with trusted contracts
+      //  crossTokens(tokenToUse, from, amount, userData);
     }
 
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
@@ -262,15 +262,24 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         //uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
     //V3 upgrade change global token fee to per token fee
         uint256 fee = allowTokens.getFeePerToken(tokenToUse);
-        
+        //require( fee > 0 , "fee should be > 0");
+
+        if(fee>0 ){
+        if (tokenToUse== WETHAddr ) {
+            ethFeeCollected = ethFeeCollected.add(fee);
+        }
+        else {
+            IERC20(tokenToUse).safeTransfer(owner(), fee);
+        }
+        }
         uint256 amountMinusFees = amount.sub(fee);
         if (isASideToken) {
-            uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
-            fee = fee.add(modulo);
-            amountMinusFees = amountMinusFees.sub(modulo);
-            if (fee > 0) {
-                IERC20(tokenToUse).safeTransfer(owner(), fee);
-            }
+        //    uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
+        //    fee = fee.add(modulo);
+        //    amountMinusFees = amountMinusFees.sub(modulo);
+            //if (fee > 0) {
+            //    IERC20(tokenToUse).safeTransfer(owner(), fee);
+            //}
             verifyWithAllowTokens(tokenToUse, amount, isASideToken);
             //Side Token Crossing
             ISideToken(tokenToUse).burn(amountMinusFees, userData);
@@ -279,14 +288,14 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         }
         else {
             //Main Token Crossing
-            if (fee > 0) {
-                if (tokenToUse== WETHAddr ) {
-                   ethFeeCollected = ethFeeCollected.add(fee);
-                }
-                else {
-                   IERC20(tokenToUse).safeTransfer(owner(), fee);
-                }
-            }
+            //if (fee > 0) {
+              //  if (tokenToUse== WETHAddr ) {
+              //     ethFeeCollected = ethFeeCollected.add(fee);
+              //  }
+              //  else {
+              //     IERC20(tokenToUse).safeTransfer(owner(), fee);
+              //  }
+            //}
                 uint8 decimals;
                 uint256 granularity;
                 string memory symbol;
@@ -330,13 +339,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
     function verifyWithAllowTokens(address tokenToUse, uint256 amount, bool isASideToken) private  {
         // solium-disable-next-line security/no-block-members
-        if (now > lastDay + 24 hours) {
-            // solium-disable-next-line security/no-block-members
-            lastDay = now;
-            spentToday = 0;
-        }
+        //if (now > lastDay + 24 hours) {
+        //    // solium-disable-next-line security/no-block-members
+        //    lastDay = now;
+        //    spentToday = 0;
+        //}
         require(allowTokens.isValidTokenTransfer(tokenToUse, amount, spentToday, isASideToken), "Bridge: Bigger than limit");
-        spentToday = spentToday.add(amount);
+        //spentToday = spentToday.add(amount);
     }
 
     function getTransactionId(
@@ -365,15 +374,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
-   // function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
-   //     require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
-   //     feePercentage = amount;
-   //     emit FeePercentageChanged(feePercentage);
-   // }
+    //function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
+    //    require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
+    //    feePercentage = amount;
+    //    emit FeePercentageChanged(feePercentage);
+    // }
 
-   // function getFeePercentage() external view returns(uint) {
-   //     return feePercentage;
-   // }
+    //function getFeePercentage() external view returns(uint) {
+    //    return feePercentage;
+    //}
 
     //function calcMaxWithdraw() external view returns (uint) {
     //    uint spent = spentToday;
@@ -421,21 +430,23 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
 //// Bridge v3 upgrade functions
     function recieveEth() external payable {
-        require(msg.value > 0, "Eth amount send should be > 0");
-        require(WETHAddr != address(0), "WETHAddr is the zero address");            
+        require(msg.value > 0 && (msg.data.length == 0) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        //require(WETHAddr != address(0), "WETHAddr is the zero address"); 
+        //require(msg.data.length == 0, "cannot send Ether from smart contract");           
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
         }
-        bytes memory _userData = "";
-        if(msg.data.length > 0) {
-            _userData = msg.data;
-        }
-        crossTokens(WETHAddr, msg.sender, msg.value, _userData);
+        //bytes memory _userData = "";
+        //if(msg.data.length > 0) {
+        //    _userData = msg.data;
+        // }
+        //crossTokens(WETHAddr, msg.sender, msg.value, _userData);
+        crossTokens(WETHAddr, msg.sender, msg.value, "");
     }
 
     function setWETHAddress(address _WETHAddr) external onlyOwner {
-        require(_WETHAddr != address(0), "WETHAddr is the zero address");
-        require(!ethFirstTransfer, "cannot change WETHAddr after first transfer");
+        require(_WETHAddr != address(0) && !ethFirstTransfer , "No set WETHAddr AF 1st transfer");
+        //require(!ethFirstTransfer, "cannot change WETHAddr after first transfer");
         WETHAddr = _WETHAddr;
     }
 
@@ -447,13 +458,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function _changeAllowTokens(address newAllowTokens) internal {
         require(newAllowTokens != NULL_ADDRESS, "Bridge: newAllowTokens is empty");
         allowTokens = IAllowTokens(newAllowTokens);
-        emit AllowTokenChanged(newAllowTokens);
+        //emit AllowTokenChanged(newAllowTokens);
     }
     function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
         require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
         isSuffix = _isSuffix;
         symbolPrefix = _prefix;
-        emit PrefixUpdated(isSuffix, _prefix);
+        //emit PrefixUpdated(isSuffix, _prefix);
     }
 
     function withdrawAllEthFees(address payable _to) public payable onlyOwner {

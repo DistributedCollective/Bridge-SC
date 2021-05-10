@@ -74,9 +74,9 @@ interface IBridge {
     event NewSideToken(address indexed _newSideTokenAddress, address indexed _originalTokenAddress, string _newSymbol, uint256 _granularity);
     event AcceptedCrossTransfer(address indexed _tokenAddress, address indexed _to, uint256 _amount, uint8 _decimals, uint256 _granularity,
         uint256 _formattedAmount, uint8 _calculatedDecimals, uint256 _calculatedGranularity, bytes _userData);
-    event FeePercentageChanged(uint256 _amount);
+    //event FeePercentageChanged(uint256 _amount);
     event ErrorTokenReceiver(bytes _errorData);
-    event AllowTokenChanged(address _newAllowToken);
-    event PrefixUpdated(bool _isPrefix, string _prefix);
+    //event AllowTokenChanged(address _newAllowToken);
+    //event PrefixUpdated(bool _isPrefix, string _prefix);
 
 }
