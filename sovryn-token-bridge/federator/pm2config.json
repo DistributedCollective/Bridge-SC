@@ -1,11 +1,11 @@
 {
   "apps": [
     {
-      "name": "Federator",
+      "name": "11Federator",
       "script": "./src/main.js",
       "watch": false,
-      "out_file": "./logs/out.log",
-      "error_file": "./logs/err.log",
+      "out_file": "./federator.log",
+      "error_file": "./federator-stderr.log",
       "time": true
     }
   ]
