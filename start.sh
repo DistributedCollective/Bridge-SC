@@ -30,7 +30,7 @@ cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
 echo "starting federator please wait..."
-nohup 2>&1 docker-compose up > federator.log  &
+nohup 2>&1 docker-compose -f docker-compose-prod.yml up > federator.log  &
 sleep 30
 echo "federator logs: /home/ubuntu/Bridge-SC/federator.log"
 rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
