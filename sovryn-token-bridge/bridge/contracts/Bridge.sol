@@ -48,9 +48,11 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     //Bridge_v3 variables
     bool public initialPrefixSetup;
     bool public isSuffix;
-    bool public ethFirstTransfer;
+    bool private ethFirstTransfer;
     uint256 public ethFeeCollected;
-    address public WETHAddr;
+    address private WETHAddr;
+    string private nativeTokenSymbol;
+
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -82,15 +84,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         return "v3";
     }
 
-    modifier onlyFederation() {
-        require(msg.sender == federation, "Bridge: Sender not Federation");
-        _;
-    }
+    //modifier onlyFederation() {
+    //    require(msg.sender == federation, "Bridge: Sender not Federation");
+    //    _;
+    // }
 
-    modifier whenNotUpgrading() {
-        require(!isUpgrading, "Bridge: Upgrading");
-        _;
-    }
+    // modifier whenNotUpgrading() {
+    //     require(!isUpgrading, "Bridge: Upgrading");
+    //     _;
+    // }
 
     function acceptTransfer(
         address tokenAddress,
@@ -132,14 +134,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint8 decimals,
         uint256 granularity,
         bytes memory userData
-    ) internal onlyFederation whenNotPaused nonReentrant returns(bool) {
-        require(tokenAddress != NULL_ADDRESS && receiver != NULL_ADDRESS, "Bridge: Token||Receiver is null");
+    ) internal whenNotPaused nonReentrant returns(bool) {
+        require(msg.sender == federation && tokenAddress != NULL_ADDRESS && receiver != NULL_ADDRESS && amount > 0 && bytes(symbol).length > 0 , "Bridge: Token||Receiver null, amount=0,empty symbol");
+        //require(msg.sender == federation, "Bridge: Sender not Federation");
         //require(receiver != NULL_ADDRESS, "Bridge: Receiver is null");
-        require(amount > 0 && receiver != NULL_ADDRESS, "Bridge: Amount 0||empty symbol");
+        //require(amount > 0 && bytes(symbol).length > 0, "Bridge: Amount 0||empty symbol");
         //require(bytes(symbol).length > 0, "Bridge: Empty symbol");
-        require(blockHash != NULL_HASH && transactionHash != NULL_HASH, "Bridge: BlockHash||txhash is null");
+        require(blockHash != NULL_HASH && transactionHash != NULL_HASH && decimals <= 18 && Utils.granularityToDecimals(granularity) <= 18, "Bridge: BlockHash||txhash is null,decimal>18,NA granluarity");
         //require(transactionHash != NULL_HASH, "Bridge: Transaction is null");
-        require(decimals <= 18 && Utils.granularityToDecimals(granularity) <= 18, "Bridge: Decimals>18||invalid granularity");
+        //require(decimals <= 18 && Utils.granularityToDecimals(granularity) <= 18, "Bridge: Decimals>18||invalid granularity");
         //require(Utils.granularityToDecimals(granularity) <= 18, "Bridge: invalid granularity");
 
         _processTransaction(blockHash, transactionHash, receiver, amount, logIndex);
@@ -227,8 +230,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint256 amount,
         address receiver,
         bytes memory extraData
-    ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
-        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
+    ) private whenNotPaused nonReentrant returns(bool) {
+        require(!isUpgrading && tokenToUse != WETHAddr, "Bridge: Upgrading||Cannot transfer WETH");
+        //require(!isUpgrading, "Bridge: Upgrading");
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, extraData);
@@ -246,10 +250,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint amount,
         bytes calldata userData,
         bytes calldata
-    ) external whenNotPaused whenNotUpgrading {
+    ) external whenNotPaused {
         //Hook from ERC777address
        if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
-       require(to == address(this), "Bridge: Not to address");
+       require(!isUpgrading && to == address(this), "Bridge: Upgrading||Not to address");
+       //require(!isUpgrading, "Bridge: Upgrading");
+       //require(to == address(this) && _msgSender != WETHAddr, "Bridge: Not to address, WETH not allowed");
        address tokenToUse = _msgSender();
        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
        //This can only be used with trusted contracts
@@ -289,7 +295,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             if (tokenToUse== WETHAddr ) {
                 decimals = 18;
                 granularity = 1;
-                symbol = "WETH";
+                symbol = nativeTokenSymbol;
             }
             else {
                 ( decimals, granularity,  symbol) = Utils.getTokenInfo(tokenToUse);
@@ -384,15 +390,20 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit SideTokenFactoryChanged(newSideTokenFactory);
     }
 
-    function startUpgrade() external onlyOwner {
-        isUpgrading = true;
+    function startUpgrade(bool _isUpgrading) external onlyOwner {
+        isUpgrading = _isUpgrading;
         emit Upgrading(isUpgrading);
     }
 
-    function endUpgrade() external onlyOwner {
-        isUpgrading = false;
-        emit Upgrading(isUpgrading);
-    }
+    // function startUpgrade() external onlyOwner {
+    //     isUpgrading = true;
+    //     emit Upgrading(isUpgrading);
+    // }
+
+    // function endUpgrade() external onlyOwner {
+    //     isUpgrading = false;
+    //     emit Upgrading(isUpgrading);
+    // }
 
 //// Bridge v3 upgrade functions
     function recieveEth() external payable {
@@ -432,6 +443,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         ethFeeCollected = 0;
         _to.transfer(ethFeeCollected);
     }
+
+    function setNativeTokenSymbol(string calldata _nativeTokenSymbol) external onlyOwner {
+        nativeTokenSymbol = _nativeTokenSymbol;
+    }
+
+    function getNativeTokenSymbol(string calldata _nativeTokenSymbol) external view returns(string memory) {
+        return nativeTokenSymbol;
+    }
+
+
 
     // Commented because it is unused for us and need decrease contract size
     //This method is only to recreate the USDT and USDC tokens on rsk without granularity restrictions.
