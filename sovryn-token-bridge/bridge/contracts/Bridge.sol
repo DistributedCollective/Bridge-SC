@@ -248,38 +248,31 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         bytes calldata
     ) external whenNotPaused whenNotUpgrading {
         //Hook from ERC777address
-      //  if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
-      //  require(to == address(this), "Bridge: Not to address");
-      //  address tokenToUse = _msgSender();
-      //  require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
-      //  //This can only be used with trusted contracts
-      //  crossTokens(tokenToUse, from, amount, userData);
+       if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
+       require(to == address(this), "Bridge: Not to address");
+       address tokenToUse = _msgSender();
+       require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
+       //This can only be used with trusted contracts
+       crossTokens(tokenToUse, from, amount, userData);
     }
 
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
-        //Send the payment to the MultiSig of the Federation
-        //uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+
     //V3 upgrade change global token fee to per token fee
         uint256 fee = allowTokens.getFeePerToken(tokenToUse);
-        //require( fee > 0 , "fee should be > 0");
 
         if(fee>0 ){
-        if (tokenToUse== WETHAddr ) {
-            ethFeeCollected = ethFeeCollected.add(fee);
-        }
-        else {
-            IERC20(tokenToUse).safeTransfer(owner(), fee);
-        }
+            if (tokenToUse== WETHAddr ) {
+                ethFeeCollected = ethFeeCollected.add(fee);
+            }
+            else {
+            //Send the payment to the MultiSig of the Federation
+                IERC20(tokenToUse).safeTransfer(owner(), fee);
+            }
         }
         uint256 amountMinusFees = amount.sub(fee);
         if (isASideToken) {
-        //    uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
-        //    fee = fee.add(modulo);
-        //    amountMinusFees = amountMinusFees.sub(modulo);
-            //if (fee > 0) {
-            //    IERC20(tokenToUse).safeTransfer(owner(), fee);
-            //}
             verifyWithAllowTokens(tokenToUse, amount, isASideToken);
             //Side Token Crossing
             ISideToken(tokenToUse).burn(amountMinusFees, userData);
@@ -288,17 +281,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         }
         else {
             //Main Token Crossing
-            //if (fee > 0) {
-              //  if (tokenToUse== WETHAddr ) {
-              //     ethFeeCollected = ethFeeCollected.add(fee);
-              //  }
-              //  else {
-              //     IERC20(tokenToUse).safeTransfer(owner(), fee);
-              //  }
-            //}
-                uint8 decimals;
-                uint256 granularity;
-                string memory symbol;
+            uint8 decimals;
+            uint256 granularity;
+            string memory symbol;
 
             knownTokens[tokenToUse] = true;
             if (tokenToUse== WETHAddr ) {
@@ -373,25 +358,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         require(!processed[compiledId], "Bridge: Already processed");
         processed[compiledId] = true;
     }
-
-    //function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
-    //    require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
-    //    feePercentage = amount;
-    //    emit FeePercentageChanged(feePercentage);
-    // }
-
-    //function getFeePercentage() external view returns(uint) {
-    //    return feePercentage;
-    //}
-
-    //function calcMaxWithdraw() external view returns (uint) {
-    //    uint spent = spentToday;
-    //    // solium-disable-next-line security/no-block-members
-    //    if (now > lastDay + 24 hours)
-    //        spent = 0;
-    //    return allowTokens.calcMaxWithdraw(spent);
-    //}
-
     function changeFederation(address newFederation) external onlyOwner returns(bool) {
         _changeFederation(newFederation);
         return true;
@@ -430,18 +396,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
 //// Bridge v3 upgrade functions
     function recieveEth() external payable {
-        require(msg.value > 0 && (msg.data.length == 0) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
-        //require(WETHAddr != address(0), "WETHAddr is the zero address"); 
-        //require(msg.data.length == 0, "cannot send Ether from smart contract");           
+        require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
         }
-        //bytes memory _userData = "";
-        //if(msg.data.length > 0) {
-        //    _userData = msg.data;
-        // }
-        //crossTokens(WETHAddr, msg.sender, msg.value, _userData);
-        crossTokens(WETHAddr, msg.sender, msg.value, "");
+        bytes memory _userData = "";        
+        crossTokens(WETHAddr, msg.sender, msg.value, _userData);
     }
 
     function setWETHAddress(address _WETHAddr) external onlyOwner {
