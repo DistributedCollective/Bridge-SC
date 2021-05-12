@@ -30,6 +30,7 @@ contract('Bridge', async function (accounts) {
     const anAccount = accounts[3];
     const newBridgeManager = accounts[4];
     const federation = accounts[5];
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
     beforeEach(async function () {
         this.allowTokens = await AllowTokens.new(bridgeManager);
@@ -65,30 +66,146 @@ contract('Bridge', async function (accounts) {
         });
 
 
+        describe('recieveEth without any initiation', async function () {
+            it('should revert if weth address called by non-admin', async function() {
+                await utils.expectThrow(this.bridge.setWETHAddress(this.weth.address, {from: accounts[6]}))
+            })
+
+            it('should not be able to set weth address with zero address', async function() {
+                await utils.expectThrow(this.bridge.setWETHAddress(ZERO_ADDRESS, {from: bridgeManager}))
+            })
+
+            it('should revert if weth address is zero address', async function() {
+                const amount = web3.utils.toWei('2');
+                await utils.expectThrow(this.bridge.recieveEthAt(accounts[6], Buffer.from(""), {from: accounts[7], value: amount}));
+            })
+
+            it('should be able to change weth address before first eth received', async function() {
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager}).then(
+                    () => this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
+                );
+            })
+
+            it('should not be able to set weth address after first set attempted', async function() {
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
+                const amount = web3.utils.toWei('2');
+                const fee = web3.utils.toWei('0.5');
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                await this.bridge.recieveEthAt(accounts[6], Buffer.from(""), {from: accounts[7], value: amount})
+                await utils.expectThrow(this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager}))
+            })
+
+            it('should revert if value sent is 0', async function() {
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
+                const amount = web3.utils.toWei('0');
+                const fee = web3.utils.toWei('0.5');
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                await utils.expectThrow(this.bridge.recieveEthAt(accounts[6], Buffer.from(""), {from: accounts[7], value: amount}))
+            })
+
+            it('should revert if sender is contract address', async function() {
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
+                const amount = web3.utils.toWei('5');
+                const fee = web3.utils.toWei('0.5');
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                await utils.expectThrow(this.bridge.recieveEthAt(accounts[6], Buffer.from(""), {from: this.weth.address, value: amount}))
+            })
+        })
+
         describe('recieveEth', async function () {
+            beforeEach(async function () {
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+            })
+
             it('recieveEth and emit cross event', async function () {
+                const fee = web3.utils.toWei('0.5');
+                const amount = web3.utils.toWei('2');
                 
-                    const amount = web3.utils.toWei('2');
-                    const fee = web3.utils.toWei('0.5');    
-                    await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
-                    await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
-                    console.log("this.weth.address" + this.weth.address);
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
 
-                    const bridgeBalanceETHBF = await web3.eth.getBalance(this.bridge.address);
-                    const userETHBalanceBF = await web3.eth.getBalance(tokenOwner);
-                    console.log("bridgeBalanceETHBF " + bridgeBalanceETHBF);
-                    console.log("userETHBalanceBF " + userETHBalanceBF);
+                const bridgeBalanceETHBF = await web3.eth.getBalance(this.bridge.address);
+                const userETHBalanceBF = await web3.eth.getBalance(tokenOwner);
+                const ethFeeCollectedBF = await this.bridge.ethFeeCollected();
+                console.log("bridgeBalanceETHBF " + bridgeBalanceETHBF.toString());
+                console.log("userETHBalanceBF " + userETHBalanceBF.toString());
+                console.log("ethFeeCollectedBF " + ethFeeCollectedBF.toString());
 
-                    await this.bridge.recieveEth({from: accounts[1], value: amount});
-                    const bridgeBalanceETHAF = await web3.eth.getBalance(this.bridge.address);
-                    const userETHBalanceAF = await web3.eth.getBalance(tokenOwner);
-                    console.log("bridgeBalanceETHAF " + bridgeBalanceETHAF);
-                    console.log("userETHBalanceAF " + userETHBalanceAF);
+                receipt = await this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: accounts[1], value: amount});
+                utils.checkRcpt(receipt);
+                const bridgeBalanceETHAF = await web3.eth.getBalance(this.bridge.address);
+                const userETHBalanceAF = await web3.eth.getBalance(tokenOwner);
+                const ethFeeCollectedAF = await this.bridge.ethFeeCollected();
+                console.log("bridgeBalanceETHAF " + bridgeBalanceETHAF.toString());
+                console.log("userETHBalanceAF " + userETHBalanceAF.toString());
+                console.log("ethFeeCollectedAF " + ethFeeCollectedAF.toString());
+                console.log(await this.weth.symbol())
 
-                    //utils.checkRcpt(receipt);
-             
+                assert.equal(receipt.logs[0].event, 'Cross');
+                assert.equal(receipt.logs[0].args[0], this.weth.address);
+                assert.equal(receipt.logs[0].args[1], tokenOwner);
+                assert.equal((receipt.logs[0].args[2]).toString(), new BN(amount).sub(new BN(fee)).toString());
+                assert.equal(receipt.logs[0].args[3], await this.weth.symbol());
+                assert.equal(receipt.logs[0].args[4], null);
+                assert.equal(receipt.logs[0].args[5].toString(), (await this.weth.decimals()).toString());
+                assert.equal(receipt.logs[0].args[6].toString(), '1');
+
+                assert.equal(amount.toString(), (new BN(bridgeBalanceETHBF).add(new BN(bridgeBalanceETHAF))).toString() )
+                assert.equal(ethFeeCollectedAF.toString(), fee)
+                // ----------- NEED TO CHECK ON THIS ISSUE ------------
+                assert.equal(userETHBalanceAF.toString(), (new BN(userETHBalanceBF).sub(new BN(amount))).toString() )
+                const isKnownToken = await this.bridge.knownTokens(this.weth.address);
+                assert.equal(isKnownToken, true);
             });
-        });
+
+            it('should generate cross event with extra data in recievedEthAt', async function () {
+                const extraData = 'Extra data';
+                const amount = web3.utils.toWei('2');
+                const fee = web3.utils.toWei('0.5');
+
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+
+                receipt = await this.bridge.recieveEthAt(tokenOwner, Buffer.from(extraData), {from: accounts[1], value: amount});
+                utils.checkRcpt(receipt);
+                const result = utils.hexaToString(receipt.logs[0].args[4]);
+                assert.equal(receipt.logs[0].event, 'Cross');
+                assert.equal(result, extraData);
+            });
+
+            it('rejects to receive tokens lesser than  min eth allowed', async function() {
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: bridgeManager });
+                let minTokensAllowed = await this.allowTokens.getMinPerToken(this.weth.address);
+                let amount = minTokensAllowed.sub(new BN(web3.utils.toWei('0.2')));
+                
+                await utils.expectThrow(this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: accounts[1], value: amount.toString()}));
+
+                const isKnownToken = await this.bridge.knownTokens(this.weth.address);
+                assert.equal(isKnownToken, false);
+                const bridgeBalance = await this.weth.balanceOf(this.bridge.address);
+                assert.equal(bridgeBalance.toString(), 0);
+            });
+
+            // NOT SURE IF WE NEED THIS TEST CASES SINCE THE MAX TOKEN ALLOWED IS TOO HIGH FOR ETHEREUM
+/*
+            it('clear spent today and successfully receives eth', async function() {
+                const amount = web3.utils.toWei('2');
+                let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
+                let dailyLimit = await this.allowTokens.dailyLimit();
+                const fee = web3.utils.toWei('0.5');
+
+                for(let tokensSent = 0; tokensSent < dailyLimit; tokensSent = BigInt(maxTokensAllowed) + BigInt(tokensSent)) {
+                    await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                    await this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: accounts[1], value: maxTokensAllowed});
+                }
+                await utils.increaseTimestamp(web3, ONE_DAY + 1);
+
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                let receipt = await this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: accounts[1], value: amount});
+                utils.checkRcpt(receipt);
+            });
+*/
+        })
 
         describe('owner', async function () {
             it('check manager', async function () {
