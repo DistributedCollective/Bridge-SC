@@ -67,7 +67,7 @@ interface IBridge {
         bytes calldata userData
     ) external returns(bool);
 
-    function recieveEth() external payable;
+    function recieveEthAt(address _receiver, bytes calldata _extraData) external payable;
 
     event Cross(address indexed _tokenAddress, address indexed _to, uint256 _amount, string _symbol, bytes _userData,
         uint8 _decimals, uint256 _granularity);

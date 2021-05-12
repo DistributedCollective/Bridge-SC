@@ -52,7 +52,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 public ethFeeCollected;
     address private WETHAddr;
     string private nativeTokenSymbol;
-    address public aggregatorAddr;
+    //address public aggregatorAddr;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -322,13 +322,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
     function verifyWithAllowTokens(address tokenToUse, uint256 amount, bool isASideToken) private  {
         // solium-disable-next-line security/no-block-members
-        //if (now > lastDay + 24 hours) {
-        //    // solium-disable-next-line security/no-block-members
-        //    lastDay = now;
-        //    spentToday = 0;
-        //}
+        if (now > lastDay + 24 hours) {
+            // solium-disable-next-line security/no-block-members
+            lastDay = now;
+            spentToday = 0;
+        }
         require(allowTokens.isValidTokenTransfer(tokenToUse, amount, spentToday, isASideToken), "Bridge: Bigger than limit");
-        //spentToday = spentToday.add(amount);
+        spentToday = spentToday.add(amount);
     }
 
     function getTransactionId(
@@ -367,13 +367,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     //     return feePercentage;
     // }
 
-    // function calcMaxWithdraw() external view returns (uint) {
-    //     uint spent = spentToday;
-    //     // solium-disable-next-line security/no-block-members
-    //     if (now > lastDay + 24 hours)
-    //         spent = 0;
-    //     return allowTokens.calcMaxWithdraw(spent);
-    // }
+    function calcMaxWithdraw() external view returns (uint) {
+        uint spent = spentToday;
+        // solium-disable-next-line security/no-block-members
+        if (now > lastDay + 24 hours)
+            spent = 0;
+        return allowTokens.calcMaxWithdraw(spent);
+    }
 
   function changeFederation(address newFederation) external onlyOwner returns(bool) {
         _changeFederation(newFederation);
@@ -412,22 +412,24 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
 //// Bridge v3 upgrade functions
-    function recieveEth() external payable {
+    function recieveEthAt(address _receiver, bytes calldata _extraData) external payable {
         require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
         }
-        if(aggregatorAddr != address(0)){
-            crossTokens(WETHAddr, aggregatorAddr, msg.value, abi.encodePacked(msg.sender));
-        }
-        else {
-            bytes memory _userData = "";        
-            crossTokens(WETHAddr, msg.sender, msg.value, _userData);
-        }
+        crossTokens(WETHAddr, _receiver, msg.value, _extraData);
     }
-    function setAggregatorAddr(address _aggregatorAddr) external onlyOwner {
-        aggregatorAddr = _aggregatorAddr;
-    }
+    //     if(aggregatorAddr != address(0)){
+    //         crossTokens(WETHAddr, aggregatorAddr, msg.value, abi.encodePacked(msg.sender));
+    //     }
+    //     else {
+    //         bytes memory _userData = "";        
+    //         crossTokens(WETHAddr, msg.sender, msg.value, _userData);
+    //     }
+    // }
+    // function setAggregatorAddr(address _aggregatorAddr) external onlyOwner {
+    //     aggregatorAddr = _aggregatorAddr;
+    // }
 
     function setWETHAddress(address _WETHAddr) external onlyOwner {
         require(_WETHAddr != address(0) && !ethFirstTransfer , "No set WETHAddr AF 1st transfer");

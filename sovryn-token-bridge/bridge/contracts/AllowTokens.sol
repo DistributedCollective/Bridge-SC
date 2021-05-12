@@ -39,9 +39,9 @@ contract AllowTokens is IAllowTokens, Ownable {
     constructor(address _manager) public  {
         transferOwnership(_manager);
         validateAllowedTokens = true;
-        maxTokensAllowed = 10000 ether;
+        maxTokensAllowed = 100000 ether;
         minTokensAllowed = 1 ether;
-        dailyLimit = 100000 ether;
+        dailyLimit = 1000000 ether;
     }
 
     function isValidatingAllowedTokens() external view returns(bool) {
@@ -115,8 +115,8 @@ contract AllowTokens is IAllowTokens, Ownable {
             return false;
         if(amount < minAllowedToken[tokenToUse])
             return false;
-        //if (spentToday + amount > dailyLimit || spentToday + amount < spentToday)
-        //    return false;
+        if (spentToday + amount > dailyLimit || spentToday + amount < spentToday)
+           return false;
         if(!isSideToken && !isTokenAllowed(tokenToUse))
             return false;
         if(feeConstToken[tokenToUse] == 0 )
