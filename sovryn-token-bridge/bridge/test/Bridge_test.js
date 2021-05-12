@@ -344,15 +344,13 @@ contract('Bridge', async function (accounts) {
                 await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
 
                 const fee = (new BN((10**16)*0.5))
-                await this.allowTokens.setFeeAndMinPerToken(this.token.address, fee, fee, {from: bridgeManager});
-
+                await this.allowTokens.setFeeAndMinPerToken(erc777.address, fee, fee, {from: bridgeManager});
                 const originalTokenBalance = await erc777.balanceOf(tokenOwner);
                 let userData = '0x1100';
                 let result = await erc777.send(this.bridge.address, amount, userData, { from: tokenOwner });
                 utils.checkRcpt(result);
-
                 let eventSignature = web3.eth.abi.encodeEventSignature('Cross(address,address,uint256,string,bytes,uint8,uint256)');
-                assert.equal(result.receipt.rawLogs[2].topics[0], eventSignature);
+                assert.equal(result.receipt.rawLogs[4].topics[0], eventSignature);
                 let decodedLog = web3.eth.abi.decodeLog([
                     {
                       "indexed": true,
@@ -389,7 +387,7 @@ contract('Bridge', async function (accounts) {
                       "name": "_granularity",
                       "type": "uint256"
                     }
-                  ], result.receipt.rawLogs[2].data, result.receipt.rawLogs[2].topics.slice(1));
+                  ], result.receipt.rawLogs[4].data, result.receipt.rawLogs[4].topics.slice(1));
 
                 assert.equal(decodedLog._tokenAddress, erc777.address);
                 assert.equal(decodedLog._to, tokenOwner);
@@ -901,13 +899,17 @@ contract('Bridge', async function (accounts) {
 
                 await this.allowTokens.addAllowedToken(erc777.address, { from: bridgeManager });
                 await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
+
+                const fee = (new BN((10**16)*0.5))
+                await this.allowTokens.setFeeAndMinPerToken(erc777.address, fee, fee, {from: bridgeManager});
+
                 const originalTokenBalance = await erc777.balanceOf(tokenOwner);
                 let userData = '0x1100';
                 let result = await erc777.send(this.bridge.address, amount, userData, { from: tokenOwner });
                 utils.checkRcpt(result);
 
                 let eventSignature = web3.eth.abi.encodeEventSignature('Cross(address,address,uint256,string,bytes,uint8,uint256)');
-                assert.equal(result.receipt.rawLogs[2].topics[0], eventSignature);
+                assert.equal(result.receipt.rawLogs[4].topics[0], eventSignature);
                 let decodedLog = web3.eth.abi.decodeLog([
                     {
                       "indexed": true,
@@ -944,11 +946,11 @@ contract('Bridge', async function (accounts) {
                       "name": "_granularity",
                       "type": "uint256"
                     }
-                  ], result.receipt.rawLogs[2].data, result.receipt.rawLogs[2].topics.slice(1));
+                  ], result.receipt.rawLogs[4].data, result.receipt.rawLogs[4].topics.slice(1));
 
                 assert.equal(decodedLog._tokenAddress, erc777.address);
                 assert.equal(decodedLog._to, tokenOwner);
-                assert.equal(decodedLog._amount, amount);
+                assert.equal(decodedLog._amount.toString(), new BN(amount).sub(new BN(fee)).toString());
                 assert.equal(decodedLog._symbol, await erc777.symbol());
                 assert.equal(decodedLog._userData, userData);
                 assert.equal(decodedLog._decimals.toString(), (await erc777.decimals()).toString());
@@ -957,7 +959,7 @@ contract('Bridge', async function (accounts) {
                 const tokenBalance = await erc777.balanceOf(tokenOwner);
                 assert.equal(tokenBalance.toString(), new BN(originalTokenBalance).sub(new BN(amount)).toString());
                 const bridgeBalance = await erc777.balanceOf(this.bridge.address);
-                assert.equal(bridgeBalance, amount);
+                assert.equal(bridgeBalance.toString(), new BN(amount).sub(new BN(fee)).toString());
                 const isKnownToken = await this.bridge.knownTokens(erc777.address);
                 assert.equal(isKnownToken, true);
             });
@@ -1807,6 +1809,7 @@ contract('Bridge', async function (accounts) {
                     let mirrorAnAccountBalance = await sideToken.balanceOf(anAccount);
                     assert.equal(mirrorAnAccountBalance.toString(), this.amount.toString());
 
+                    await this.mirrorAllowTokens.setFeeAndMinPerToken(sideToken.address, this.amountToCrossBack, this.amountToCrossBack, {from: bridgeManager});
                     //Transfer the Side tokens to the bridge, the bridge burns them and creates an event
                     let receipt = await sideToken.send(this.mirrorBridge.address, this.amountToCrossBack, "0x", { from: anAccount });
                     utils.checkRcpt(receipt);
