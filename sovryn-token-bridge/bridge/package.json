@@ -11,7 +11,7 @@
     "test": "npx truffle test",
     "coverage": "npx truffle run coverage",
     "prepare": "npx truffle compile && node ./datagen.js",
-    "ganache": "npx ganache-cli -i 5777",
+    "ganache": "npx ganache-cli -i 5777 --allowUnlimitedContractSize --gasLimit=0x1fffffffffffff",
     "deployIntegrationTest": "rm -f ./.openzeppelin/dev-5777.json && rm -f ./.openzeppelin/dev-33.json && rm -rf ./build && npx truffle migrate --reset --network rskregtest && npx truffle migrate --reset --network development"
   },
   "keywords": [
@@ -39,7 +39,9 @@
     "solidity-coverage": "^0.7.11",
     "table": "^6.0.3",
     "truffle": "^5.1.42",
-    "truffle-assertions": "^0.9.2"
+    "truffle-assertions": "^0.9.2",
+    "truffle-flattener": "^1.5.0",
+    "websocket": "^1.0.34"
   },
   "devDependencies": {
     "bl": ">=2.2.1",
