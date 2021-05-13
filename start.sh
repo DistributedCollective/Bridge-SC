@@ -1,6 +1,9 @@
 export FED_ENV=$1
 export FED_ID=$2
 
+./reset.sh
+./stop.sh
+
 # Error out early if there's any error in the script.
 # Otherwise the errors can get uncaught and this wastes development time.
 set -e
