@@ -29,8 +29,8 @@ module.exports = {
       host: "127.0.0.1",
       port: 8545,
       network_id: "*",
-      gas: 6300000,
-      gasPrice: 20000000000
+      gas: 6721975,
+      gasPrice: 200000000
     },
     //RSK
     rskregtest: {
@@ -61,7 +61,7 @@ module.exports = {
       //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
       new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
       network_id: 30,
-      gas: 6300000,
+      gas: 6800000,
       gasPrice: 65000000, // 0.065 gwei
       skipDryRun: true
     },
@@ -72,7 +72,7 @@ module.exports = {
       network_id: 3,
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
-      gas: 4700000,
+      gas: 8000000,
       gasPrice: 10000000000,
       skipDryRun: true
     },
@@ -131,9 +131,10 @@ module.exports = {
       solc: {
         version: "0.5.17",
         settings: {
-          evmVersion: "constantinople",
+          //evmVersion: "constantinople",
+          evmVersion: "istanbul",
           optimizer: {
-            enabled: false,
+            enabled: true,
             // Optimize for how many times you intend to run the code.
             // Lower values will optimize more for initial deployment cost, higher
             // values will optimize more for high-frequency usage.
