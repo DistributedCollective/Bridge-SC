@@ -80,90 +80,90 @@ module.exports = {
             ],
         },
         "3": {
-            "default": 5760,
-            "minConfirmation": 10,
+            "default": 5,
+            "minConfirmation": 5,
             "DAI": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
 	        "USDC": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
 	        "USDT": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "eSOV": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "ETH": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
-            "": [
+            "esETH": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
         },
@@ -284,132 +284,132 @@ module.exports = {
             ],
         },
         "31": {
-            "default": 10,
-            "minConfirmation": 10,
+            "default": 5,
+            "minConfirmation": 5,
             "DAIes": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "USDCes": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
 	        "USDTes": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "DAIbs": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "USDCbs": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
 	        "USDTbs": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 2500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
             "SOV": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
-            "es": [
+            "esETH": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
-            "": [
+            "ETH": [
                 {
                     "amount": 0,
-                    "confirmations": 10
+                    "confirmations": 5
                 },
                 {
                     "amount": 50,
-                    "confirmations": 30
+                    "confirmations": 5
                 },
                 {
                     "amount": 500,
-                    "confirmations": 50
+                    "confirmations": 5
                 }
             ],
           },
