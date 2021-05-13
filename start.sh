@@ -1,8 +1,7 @@
 export FED_ENV=$1
 export FED_ID=$2
 
-./reset.sh
-./stop.sh
+
 
 # Error out early if there's any error in the script.
 # Otherwise the errors can get uncaught and this wastes development time.
@@ -19,9 +18,20 @@ then
         echo "ERROR: please provide uniqe id for this federator as second cmd arg."
         exit
 fi
+
+echo "Enter pm2-public-key:"
+read PM2_PUBLIC_KEY_VAL
+echo "Enter pm2-secret-key:"
+read PM2_SECRET_KEY_VAL
+export PM2_PUBLIC_KEY=$PM2_PUBLIC_KEY_VAL
+export PM2_SECRET_KEY=$PM2_SECRET_KEY_VAL
+
+./reset.sh
+./stop.sh
+
 sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
 
-echo "start fed on $ED_ENV.."
+echo "starting federator on $ED_ENV.. this should take 30 sec, please wait" 
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
 echo "getting fed secret:"
