@@ -122,25 +122,23 @@ contract('Bridge', async function (accounts) {
             it('recieveEth and emit cross event', async function () {
                 const fee = web3.utils.toWei('0.5');
                 const amount = web3.utils.toWei('2');
+                const sender = accounts[2]
                 
                 await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
 
                 const bridgeBalanceETHBF = await web3.eth.getBalance(this.bridge.address);
-                const userETHBalanceBF = await web3.eth.getBalance(tokenOwner);
+                const tokenOwnerETHBalanceBF = await web3.eth.getBalance(tokenOwner);
+                const senderETHBalanceBF = await web3.eth.getBalance(sender);
                 const ethFeeCollectedBF = await this.bridge.ethFeeCollected();
-                console.log("bridgeBalanceETHBF " + bridgeBalanceETHBF.toString());
-                console.log("userETHBalanceBF " + userETHBalanceBF.toString());
-                console.log("ethFeeCollectedBF " + ethFeeCollectedBF.toString());
 
-                receipt = await this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: accounts[1], value: amount});
+                receipt = await this.bridge.recieveEthAt(tokenOwner, Buffer.from(""), {from: sender, value: amount});
                 utils.checkRcpt(receipt);
+
+                const etherGasCost = await utils.etherGasCost(receipt)
                 const bridgeBalanceETHAF = await web3.eth.getBalance(this.bridge.address);
-                const userETHBalanceAF = await web3.eth.getBalance(tokenOwner);
+                const tokenOwnerETHBalanceAF = await web3.eth.getBalance(tokenOwner);
+                const senderETHBalanceAF = await web3.eth.getBalance(sender);
                 const ethFeeCollectedAF = await this.bridge.ethFeeCollected();
-                console.log("bridgeBalanceETHAF " + bridgeBalanceETHAF.toString());
-                console.log("userETHBalanceAF " + userETHBalanceAF.toString());
-                console.log("ethFeeCollectedAF " + ethFeeCollectedAF.toString());
-                console.log(await this.weth.symbol())
 
                 assert.equal(receipt.logs[0].event, 'Cross');
                 assert.equal(receipt.logs[0].args[0], this.weth.address);
@@ -151,10 +149,10 @@ contract('Bridge', async function (accounts) {
                 assert.equal(receipt.logs[0].args[5].toString(), (await this.weth.decimals()).toString());
                 assert.equal(receipt.logs[0].args[6].toString(), '1');
 
+                assert.equal(tokenOwnerETHBalanceBF.toString(), tokenOwnerETHBalanceAF.toString())
                 assert.equal(amount.toString(), (new BN(bridgeBalanceETHBF).add(new BN(bridgeBalanceETHAF))).toString() )
-                assert.equal(ethFeeCollectedAF.toString(), fee)
-                // ----------- NEED TO CHECK ON THIS ISSUE ------------
-                assert.equal(userETHBalanceAF.toString(), (new BN(userETHBalanceBF).sub(new BN(amount))).toString() )
+                assert.equal(ethFeeCollectedAF.toString(), (new BN(fee).add(ethFeeCollectedBF)).toString())
+                assert.equal(senderETHBalanceAF.toString(), (new BN(senderETHBalanceBF).sub(new BN(amount)).sub(new BN(etherGasCost))).toString() )
                 const isKnownToken = await this.bridge.knownTokens(this.weth.address);
                 assert.equal(isKnownToken, true);
             });
