@@ -31,7 +31,7 @@ export PM2_SECRET_KEY=$PM2_SECRET_KEY_VAL
 
 sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
 
-echo "starting federator on $ED_ENV.. this should take 30 sec, please wait" 
+echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
 echo "getting fed secret:"
