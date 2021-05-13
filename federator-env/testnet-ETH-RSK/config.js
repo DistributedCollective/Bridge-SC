@@ -138,6 +138,34 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
+            "ETH": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 50
+                }
+            ],
+            "": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 50
+                }
+            ],
         },
         "30": {
             "default": 2880,
@@ -240,6 +268,20 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
+            "ETH": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 50
+                }
+            ],
         },
         "31": {
             "default": 10,
@@ -329,6 +371,34 @@ module.exports = {
                 }
             ],
             "SOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 50
+                }
+            ],
+            "es": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 50
+                }
+            ],
+            "": [
                 {
                     "amount": 0,
                     "confirmations": 10
