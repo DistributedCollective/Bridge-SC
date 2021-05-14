@@ -31,12 +31,13 @@ describe('TransactionSender module tests', () => {
 
     it('should getGasPrice Eth', async () => {
         let gasPrice = 111;
+        const multiplier = 1.1;
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve(gasPrice.toString()));
         let sender = new TransactionSender(web3Mock, logger, {});
         let result = await sender.getGasPrice(42); //Kovna chain id
-        expect(result).toEqual(Math.round(gasPrice*1.5));
+        expect(result).toEqual(Math.round(gasPrice*multiplier));
         result = await sender.getGasPrice(1); //Ethereum mainnet
-        expect(result).toEqual(Math.round(gasPrice*1.5));
+        expect(result).toEqual(Math.round(gasPrice*multiplier));
 
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve('0'));
         sender = new TransactionSender(web3Mock, logger, {});
