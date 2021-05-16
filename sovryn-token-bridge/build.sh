@@ -1,1 +1,1 @@
-docker build -t sovryn/fed-tokenbridge:2.0 .
+docker build -t sovryn/fed-tokenbridge:5.0 .
