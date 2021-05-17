@@ -182,7 +182,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
-    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) private {
+    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) internal {
         require(decimals == 18, "Bridge: Invalid decimals cross back");
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
@@ -227,7 +227,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         uint256 amount,
         address receiver,
         bytes memory extraData
-    ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
+    ) internal whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
         require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
@@ -256,7 +256,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
        crossTokens(tokenToUse, from, amount, userData);
     }
 
-    function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
+    function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) internal {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
     //V3 upgrade change global token fee to per token fee
         uint256 fee = allowTokens.getFeePerToken(tokenToUse);
@@ -302,7 +302,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         }     
     }
 
-    function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
+    function _createSideToken(address token, string memory symbol, uint256 granularity) internal returns (ISideToken sideToken){
         initialPrefixSetup = true;
         string memory newSymbol;
         if(!isSuffix) {
