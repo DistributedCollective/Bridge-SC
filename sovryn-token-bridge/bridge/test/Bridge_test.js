@@ -16,7 +16,9 @@ const SideTokenFactory = artifacts.require('./SideTokenFactory');
 const MultiSigWallet = artifacts.require('./MultiSigWallet');
 const UtilsContract = artifacts.require('./Utils');
 const mockReceiveTokensCall = artifacts.require('./mockReceiveTokensCall');
+const mockBridge = artifacts.require('./mockBridge');
 const TokenReceiver = artifacts.require('./TokenReceiverImpl');
+const { expectRevert } = require('@openzeppelin/test-helpers');
 
 const utils = require('./utils');
 const BN = web3.utils.BN;
@@ -33,7 +35,7 @@ contract('Bridge', async function (accounts) {
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
     beforeEach(async function () {
-        this.allowTokens = await AllowTokens.new(bridgeManager);changeAllowTokens
+        this.allowTokens = await AllowTokens.new(bridgeManager);
         
         this.token = await MainToken.new("MAIN", "MAIN", 18, web3.utils.toWei('1000000000'), { from: tokenOwner });
         await this.allowTokens.addAllowedToken(this.token.address, {from: bridgeManager});
@@ -66,6 +68,16 @@ contract('Bridge', async function (accounts) {
         });
 
         //data = this.allowTokens.contract.methods.addAllowedToken(this.token.address).encodeABI();
+
+        describe('set native token symbol', async function () {
+            it('check native token symbol', async function() {
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+
+                const updatedNativeTokenSymbol = await this.bridge.getNativeTokenSymbol()
+                assert.equal(updatedNativeTokenSymbol, nativeTokenSymbol);
+            })
+        })
 
 
         describe('recieveEthAt without any initiation', async function () {
@@ -234,7 +246,7 @@ contract('Bridge', async function (accounts) {
                 const ethFeeCollectedAF = await this.bridge.ethFeeCollected();
 
                 assert.equal(fee.toString(), (new BN(bridgeBalanceETHAF).sub(bridgeBalanceETHBF)).toString());
-                assert.equal(fee.toString(), (ethFeeCollectedBF.toString());
+                assert.equal(fee.toString(), (ethFeeCollectedBF.toString()));
                 
                 await this.bridge.withdrawAllEthFees(receiver, {from: bridgeManager});
 
@@ -273,7 +285,7 @@ contract('Bridge', async function (accounts) {
 
                 const isSuffix1 = true;
                 const symbolPrefix1 = "kk";
-                await utils.expectThrow(this.bridge.initialSymbolPrefixSetup(isSuffix1, symbolPrefix1, {from: bridgeManager});
+                await utils.expectThrow(this.bridge.initialSymbolPrefixSetup(isSuffix1, symbolPrefix1, {from: bridgeManager}));
 
                 let sideTokenAddress = await this.bridge.mappedTokens(this.token.address);
                 let sideToken = await SideToken.at(sideTokenAddress);
@@ -717,7 +729,8 @@ contract('Bridge', async function (accounts) {
                 await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
                 const originalTokenBalance = await erc777.balanceOf(tokenOwner);
                 let userData = '0x1100';
-                await utils.expectThrow(this.bridge.tokensReceived(tokenOwner,tokenOwner, this.bridge.address, amount, userData, '0x', { from: tokenOwner }));
+                const wethAddress = this.weth.address
+                await expectRevert(this.bridge.tokensReceived(tokenOwner,tokenOwner, this.bridge.address, amount, userData, '0x', { from: wethAddress }), "Bridge: Cannot transfer WETH");
             });
 
 
@@ -1948,7 +1961,7 @@ contract('Bridge', async function (accounts) {
                 const sideToken = await SideToken.at(sideTokenAddress);
                 //const feePercentageDivider = await this.mirrorBridge.feePercentageDivider();
                 //const fees = amountToCrossBack.mul(payment).div(feePercentageDivider);
-                cosnt fees = new BN(web3.utils.toWei('0.02'));
+                const fees = new BN(web3.utils.toWei('0.02'));
                 const modulo = amountToCrossBack.sub(fees).mod(new BN(granularity));
                 const originalTokenBalance = await sideToken.balanceOf(anAccount);
                 await this.allowTokens.setFeeAndMinPerToken(this.token.address, fees, fees, {from: bridgeManager});
@@ -2390,4 +2403,5 @@ contract('Bridge', async function (accounts) {
             assert.equal(result.toLowerCase(), newAddress.toLowerCase());
         });
     });
+})
 });
