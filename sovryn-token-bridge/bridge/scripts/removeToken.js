@@ -5,14 +5,11 @@ const Bridge_v1 = artifacts.require("Bridge");
 
 module.exports = async callback => {
     try {
-        const minTokenAmount = process.argv[6];
-        if (!minTokenAmount) {
-            console.error('You need to pass the minimum token amount allowed');
-            callback();
-            return;
-        }
-        //const minimumTokenAmount = Number.parseInt(minTokenAmount);
-        
+        const tokenToRemove = process.argv[6];
+        if (!tokenToRemove)
+            console.error('You need to pass the token address');
+        console.log(`You will remove the token ${tokenToRemove}`);
+
         const net = process.argv[5];
         console.log("net is:"+ net);
 
@@ -23,8 +20,6 @@ module.exports = async callback => {
             gasPriceNow = Number.parseInt(gasPrice * 1.5);
         }
         console.log("gas price now is: " + gasPriceNow); 
-
-        const minimumTokenAmount = web3.utils.toWei(minTokenAmount);
         
         //const deployer = (await web3.eth.getAccounts())[0];
         const deployer = (await web3.eth.getAccounts())[3];
@@ -34,6 +29,7 @@ module.exports = async callback => {
         const bridgeAddress = bridge_v0.address;
         const bridge_v1 = new web3.eth.Contract(Bridge_v1.abi, bridgeAddress);
 
+        console.log(await bridge_v1.methods.allowTokens().call());
         const allowTokensAddress = await bridge_v1.methods.allowTokens().call();
         const allowTokens = await AllowTokens.at(allowTokensAddress);
         console.log(`Configuring AllowTokens contract ${allowTokens.address}`);
@@ -41,15 +37,15 @@ module.exports = async callback => {
         const multiSigAddress = await allowTokens.contract.methods.owner().call();
         const multiSig = new web3.eth.Contract(MultiSigWallet.abi, multiSigAddress);
 
-        const setMinTokensAllowedData =
-            allowTokens.contract.methods.setMinTokensAllowed(minimumTokenAmount).encodeABI();
+        const tokenToRemoveData =
+            allowTokens.contract.methods.removeAllowedToken(tokenToRemove).encodeABI();
 
-        console.log(`Setting min tokens allowed in ${minimumTokenAmount}`)
-        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setMinTokensAllowedData).send({ from: deployer , gasPrice: gasPriceNow});
+        console.log(tokenToRemoveData);
+        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, tokenToRemoveData).send({ from: deployer, gasPrice: gasPriceNow });
         console.log(result)
+
     } catch (e) {
-        console.error(e);
         callback(e);
     }
     callback();
-};
+}
