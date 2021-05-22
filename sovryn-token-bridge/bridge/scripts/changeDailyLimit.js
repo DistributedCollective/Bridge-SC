@@ -5,14 +5,13 @@ const Bridge_v1 = artifacts.require("Bridge");
 
 module.exports = async callback => {
     try {
-        const minTokenAmount = process.argv[6];
-        if (!minTokenAmount) {
-            console.error('You need to pass the minimum token amount allowed');
+        const dailyLimit = process.argv[6];
+        if (!dailyLimit) {
+            console.error('You need to pass the dailyLimit of the bridge');
             callback();
             return;
         }
-        //const minimumTokenAmount = Number.parseInt(minTokenAmount);
-        
+        //const dailyLimit = Number.parseInt(dailyLimit);
         const net = process.argv[5];
         console.log("net is:"+ net);
 
@@ -24,7 +23,8 @@ module.exports = async callback => {
         }
         console.log("gas price now is: " + gasPriceNow); 
 
-        const minimumTokenAmount = web3.utils.toWei(minTokenAmount);
+
+        const dailyLimitWei = web3.utils.toWei(dailyLimit);
         
         //const deployer = (await web3.eth.getAccounts())[0];
         const deployer = (await web3.eth.getAccounts())[3];
@@ -41,11 +41,12 @@ module.exports = async callback => {
         const multiSigAddress = await allowTokens.contract.methods.owner().call();
         const multiSig = new web3.eth.Contract(MultiSigWallet.abi, multiSigAddress);
 
-        const setMinTokensAllowedData =
-            allowTokens.contract.methods.setMinTokensAllowed(minimumTokenAmount).encodeABI();
+        const changeDailyLimitData =
+            allowTokens.contract.methods.changeDailyLimit(dailyLimitWei).encodeABI();
 
-        console.log(`Setting min tokens allowed in ${minimumTokenAmount}`)
-        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setMinTokensAllowedData).send({ from: deployer , gasPrice: gasPriceNow});
+        console.log(`Setting dailyLimit tokens allowed in ${dailyLimitWei}`)
+        
+        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, changeDailyLimitData).send({ from: deployer , gasPrice: gasPriceNow});
         console.log(result)
     } catch (e) {
         console.error(e);

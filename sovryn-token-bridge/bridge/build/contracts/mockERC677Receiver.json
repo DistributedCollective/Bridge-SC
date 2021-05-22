@@ -52,25 +52,25 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"Success\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{\"onTokenTransfer(address,uint256,bytes)\":{\"notice\":\"ERC-677's only method implementation See https://github.com/ethereum/EIPs/issues/677 for details\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":\"mockERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":{\"keccak256\":\"0xc61878df5b9acab335a044033ec508bcc4217d519ca7eb3d9f1d790d9e78b8fc\",\"urls\":[\"bzz-raw://b964def7d555be9c0dcc7c8a1d276f70bf96d4a9e2e17162b9a2d1501532848b\",\"dweb:/ipfs/QmcUFsXPMs9Yt3ztg9wHZskbpezuRVtTGs17uKzbmi5Y5p\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b50610227806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a72315820f625813f971d5c8baca05f2d33429a99a49e898e37d404d08b0ff21eb879bea964736f6c63430005110032",
-  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a72315820f625813f971d5c8baca05f2d33429a99a49e898e37d404d08b0ff21eb879bea964736f6c63430005110032",
-  "sourceMap": "155:379:24:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:24;;;;;;;",
-  "deployedSourceMap": "155:379:24:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:24;;;;;;;;;;;;;;;;;;;397:135;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;397:135:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;21:11:-1;8;5:28;2:2;;;46:1;43;36:12;2:2;397:135:24;;35:9:-1;28:4;12:14;8:25;5:40;2:2;;;58:1;55;48:12;2:2;397:135:24;;;;;;100:9:-1;95:1;81:12;77:20;67:8;63:35;60:50;39:11;25:12;22:29;11:107;8:2;;;131:1;128;121:12;8:2;397:135:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;30:3:-1;22:6;14;1:33;99:1;93:3;85:6;81:16;74:27;137:4;133:9;126:4;121:3;117:14;113:30;106:37;;169:3;161:6;157:16;147:26;;397:135:24;;;;;;;;;;;;;;;:::i;:::-;;;494:31;502:7;511:6;519:5;494:31;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;23:1:-1;8:100;33:3;30:1;27:10;8:100;;;99:1;94:3;90:11;84:18;80:1;75:3;71:11;64:39;52:2;49:1;45:10;40:15;;8:100;;;12:14;494:31:24;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;397:135;;;:::o",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"Success\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{\"onTokenTransfer(address,uint256,bytes)\":{\"notice\":\"ERC-677's only method implementation See https://github.com/ethereum/EIPs/issues/677 for details\"}}}},\"settings\":{\"compilationTarget\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":\"mockERC677Receiver\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol\":{\"keccak256\":\"0x3261dd293bb559a2f8a1b667a451747d3e4d945bf928ef5883f68e128ca3f431\",\"urls\":[\"bzz-raw://ff3e56c636916b1ebf249a548521d6bc88fd716f8b28d13dadc2d4b0b3bfac61\",\"dweb:/ipfs/QmeH5cbTwAEHR6t9KqRWzC3WPuBQC622pw5jjKLtafkfta\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol\":{\"keccak256\":\"0xc61878df5b9acab335a044033ec508bcc4217d519ca7eb3d9f1d790d9e78b8fc\",\"urls\":[\"bzz-raw://b964def7d555be9c0dcc7c8a1d276f70bf96d4a9e2e17162b9a2d1501532848b\",\"dweb:/ipfs/QmcUFsXPMs9Yt3ztg9wHZskbpezuRVtTGs17uKzbmi5Y5p\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/GSN/Context.sol\":{\"keccak256\":\"0x90a3995645af7562d84b9d69363ffa5ae7217714ab61e951bf7bc450f40e4061\",\"urls\":[\"bzz-raw://216ef9d6b614db4eb46970b4e84903f2534a45572dd30a79f0041f1a5830f436\",\"dweb:/ipfs/QmNPrJ4MWKUAWzKXpUqeyKRUfosaoANZAqXgvepdrCwZAG\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/math/SafeMath.sol\":{\"keccak256\":\"0x640b6dee7a4b830bdfd52b5031a07fc2b12209f5b2e29e5d364a7d37f69d8076\",\"urls\":[\"bzz-raw://31113152e1ddb78fe7a4197f247591ca894e93f916867beb708d8e747b6cc74f\",\"dweb:/ipfs/QmbZaJyXdpsYGykVhHH9qpVGQg9DGCxE2QufbCUy3daTgq\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol\":{\"keccak256\":\"0x7721561383469953ca64c02111ee285c1d0a85293144120b88d65649b7fe3fb2\",\"urls\":[\"bzz-raw://9c5ce7ef6156dbfa561c5d28ca5c4c7bcb63a16cb9f6c7622f8a54aef442f7cf\",\"dweb:/ipfs/QmWTuJec8NkNSYroRaQDGezmrXJvhvH64ZFMwUFCAHoL5v\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol\":{\"keccak256\":\"0x4a3a810b7ebe742e897e1fd428b3eeed2196d3acea58eaf9c566ed10d545d2ed\",\"urls\":[\"bzz-raw://28d03f328e19e4099d5013de0649afaeaabac1a614e130767ab1cb4aca9775b6\",\"dweb:/ipfs/Qmb9iW7yNuYehB2NfhRMs9TakqbLVQhBhmGMkaDZ5g1Eb4\"]},\"/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/IERC20.sol\":{\"keccak256\":\"0xe5bb0f57cff3e299f360052ba50f1ea0fff046df2be070b6943e0e3c3fdad8a9\",\"urls\":[\"bzz-raw://59fd025151435da35faa8093a5c7a17de02de9d08ad27275c5cdf05050820d91\",\"dweb:/ipfs/QmQMvwEcPhoRXzbXyrdoeRtvLoifUW9Qh7Luho7bmUPRkc\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610227806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a723158209847f8d108ff6e59f942caa082a1a06e89e8f328d5b8500d638eb85d22aea63064736f6c63430005110032",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a4c0ed3614610030575b600080fd5b6101136004803603606081101561004657600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291908035906020019064010000000081111561008d57600080fd5b82018360208201111561009f57600080fd5b803590602001918460018302840111640100000000831117156100c157600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f820116905080830192505050505050509192919290505050610115565b005b7f1e0b80de8d13bab81e75e94d7bf048b504d9e18daa6c4c0a86cc1f96c477825a838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b838110156101b1578082015181840152602081019050610196565b50505050905090810190601f1680156101de5780820380516001836020036101000a031916815260200191505b5094505050505060405180910390a150505056fea265627a7a723158209847f8d108ff6e59f942caa082a1a06e89e8f328d5b8500d638eb85d22aea63064736f6c63430005110032",
+  "sourceMap": "155:379:46:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:46;;;;;;;",
+  "deployedSourceMap": "155:379:46:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;155:379:46;;;;;;;;;;;;;;;;;;;397:135;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;397:135:46;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;21:11:-1;8;5:28;2:2;;;46:1;43;36:12;2:2;397:135:46;;35:9:-1;28:4;12:14;8:25;5:40;2:2;;;58:1;55;48:12;2:2;397:135:46;;;;;;100:9:-1;95:1;81:12;77:20;67:8;63:35;60:50;39:11;25:12;22:29;11:107;8:2;;;131:1;128;121:12;8:2;397:135:46;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;30:3:-1;22:6;14;1:33;99:1;93:3;85:6;81:16;74:27;137:4;133:9;126:4;121:3;117:14;113:30;106:37;;169:3;161:6;157:16;147:26;;397:135:46;;;;;;;;;;;;;;;:::i;:::-;;;494:31;502:7;511:6;519:5;494:31;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;23:1:-1;8:100;33:3;30:1;27:10;8:100;;;99:1;94:3;90:11;84:18;80:1;75:3;71:11;64:39;52:2;49:1;45:10;40:15;;8:100;;;12:14;494:31:46;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;397:135;;;:::o",
   "source": "pragma solidity ^0.5.0;\n\nimport \"../zeppelin/token/ERC20/ERC20Detailed.sol\";\nimport \"../zeppelin/token/ERC20/ERC20.sol\";\nimport \"../IERC677Receiver.sol\";\n\ncontract mockERC677Receiver is IERC677Receiver {\n    event Success(address _sender, uint _value, bytes _data);\n    /**\n     * ERC-677's only method implementation\n     * See https://github.com/ethereum/EIPs/issues/677 for details\n     */\n    function onTokenTransfer(address _sender, uint _value, bytes memory _data) public {\n        emit Success(_sender, _value, _data);\n    }\n}",
-  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+  "sourcePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
   "ast": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
     "exportedSymbols": {
       "mockERC677Receiver": [
-        8229
+        11998
       ]
     },
-    "id": 8230,
+    "id": 11999,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 8199,
+        "id": 11968,
         "literals": [
           "solidity",
           "^",
@@ -78,38 +78,38 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:24"
+        "src": "0:23:46"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
-        "id": 8200,
+        "id": 11969,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 9751,
-        "src": "25:51:24",
+        "scope": 11999,
+        "sourceUnit": 13520,
+        "src": "25:51:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
-        "id": 8201,
+        "id": 11970,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 9693,
-        "src": "77:43:24",
+        "scope": 11999,
+        "sourceUnit": 13462,
+        "src": "77:43:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
         "file": "../IERC677Receiver.sol",
-        "id": 8202,
+        "id": 11971,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 5901,
-        "src": "121:32:24",
+        "scope": 11999,
+        "sourceUnit": 9670,
+        "src": "121:32:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -119,31 +119,31 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 8203,
+              "id": 11972,
               "name": "IERC677Receiver",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 5900,
-              "src": "186:15:24",
+              "referencedDeclaration": 9669,
+              "src": "186:15:46",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC677Receiver_$5900",
+                "typeIdentifier": "t_contract$_IERC677Receiver_$9669",
                 "typeString": "contract IERC677Receiver"
               }
             },
-            "id": 8204,
+            "id": 11973,
             "nodeType": "InheritanceSpecifier",
-            "src": "186:15:24"
+            "src": "186:15:46"
           }
         ],
         "contractDependencies": [
-          5900
+          9669
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 8229,
+        "id": 11998,
         "linearizedBaseContracts": [
-          8229,
-          5900
+          11998,
+          9669
         ],
         "name": "mockERC677Receiver",
         "nodeType": "ContractDefinition",
@@ -151,21 +151,21 @@
           {
             "anonymous": false,
             "documentation": null,
-            "id": 8212,
+            "id": 11981,
             "name": "Success",
             "nodeType": "EventDefinition",
             "parameters": {
-              "id": 8211,
+              "id": 11980,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 8206,
+                  "id": 11975,
                   "indexed": false,
                   "name": "_sender",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "222:15:24",
+                  "scope": 11981,
+                  "src": "222:15:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -173,10 +173,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 8205,
+                    "id": 11974,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "222:7:24",
+                    "src": "222:7:46",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -188,12 +188,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 8208,
+                  "id": 11977,
                   "indexed": false,
                   "name": "_value",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "239:11:24",
+                  "scope": 11981,
+                  "src": "239:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -201,10 +201,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 8207,
+                    "id": 11976,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "239:4:24",
+                    "src": "239:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -215,12 +215,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 8210,
+                  "id": 11979,
                   "indexed": false,
                   "name": "_data",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "252:11:24",
+                  "scope": 11981,
+                  "src": "252:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -228,10 +228,10 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 8209,
+                    "id": 11978,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
-                    "src": "252:5:24",
+                    "src": "252:5:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes_storage_ptr",
                       "typeString": "bytes"
@@ -241,15 +241,15 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "221:43:24"
+              "src": "221:43:46"
             },
-            "src": "208:57:24"
+            "src": "208:57:46"
           },
           {
             "body": {
-              "id": 8227,
+              "id": 11996,
               "nodeType": "Block",
-              "src": "479:53:24",
+              "src": "479:53:46",
               "statements": [
                 {
                   "eventCall": {
@@ -257,12 +257,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 8222,
+                        "id": 11991,
                         "name": "_sender",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8214,
-                        "src": "502:7:24",
+                        "referencedDeclaration": 11983,
+                        "src": "502:7:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -270,12 +270,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 8223,
+                        "id": 11992,
                         "name": "_value",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8216,
-                        "src": "511:6:24",
+                        "referencedDeclaration": 11985,
+                        "src": "511:6:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -283,12 +283,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 8224,
+                        "id": 11993,
                         "name": "_data",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8218,
-                        "src": "519:5:24",
+                        "referencedDeclaration": 11987,
+                        "src": "519:5:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes_memory_ptr",
                           "typeString": "bytes memory"
@@ -310,18 +310,18 @@
                           "typeString": "bytes memory"
                         }
                       ],
-                      "id": 8221,
+                      "id": 11990,
                       "name": "Success",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 8212,
-                      "src": "494:7:24",
+                      "referencedDeclaration": 11981,
+                      "src": "494:7:46",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_bytes_memory_ptr_$returns$__$",
                         "typeString": "function (address,uint256,bytes memory)"
                       }
                     },
-                    "id": 8225,
+                    "id": 11994,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -329,36 +329,36 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "494:31:24",
+                    "src": "494:31:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 8226,
+                  "id": 11995,
                   "nodeType": "EmitStatement",
-                  "src": "489:36:24"
+                  "src": "489:36:46"
                 }
               ]
             },
             "documentation": "ERC-677's only method implementation\nSee https://github.com/ethereum/EIPs/issues/677 for details",
-            "id": 8228,
+            "id": 11997,
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "onTokenTransfer",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 8219,
+              "id": 11988,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 8214,
+                  "id": 11983,
                   "name": "_sender",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "422:15:24",
+                  "scope": 11997,
+                  "src": "422:15:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -366,10 +366,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 8213,
+                    "id": 11982,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "422:7:24",
+                    "src": "422:7:46",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -381,11 +381,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 8216,
+                  "id": 11985,
                   "name": "_value",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "439:11:24",
+                  "scope": 11997,
+                  "src": "439:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -393,10 +393,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 8215,
+                    "id": 11984,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "439:4:24",
+                    "src": "439:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -407,11 +407,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 8218,
+                  "id": 11987,
                   "name": "_data",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "452:18:24",
+                  "scope": 11997,
+                  "src": "452:18:46",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -419,10 +419,10 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 8217,
+                    "id": 11986,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
-                    "src": "452:5:24",
+                    "src": "452:5:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes_storage_ptr",
                       "typeString": "bytes"
@@ -432,39 +432,39 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "421:50:24"
+              "src": "421:50:46"
             },
             "returnParameters": {
-              "id": 8220,
+              "id": 11989,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "479:0:24"
+              "src": "479:0:46"
             },
-            "scope": 8229,
-            "src": "397:135:24",
+            "scope": 11998,
+            "src": "397:135:46",
             "stateMutability": "nonpayable",
-            "superFunction": 5899,
+            "superFunction": 9668,
             "visibility": "public"
           }
         ],
-        "scope": 8230,
-        "src": "155:379:24"
+        "scope": 11999,
+        "src": "155:379:46"
       }
     ],
-    "src": "0:534:24"
+    "src": "0:534:46"
   },
   "legacyAST": {
-    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
+    "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/test/mockERC677Reciever.sol",
     "exportedSymbols": {
       "mockERC677Receiver": [
-        8229
+        11998
       ]
     },
-    "id": 8230,
+    "id": 11999,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 8199,
+        "id": 11968,
         "literals": [
           "solidity",
           "^",
@@ -472,38 +472,38 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:24"
+        "src": "0:23:46"
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20Detailed.sol",
         "file": "../zeppelin/token/ERC20/ERC20Detailed.sol",
-        "id": 8200,
+        "id": 11969,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 9751,
-        "src": "25:51:24",
+        "scope": 11999,
+        "sourceUnit": 13520,
+        "src": "25:51:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/zeppelin/token/ERC20/ERC20.sol",
         "file": "../zeppelin/token/ERC20/ERC20.sol",
-        "id": 8201,
+        "id": 11970,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 9693,
-        "src": "77:43:24",
+        "scope": 11999,
+        "sourceUnit": 13462,
+        "src": "77:43:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Prefix-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
+        "absolutePath": "/Users/pooh/sovryn/deploy_bridge/MAIN-Restore-RSK-ETH/Bridge-SC/sovryn-token-bridge/bridge/contracts/IERC677Receiver.sol",
         "file": "../IERC677Receiver.sol",
-        "id": 8202,
+        "id": 11971,
         "nodeType": "ImportDirective",
-        "scope": 8230,
-        "sourceUnit": 5901,
-        "src": "121:32:24",
+        "scope": 11999,
+        "sourceUnit": 9670,
+        "src": "121:32:46",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -513,31 +513,31 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 8203,
+              "id": 11972,
               "name": "IERC677Receiver",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 5900,
-              "src": "186:15:24",
+              "referencedDeclaration": 9669,
+              "src": "186:15:46",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC677Receiver_$5900",
+                "typeIdentifier": "t_contract$_IERC677Receiver_$9669",
                 "typeString": "contract IERC677Receiver"
               }
             },
-            "id": 8204,
+            "id": 11973,
             "nodeType": "InheritanceSpecifier",
-            "src": "186:15:24"
+            "src": "186:15:46"
           }
         ],
         "contractDependencies": [
-          5900
+          9669
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 8229,
+        "id": 11998,
         "linearizedBaseContracts": [
-          8229,
-          5900
+          11998,
+          9669
         ],
         "name": "mockERC677Receiver",
         "nodeType": "ContractDefinition",
@@ -545,21 +545,21 @@
           {
             "anonymous": false,
             "documentation": null,
-            "id": 8212,
+            "id": 11981,
             "name": "Success",
             "nodeType": "EventDefinition",
             "parameters": {
-              "id": 8211,
+              "id": 11980,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 8206,
+                  "id": 11975,
                   "indexed": false,
                   "name": "_sender",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "222:15:24",
+                  "scope": 11981,
+                  "src": "222:15:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -567,10 +567,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 8205,
+                    "id": 11974,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "222:7:24",
+                    "src": "222:7:46",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -582,12 +582,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 8208,
+                  "id": 11977,
                   "indexed": false,
                   "name": "_value",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "239:11:24",
+                  "scope": 11981,
+                  "src": "239:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -595,10 +595,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 8207,
+                    "id": 11976,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "239:4:24",
+                    "src": "239:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -609,12 +609,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 8210,
+                  "id": 11979,
                   "indexed": false,
                   "name": "_data",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8212,
-                  "src": "252:11:24",
+                  "scope": 11981,
+                  "src": "252:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -622,10 +622,10 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 8209,
+                    "id": 11978,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
-                    "src": "252:5:24",
+                    "src": "252:5:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes_storage_ptr",
                       "typeString": "bytes"
@@ -635,15 +635,15 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "221:43:24"
+              "src": "221:43:46"
             },
-            "src": "208:57:24"
+            "src": "208:57:46"
           },
           {
             "body": {
-              "id": 8227,
+              "id": 11996,
               "nodeType": "Block",
-              "src": "479:53:24",
+              "src": "479:53:46",
               "statements": [
                 {
                   "eventCall": {
@@ -651,12 +651,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 8222,
+                        "id": 11991,
                         "name": "_sender",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8214,
-                        "src": "502:7:24",
+                        "referencedDeclaration": 11983,
+                        "src": "502:7:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -664,12 +664,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 8223,
+                        "id": 11992,
                         "name": "_value",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8216,
-                        "src": "511:6:24",
+                        "referencedDeclaration": 11985,
+                        "src": "511:6:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -677,12 +677,12 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 8224,
+                        "id": 11993,
                         "name": "_data",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 8218,
-                        "src": "519:5:24",
+                        "referencedDeclaration": 11987,
+                        "src": "519:5:46",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes_memory_ptr",
                           "typeString": "bytes memory"
@@ -704,18 +704,18 @@
                           "typeString": "bytes memory"
                         }
                       ],
-                      "id": 8221,
+                      "id": 11990,
                       "name": "Success",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 8212,
-                      "src": "494:7:24",
+                      "referencedDeclaration": 11981,
+                      "src": "494:7:46",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_uint256_$_t_bytes_memory_ptr_$returns$__$",
                         "typeString": "function (address,uint256,bytes memory)"
                       }
                     },
-                    "id": 8225,
+                    "id": 11994,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -723,36 +723,36 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "494:31:24",
+                    "src": "494:31:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 8226,
+                  "id": 11995,
                   "nodeType": "EmitStatement",
-                  "src": "489:36:24"
+                  "src": "489:36:46"
                 }
               ]
             },
             "documentation": "ERC-677's only method implementation\nSee https://github.com/ethereum/EIPs/issues/677 for details",
-            "id": 8228,
+            "id": 11997,
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "onTokenTransfer",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 8219,
+              "id": 11988,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 8214,
+                  "id": 11983,
                   "name": "_sender",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "422:15:24",
+                  "scope": 11997,
+                  "src": "422:15:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -760,10 +760,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 8213,
+                    "id": 11982,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "422:7:24",
+                    "src": "422:7:46",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -775,11 +775,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 8216,
+                  "id": 11985,
                   "name": "_value",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "439:11:24",
+                  "scope": 11997,
+                  "src": "439:11:46",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -787,10 +787,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 8215,
+                    "id": 11984,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "439:4:24",
+                    "src": "439:4:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -801,11 +801,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 8218,
+                  "id": 11987,
                   "name": "_data",
                   "nodeType": "VariableDeclaration",
-                  "scope": 8228,
-                  "src": "452:18:24",
+                  "scope": 11997,
+                  "src": "452:18:46",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -813,10 +813,10 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 8217,
+                    "id": 11986,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
-                    "src": "452:5:24",
+                    "src": "452:5:46",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes_storage_ptr",
                       "typeString": "bytes"
@@ -826,26 +826,26 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "421:50:24"
+              "src": "421:50:46"
             },
             "returnParameters": {
-              "id": 8220,
+              "id": 11989,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "479:0:24"
+              "src": "479:0:46"
             },
-            "scope": 8229,
-            "src": "397:135:24",
+            "scope": 11998,
+            "src": "397:135:46",
             "stateMutability": "nonpayable",
-            "superFunction": 5899,
+            "superFunction": 9668,
             "visibility": "public"
           }
         ],
-        "scope": 8230,
-        "src": "155:379:24"
+        "scope": 11999,
+        "src": "155:379:46"
       }
     ],
-    "src": "0:534:24"
+    "src": "0:534:46"
   },
   "compiler": {
     "name": "solc",
@@ -853,7 +853,7 @@
   },
   "networks": {},
   "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-11T06:17:30.042Z",
+  "updatedAt": "2021-04-27T19:12:41.393Z",
   "devdoc": {
     "methods": {}
   },
