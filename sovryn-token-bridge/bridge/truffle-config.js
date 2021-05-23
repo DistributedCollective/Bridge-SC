@@ -67,8 +67,11 @@ module.exports = {
     },
      //Ethereum
     ropsten: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
+      //provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
+      provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
       network_id: 3,
+      networkCheckTimeout: 1e9,
+      timeoutBlocks: 500000,
       gas: 4700000,
       gasPrice: 10000000000,
       skipDryRun: true
@@ -95,7 +98,7 @@ module.exports = {
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
       gas: 6700000,
-      gasPrice: 101000000000,  //101 GWei
+      gasPrice: 70000000000,  //101 GWei
       skipDryRun: true
     },
     //Binance
@@ -105,6 +108,13 @@ module.exports = {
        confirmations: 10,
        timeoutBlocks: 200,
        skipDryRun: true
+    },
+    bscmainnet: {
+      provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.binance.org`),
+      network_id: 56,
+      confirmations: 10,
+      timeoutBlocks: 200,
+      skipDryRun: true
     },
   },
   plugins: [
@@ -118,9 +128,9 @@ module.exports = {
       solc: {
         version: "0.5.17",
         settings: {
-          evmVersion: "constantinople",
+          evmVersion: "istanbul",
           optimizer: {
-            enabled: false,
+            enabled: true,
             // Optimize for how many times you intend to run the code.
             // Lower values will optimize more for initial deployment cost, higher
             // values will optimize more for high-frequency usage.

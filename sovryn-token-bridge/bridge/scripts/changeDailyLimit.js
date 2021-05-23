@@ -23,13 +23,11 @@ module.exports = async callback => {
         }
         console.log("gas price now is: " + gasPriceNow); 
 
-
         const dailyLimitWei = web3.utils.toWei(dailyLimit);
         
         //const deployer = (await web3.eth.getAccounts())[0];
         const deployer = (await web3.eth.getAccounts())[3];
         console.log("deployer is " + deployer);
-
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
         const bridge_v1 = new web3.eth.Contract(Bridge_v1.abi, bridgeAddress);
@@ -44,8 +42,7 @@ module.exports = async callback => {
         const changeDailyLimitData =
             allowTokens.contract.methods.changeDailyLimit(dailyLimitWei).encodeABI();
 
-        console.log(`Setting dailyLimit tokens allowed in ${dailyLimitWei}`)
-        
+        console.log(`Setting dailyLimit tokens allowed in ${dailyLimitWei}`);
         const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, changeDailyLimitData).send({ from: deployer , gasPrice: gasPriceNow});
         console.log(result)
     } catch (e) {

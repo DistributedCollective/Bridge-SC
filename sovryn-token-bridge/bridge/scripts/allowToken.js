@@ -1,7 +1,7 @@
 const AllowTokens = artifacts.require("AllowTokens");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 const Bridge = artifacts.require("Bridge_v0");
-const Bridge_v1 = artifacts.require("Bridge");
+const Bridge_v3 = artifacts.require("Bridge");
 
 module.exports = async callback => {
     try {
@@ -27,10 +27,10 @@ module.exports = async callback => {
 
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
-        const bridge_v1 = new web3.eth.Contract(Bridge_v1.abi, bridgeAddress);
+        const bridge_v3 = new web3.eth.Contract(Bridge_v3.abi, bridgeAddress);
 
-        console.log(await bridge_v1.methods.allowTokens().call());
-        const allowTokensAddress = await bridge_v1.methods.allowTokens().call();
+        console.log(await bridge_v3.methods.allowTokens().call());
+        const allowTokensAddress = await bridge_v3.methods.allowTokens().call();
         const allowTokens = await AllowTokens.at(allowTokensAddress);
         console.log(`Configuring AllowTokens contract ${allowTokens.address}`);
 
