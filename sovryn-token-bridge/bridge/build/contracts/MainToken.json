@@ -2582,8 +2582,9 @@
       "transactionHash": "0x7e30dc1ae7692a180f742a838c411b9df7ef20f5898d1b4828aef3d964d22503"
     }
   },
-  "schemaVersion": "3.2.4",
-  "updatedAt": "2021-04-27T19:12:41.388Z",
+  "schemaVersion": "3.3.4",
+  "updatedAt": "2021-05-23T04:34:16.885Z",
+  "networkType": "ethereum",
   "devdoc": {
     "methods": {
       "allowance(address,address)": {
