@@ -412,7 +412,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
 //// Bridge v3 upgrade functions
-    function recieveEthAt(address _receiver, bytes calldata _extraData) external payable {
+    function receiveEthAt(address _receiver, bytes calldata _extraData) external payable {
         require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
