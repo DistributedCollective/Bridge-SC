@@ -35,8 +35,10 @@ module.exports = class TransactionSender {
     async getGasLimit(rawTx) {
         let estimatedGas = await this.client.eth.estimateGas({ gasPrice: rawTx.gasPrice, value: rawTx.value, to: rawTx.to, data: rawTx.data, from: rawTx.from});
 
-        //estimatedGas = (estimatedGas < 250000) ? 250000 : 3500000;
-        const minimum = 1000000;
+        // Vote: ~70k
+        // Vote+execute: A little over 250k
+        // First side token deployment: ~3.15M
+        const minimum = 300000;
         estimatedGas = (estimatedGas < minimum) ? minimum : 3500000;
 
         return estimatedGas;
