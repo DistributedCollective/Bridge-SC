@@ -19,6 +19,20 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve,ms));
 }
 
+async function exponentialSleep(attempt = 0, opts = {}) {
+    const {
+        maxSleepMs = 256000,
+        initialSleepMs = 1000,
+        logger = null,
+    } = opts;
+    let sleepMs = initialSleepMs * (2 ** attempt);
+    sleepMs = Math.min(sleepMs, maxSleepMs);
+    if(logger) {
+        logger.debug(`Sleeping ${sleepMs} ms`);
+    }
+    return await sleep(sleepMs);
+}
+
 async function waitForReceipt(txHash) {
     let timeElapsed = 0;
     let interval = 10000;
@@ -95,6 +109,7 @@ function calculatePrefixesSuffixes(nodes) {
 module.exports = {
     waitBlocks: waitBlocks,
     sleep: sleep,
+    exponentialSleep: exponentialSleep,
     hexStringToBuffer: hexStringToBuffer,
     privateToAddress: privateToAddress,
     stripHexPrefix: stripHexPrefix,

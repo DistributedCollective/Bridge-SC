@@ -222,7 +222,8 @@ contract('Bridge upgrade test', async (accounts) => {
                         let sideTokenAddress = await this.proxy.methods.mappedTokens(this.token.address).call();
                         let sideToken = await SideToken.at(sideTokenAddress);
                         const sideTokenSymbol = await sideToken.symbol();
-                        assert.equal(sideTokenSymbol, "rMAIN");
+                        //assert.equal(sideTokenSymbol, "rMAIN");
+                        assert.equal(sideTokenSymbol, "MAINr");
 
                         let originalTokenAddress = await this.proxy.methods.originalTokens(sideTokenAddress).call();
                         assert.equal(originalTokenAddress, this.token.address);
@@ -326,7 +327,8 @@ contract('Bridge upgrade test', async (accounts) => {
                         let sideTokenAddress = await this.proxy.methods.mappedTokens(this.token.address).call();
                         let sideToken = await SideToken.at(sideTokenAddress);
                         const sideTokenSymbol = await sideToken.symbol();
-                        assert.equal(sideTokenSymbol, "rMAIN");
+                        //assert.equal(sideTokenSymbol, "rMAIN");
+                        assert.equal(sideTokenSymbol, "MAINr");
 
                         let originalTokenAddress = await this.proxy.methods.originalTokens(sideTokenAddress).call();
                         assert.equal(originalTokenAddress, this.token.address);

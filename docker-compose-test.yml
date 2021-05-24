@@ -1,0 +1,16 @@
+version: "3"
+services:
+  federation:
+    image: sovryn/fed-tokenbridge:6.0
+    volumes:
+      - ./federator-env/${FED_ENV}/:/app/federator/config
+      - ./federator-env/${FED_ENV}/db:/app/federator/db
+  monitoring:
+    image: google/cadvisor:latest
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:rw"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+    ports:
+      - "8080:8080"

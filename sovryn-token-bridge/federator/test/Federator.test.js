@@ -1,11 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
+const Web3PromiEvent = require('web3-core-promievent');
+
 const Federator = require('../src/lib/Federator');
+const TransactionSender = require('../src/lib/TransactionSender');
+const CustomError = require('../src/lib/CustomError');
 const eth = require('./web3Mock/eth.js');
 const web3Mock = require('./web3Mock');
 const {ConfirmationTableReader} = require('../src/helpers/ConfirmationTableReader');
-
 
 const configFile = fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8');
 const config = JSON.parse(configFile);
@@ -19,18 +22,40 @@ const logger = {
 };
 const storagePath = `${__dirname}`;
 const testPath = `${storagePath}/lastBlock.txt`;
+const testFailingTxIdsPath = `${storagePath}/failingTxIds.txt`;
+
 let testConfig = { ...config, storagePath };
 
 function mockFederatorMethods(federator, methods) {
     federator.mainWeb3.eth = federator.mainWeb3.eth.mockMethods(methods);
 }
 
+function cleanUpTestPaths() {
+    if(fs.existsSync(testPath)) {
+        fs.unlinkSync(testPath);
+    }
+    if(fs.existsSync(testFailingTxIdsPath)) {
+        fs.unlinkSync(testFailingTxIdsPath);
+    }
+}
+
+function createPromiEventError(message) {
+    const promiEvent = Web3PromiEvent();
+    setTimeout(() => {
+        promiEvent.reject(new Error(message));
+
+    }, 10)
+    return promiEvent.eventEmitter;
+}
+
 describe('Federator module tests', () => {
     beforeEach(async function () {
         jest.clearAllMocks();
-        if(fs.existsSync(testPath)) {
-            fs.unlinkSync(testPath);
-        }
+        cleanUpTestPaths();
+    });
+
+    afterEach(() => {
+        cleanUpTestPaths();
     });
 
     it('Runs the main federator process sucessfully', async () => {
@@ -308,5 +333,81 @@ describe('Federator module tests', () => {
 
         let result = await federator._processLogs(ctr, logs);
         expect(result).toEqual(secondLogBlockNumber - 1);
+    });
+
+    describe('voteTransaction error cases', () => {
+        const log = {
+            logIndex: 2,
+            blockNumber: 2557,
+            blockHash:
+                '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash:
+                '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_a755a817',
+            returnValues:{
+                '0': '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                '1': '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                '2': '1000000000000000000',
+                '3': 'MAIN',
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '1000000000000000000',
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461'
+            },
+            event: 'Cross',
+            signature:
+                '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data:
+                    '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics:[
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826'
+                ]
+            }
+        };
+        let federator;
+        let sendTransactionSpy;
+
+        beforeEach(() => {
+            federator = new Federator(testConfig, logger, web3Mock);
+            sendTransactionSpy = jest.spyOn(TransactionSender.prototype, 'sendTransaction');
+        })
+
+        it('Should handle reverted transactions gracefully', async () => {
+            federator.sideWeb3.eth = federator.sideWeb3.eth.mockMethods({
+                sendSignedTransaction: () => createPromiEventError('Transaction has been reverted by the EVM'),
+                sendTransaction: () => createPromiEventError('Transaction has been reverted by the EVM'),
+            });
+
+            expect(sendTransactionSpy).toHaveBeenCalledTimes(0); // sanity check
+
+            let result = await federator._voteTransaction(log, '0x0'); // should not throw
+            expect(result).toBeFalsy();
+            expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
+
+            // After another call, it should NOT try to send the transaction again
+            result = await federator._voteTransaction(log, '0x0');
+            expect(result).toBeFalsy();
+            expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('Should error and retry on other exceptions', async () => {
+            federator.sideWeb3.eth = federator.sideWeb3.eth.mockMethods({
+                sendSignedTransaction: () => createPromiEventError('Invalid JSON RPC response: ""'),
+                sendTransaction: () => createPromiEventError('Invalid JSON RPC response: ""')
+            });
+
+            await expect(federator._voteTransaction(log, '0x0')).rejects.toThrow(CustomError);
+            expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
+
+            // After another call, it should try to send the transaction again
+            await expect(federator._voteTransaction(log, '0x0')).rejects.toThrow(CustomError);
+            expect(sendTransactionSpy).toHaveBeenCalledTimes(2);
+        });
     });
 })

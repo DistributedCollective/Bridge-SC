@@ -176,6 +176,59 @@ contract('AllowTokens', async function (accounts) {
         });
     });
 
+    describe('Fee And Min Per token', async function() {
+
+        it ('sets a new amount of fee and min per token', async function() {
+            let newFee = web3.utils.toWei('1');
+            let newMin = web3.utils.toWei('2');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
+
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
+
+        it('fail if not the owner', async function() {
+            let newFee = web3.utils.toWei('1');
+            let newMin = web3.utils.toWei('2');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
+
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+            
+            let newFee1 = web3.utils.toWei('4');
+            let newMin1 = web3.utils.toWei('5');
+
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: tokenDeployer }));
+            
+            feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            minToken = await this.allowTokens.getMinPerToken(this.token.address);
+            
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
+
+        it('fail if min is bigger than max', async function() {
+            await this.allowTokens.setMaxTokensAllowed(web3.utils.toWei('10'), { from: manager });
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('2'), web3.utils.toWei('11'), { from: manager }));
+        });
+
+        it('fail if fee is bigger than min', async function() {
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('2'), web3.utils.toWei('1'), { from: manager }));
+        });
+
+        it('fail if fee is 0', async function() {
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, 0, web3.utils.toWei('1'), { from: manager }));
+        });
+
+
+    });
+
     describe('Max Daily Limit tokens', async function() {
 
         it('should set initial values', async function() {
@@ -224,7 +277,18 @@ contract('AllowTokens', async function (accounts) {
 
     describe('isValidTokenTransfer', async function() {
 
+        it('should check fee set', async function() {
+            let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
+            let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
+            assert.equal(result, false);
+
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: manager });
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
+            assert.equal(result, true);
+        });
+
         it('should check max value', async function() {
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: manager });
             let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
             assert.equal(result, true);
@@ -234,7 +298,8 @@ contract('AllowTokens', async function (accounts) {
         });
 
         it('should check min value', async function() {
-            let minTokensAllowed = await this.allowTokens.getMinTokensAllowed();
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('3'), web3.utils.toWei('5'), { from: manager });
+            let minTokensAllowed = await this.allowTokens.getMinPerToken(this.token.address);
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, minTokensAllowed, 0, true);
             assert.equal(result, true);
             result = await this.allowTokens.isValidTokenTransfer(this.token.address, new BN(minTokensAllowed).sub(new BN('1')), 0, true);
@@ -242,6 +307,7 @@ contract('AllowTokens', async function (accounts) {
         });
 
         it('should check daily limit', async function() {
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: manager });
             let minTokensAllowed = await this.allowTokens.getMinTokensAllowed();
             let dailyLimit = await this.allowTokens.dailyLimit({ from: manager });
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, minTokensAllowed, new BN(dailyLimit).sub(new BN(minTokensAllowed)), true);
@@ -252,6 +318,7 @@ contract('AllowTokens', async function (accounts) {
         });
 
         it('should allow side token', async function() {
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5')), web3.utils.toWei('0.5');
             let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
             assert.equal(result, true);
@@ -267,6 +334,7 @@ contract('AllowTokens', async function (accounts) {
         });
 
         it('should check allowed token if not side token', async function() {
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: manager });
             let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, false);
             assert.equal(result, false);
@@ -281,6 +349,17 @@ contract('AllowTokens', async function (accounts) {
             result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, false);
             assert.equal(result, true);
         });
+
+        it('should check feeConstToken per token is set', async function() {
+            let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
+            let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
+            assert.equal(result, false);
+
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'),{ from: manager }) ;
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
+            assert.equal(result, true);
+        });
+
 
 
     });
@@ -433,16 +512,30 @@ contract('AllowTokens', async function (accounts) {
             assert.equal(maxTokensAfter.toString(), newMax);
         });
 
-        it('should set min tokens', async function() {
+        // it('should set min tokens', async function() {
+        //     let newMin = web3.utils.toWei('10');
+        //     let data = this.allowTokens.contract.methods.setMinTokensAllowed(newMin).encodeABI();
+        //     await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
+        //     await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
+
+        //     let tx = await this.multiSig.transactions(0);
+        //     assert.equal(tx.executed, true);
+
+        //     let maxTokensAfter = await this.allowTokens.getMinTokensAllowed();
+        //     assert.equal(maxTokensAfter.toString(), newMin.toString());
+        // });
+
+        it('should set fee and min per token', async function() {
             let newMin = web3.utils.toWei('10');
-            let data = this.allowTokens.contract.methods.setMinTokensAllowed(newMin).encodeABI();
+
+            let data = this.allowTokens.contract.methods.setFeeAndMinPerToken(this.token.address, newMin, newMin).encodeABI();
             await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
             await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
 
             let tx = await this.multiSig.transactions(0);
             assert.equal(tx.executed, true);
 
-            let maxTokensAfter = await this.allowTokens.getMinTokensAllowed();
+            let maxTokensAfter = await this.allowTokens.getMinPerToken(this.token.address);
             assert.equal(maxTokensAfter.toString(), newMin.toString());
         });
 

@@ -4,11 +4,13 @@ const abiBridge = require('../../../abis/Bridge.json');
 const abiFederation = require('../../../abis/Federation.json');
 const TransactionSender = require('./TransactionSender');
 const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
+const AppendOnlyFileStorage = require('../helpers/AppendOnlyFileStorage');
 const CustomError = require('./CustomError');
+const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3) {
+    constructor(config, logger, Web3 = web3, chatBot = null) {
         this.config = config;
         this.logger = logger;
 
@@ -22,14 +24,18 @@ module.exports = class Federator {
         this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
 
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
+        const failingTxIdsPath = `${config.storagePath || __dirname}/failingTxIds.txt`;
+        this.failingTxIds = new AppendOnlyFileStorage(failingTxIdsPath);
 
         this.confirmationTable = config.confirmationTable;
+
+        this.chatBot = chatBot || new NullBot(this.logger);
     }
 
     async run() {
-        let retries = 3;
-        const sleepAfterRetrie = 3000;
-        while (retries > 0) {
+        this.logger.info('Starting federator run');
+        const maxAttempts = 20;
+        for(let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
@@ -47,16 +53,20 @@ module.exports = class Federator {
 
                 await this._processBlocks(ctr, fromBlock, toBlock)
 
+                this.logger.info('Federator run finished');
                 return true;
             } catch (err) {
-                console.log(err)
                 this.logger.error(new Error('Exception Running Federator'), err);
-                retries--;
-                this.logger.debug(`Run ${3 - retries} retrie`);
-                if (retries > 0) {
-                    await utils.sleep(sleepAfterRetrie);
+                if(attempt === maxAttempts) {
+                    this.logger.error('All attempts exhausted and still no success. Proceeding on as normal.')
+                    const truncatedError = err.toString().slice(0, 200);
+                    await this.chatBot.sendMessage(
+                        `Error running federator after ${maxAttempts} attempts: ${truncatedError}`
+                    );
+                    return;
                 } else {
-                    process.exit();
+                    this.logger.debug(`Retrying. Attempt ${attempt}/${maxAttempts}.`);
+                    await utils.exponentialSleep(attempt, { logger: this.logger });
                 }
             }
         }
@@ -165,7 +175,6 @@ module.exports = class Federator {
             } else {
                 this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
             }
-
         } else {
             this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
         }
@@ -173,12 +182,13 @@ module.exports = class Federator {
 
 
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
+        let txId;
         try {
 
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
-            let txId = await this.federationContract.methods.getTransactionId(
+            txId = await this.federationContract.methods.getTransactionId(
                 tokenAddress,
                 receiver,
                 amount,
@@ -189,6 +199,13 @@ module.exports = class Federator {
                 decimals,
                 granularity
             ).call();
+
+            if (this.failingTxIds.contains(txId)) {
+                this.logger.info(
+                    `Transaction with id ${txId}, hash: ${transactionHash} is marked as failing -- not voting for it`
+                );
+                return false;
+            }
 
             let txData;
             if(userData) {
@@ -223,7 +240,23 @@ module.exports = class Federator {
             this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
             return true;
         } catch (err) {
-            throw new CustomError(`Exception Voting tx:${transactionHash} block: ${blockHash} token ${symbol}`, err);
+            if (txId && this._isEVMRevert(err)) {
+                // we don't want to crash everything when there's a single failed transaction, so we keep a dead-letter
+                // queue of those
+                const msgHeader = (
+                    `EVM revert when voting for tx with ` +
+                    `id: ${txId} hash: ${transactionHash} block: ${blockHash} token: ${symbol}.`
+                );
+                const msgFooter = `The transaction will be marked as failing and not retried automatically again.`;
+                this.logger.error(msgHeader + ` Detailed error: ${err}\n` + msgFooter);
+
+                this.failingTxIds.append(txId);
+
+                await this.chatBot.sendMessage(`${msgHeader}\n${msgFooter}`);
+                return false;
+            } else {
+                throw new CustomError(`Exception Voting tx:${transactionHash} block: ${blockHash} token ${symbol}`, err);
+            }
         }
     }
 
@@ -260,6 +293,17 @@ module.exports = class Federator {
         let confirmations = ctr.getConfirmations(symbol, amount)
         let blockConfirmations = currentBlock - logBlockNumber;
         return confirmations <= blockConfirmations;
+    }
+
+    _isEVMRevert(error) {
+        const revertMessage = 'Transaction has been reverted by the EVM';
+        if (error.message.indexOf(revertMessage) !== -1) {
+            return true;
+        }
+        if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
+            return true;
+        }
+        return false;
     }
 
     async _getCurrentBlockNumber() {

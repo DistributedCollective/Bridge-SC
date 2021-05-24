@@ -1,4 +1,5 @@
 const gasLimit = 6800000;
+const BN = web3.utils.BN;
 
 // from https://ethereum.stackexchange.com/questions/11444/web3-js-with-promisified-api
 const promisify = (inner) =>
@@ -127,6 +128,13 @@ function hexaToString(hexaValue)
         return result.replace(/\0/g, '');
     }
 
+async function etherGasCost(receipt) {
+    const tx = await web3.eth.getTransaction(receipt.tx);
+    const gasUsed = new BN(receipt.receipt.gasUsed);
+    const gasPrice = new BN(tx.gasPrice);
+    return gasUsed * gasPrice;
+}
+
 module.exports = {
     checkGas: checkGas,
     checkRcpt: checkRcpt,
@@ -137,6 +145,7 @@ module.exports = {
     increaseTimestamp: increaseTimestamp,
     ascii_to_hexa: ascii_to_hexa,
     NULL_ADDRESS: '0x0000000000000000000000000000000000000000',
-    hexaToString: hexaToString
+    hexaToString: hexaToString,
+    etherGasCost: etherGasCost
 };
 
