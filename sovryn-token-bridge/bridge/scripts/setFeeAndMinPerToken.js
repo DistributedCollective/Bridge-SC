@@ -18,6 +18,18 @@ module.exports = async callback => {
         const minAmount = minArg;
         console.log('Min is: ' + minAmount);
         
+
+        const net = process.argv[5];
+        console.log("net is:"+ net);
+
+        const gasPrice = await web3.eth.getGasPrice();
+        console.log("gas price is: " + gasPrice);
+        let gasPriceNow = gasPrice;
+        if (net == "mainnet") {
+            gasPriceNow = Number.parseInt(gasPrice * 1.5);
+        }
+        console.log("gas price now is: " + gasPriceNow); 
+
         //const allowTokens = await AllowTokens.deployed();
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
@@ -40,7 +52,7 @@ module.exports = async callback => {
         //const multisigAddress = await bridge_v3.methods.owner().call();
         //const multiSig = new web3.eth.Contract(MultiSigWallet.abi, multisigAddress);
         console.log('MultiSig address', multiSigAddress);
-        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setFeeAndMinMethodData).send({ from: deployer, gas: 300000 });
+        const result = await multiSig.methods.submitTransaction(allowTokens.address, 0, setFeeAndMinMethodData).send({ from: deployer, gas: 300000 , gasPrice: gasPriceNow});
 
         console.log('Fee And Min per token were updated');
         console.log(result)
