@@ -123,12 +123,15 @@ DONE
 	npx truffle exec ./scripts/deployETHToken.js --network mainnet
 DONE
 
+8.1+ Set WETHAddr
+
 9+ Allow ETH Token
 	npx truffle exec ./scripts/allowToken.js --network mainnet <ETHToken>
 DONE
 
-10+ Set fee of 0.001ETH and min of 0.1ET for ETH transferH
-	npx truffle exec ./scripts/setFeeAndMinPerToken.js --network mainnet <ETHToken> 1000000000000000 100000000000000000
+10+ Set fee of 0.0001ETH and min of 0.0005ET for ETH transferH
+	npx truffle exec ./scripts/setFeeAndMinPerToken.js --network mainnet <ETHToken> 100000000000000 500000000000000
+DONE
 
 11+ Set initialSymbolPrefixSetup
 No Need -Default is for mainnet: isSuffix = false, symbolPrefix = e
