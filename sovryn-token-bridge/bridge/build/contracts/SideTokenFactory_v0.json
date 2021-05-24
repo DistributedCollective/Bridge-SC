@@ -1301,6 +1301,45 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            }
+          ],
+          "name": "PrimaryTransferred",
+          "type": "event"
+        },
+        "0x1bb6712e2def197f4249d7cc11aa86fd67e97d4c502d7cf46271c3e9594197c4": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "sideToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            }
+          ],
+          "name": "createdSideToken",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xC51579E62354A6E07E3706CabE180B7c26148959",
+      "transactionHash": "0x500105f05f8bfec6c90e49241aa25d1911a617676663ce619527735e231cfad7"
+    },
     "30": {
       "events": {
         "0x4101e71e974f68df5e9730cc223280b41654676bbb052cdcc735c3337e64d2d9": {

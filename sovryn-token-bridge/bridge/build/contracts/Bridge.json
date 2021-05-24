@@ -39111,6 +39111,292 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x3f11277de1ec7e6084b80bb080be00fd989d3e5d233d77504a7426511f5452f2": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_tokenAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_to",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "_decimals",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_granularity",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_formattedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "_calculatedDecimals",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_calculatedGranularity",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "_userData",
+              "type": "bytes"
+            }
+          ],
+          "name": "AcceptedCrossTransfer",
+          "type": "event"
+        },
+        "0x33409cca56f705a7bbed38b7db57cf3a63317f3c1b9a747bbfb3d3ecffa84f6f": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_tokenAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_to",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "_symbol",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "_userData",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "_decimals",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_granularity",
+              "type": "uint256"
+            }
+          ],
+          "name": "Cross",
+          "type": "event"
+        },
+        "0x64de857e027e5e94a8966c5707d2a9424097c78b217caf33543f84c2332483a1": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "_errorData",
+              "type": "bytes"
+            }
+          ],
+          "name": "ErrorTokenReceiver",
+          "type": "event"
+        },
+        "0x4a41a4d11aaf0c0c9e4311ac1d68b2b0134556da594779a2a35b0ddf7cd1eafb": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_newFederation",
+              "type": "address"
+            }
+          ],
+          "name": "FederationChanged",
+          "type": "event"
+        },
+        "0x97e97c577f03bda90e2c9739011ec065ed5fbfb36ae217d20bb0d9be95e160cd": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "FeePercentageChanged",
+          "type": "event"
+        },
+        "0x2ef93c4e96a4ef0b19497ff60c9e7360a8734f3d2cd27ae5318e43851734d17f": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_newSideTokenAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_originalTokenAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "_newSymbol",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_granularity",
+              "type": "uint256"
+            }
+          ],
+          "name": "NewSideToken",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Paused",
+          "type": "event"
+        },
+        "0x6719d08c1888103bea251a4ed56406bd0c3e69723c8a1686e017e7bbe159b6f8": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "PauserAdded",
+          "type": "event"
+        },
+        "0xcd265ebaf09df2871cc7bd4133404a235ba12eff2041bb89d9c714a2621c7c7e": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "PauserRemoved",
+          "type": "event"
+        },
+        "0x619936bc6e3618d0b8dc69bcc70134fe9d88f9967f3a8b8304e3183692521625": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_newSideTokenFactory",
+              "type": "address"
+            }
+          ],
+          "name": "SideTokenFactoryChanged",
+          "type": "event"
+        },
+        "0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Unpaused",
+          "type": "event"
+        },
+        "0x983e436223c000a441c2443b394ca5fb4669a513fe86dc1dd44494047b514ad9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "isUpgrading",
+              "type": "bool"
+            }
+          ],
+          "name": "Upgrading",
+          "type": "event"
+        }
+      },
+      "links": {
+        "Utils": "0x752FA1171dd6f07Ad818EA5E6Dc2c9afda928537"
+      },
+      "address": "0xB6C313a427fa911A4C9a119e80Feea0fe20E69F0",
+      "transactionHash": "0x325961197467190c649ccf5148e64ad81e6088dcb54511fb2863cd3589263bd9"
+    },
     "30": {
       "events": {
         "0x3f11277de1ec7e6084b80bb080be00fd989d3e5d233d77504a7426511f5452f2": {

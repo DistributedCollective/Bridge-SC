@@ -13026,6 +13026,135 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0xf849d00bc67e9e4bf072df9680646c59b8c5380160834c2e1d4896ce5ec81f75": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_tokenAddress",
+              "type": "address"
+            }
+          ],
+          "name": "AllowedTokenAdded",
+          "type": "event"
+        },
+        "0xbf996b4fd74f0c7159bb017b1db415b0d9a6f13129f46d0b93309d170b78df31": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_tokenAddress",
+              "type": "address"
+            }
+          ],
+          "name": "AllowedTokenRemoved",
+          "type": "event"
+        },
+        "0x56c494debe2cb09344893898449050dd58a4432e66f95108d729ad21ccfd19e7": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "_enabled",
+              "type": "bool"
+            }
+          ],
+          "name": "AllowedTokenValidation",
+          "type": "event"
+        },
+        "0xad4123ae17c414d9c6d2fec478b402e6b01856cc250fd01fbfd252fda0089d3c": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "dailyLimit",
+              "type": "uint256"
+            }
+          ],
+          "name": "DailyLimitChanged",
+          "type": "event"
+        },
+        "0xd71e2baa82a5d055fc51d591360ec316a059192a353993a9cec6a85e88d4e1da": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_maxTokens",
+              "type": "uint256"
+            }
+          ],
+          "name": "MaxTokensAllowedChanged",
+          "type": "event"
+        },
+        "0x12a646d3bbffa271e4444ba46156444c17a66ed892618d27ddfda6189622ae44": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_minTokens",
+              "type": "uint256"
+            }
+          ],
+          "name": "MinTokensAllowedChanged",
+          "type": "event"
+        },
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        "0x616446306dc04614baf9ec7c3f89cd2b5b5f890290617b8e298d7d1d31968e7f": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_token",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_feeConst",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_minAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "FeeAndMinPerTokenChanged",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x8DF20c2c85Bee0c3DA250dA96D892598C70aA1bE",
+      "transactionHash": "0xb6f409b5adde03abbc02ef40816dab1926609090c825277b21dacd6ca21724e0"
+    },
     "30": {
       "events": {
         "0xf849d00bc67e9e4bf072df9680646c59b8c5380160834c2e1d4896ce5ec81f75": {

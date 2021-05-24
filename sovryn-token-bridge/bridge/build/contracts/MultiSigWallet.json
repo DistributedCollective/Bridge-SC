@@ -27330,6 +27330,148 @@
     "version": "0.5.17+commit.d19bba13.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {
+        "0x4a504a94899432a9846e1aa406dceb1bcfd538bb839071d49d1e5e23f5be30ef": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "transactionId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Confirmation",
+          "type": "event"
+        },
+        "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "Deposit",
+          "type": "event"
+        },
+        "0x33e13ecb54c3076d8e8bb8c2881800a4d972b792045ffae98fdf46df365fed75": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "transactionId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Execution",
+          "type": "event"
+        },
+        "0x526441bb6c1aba3c9a4a6ca1d6545da9c2333c8c48343ef398eb858d72b79236": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "transactionId",
+              "type": "uint256"
+            }
+          ],
+          "name": "ExecutionFailure",
+          "type": "event"
+        },
+        "0xf39e6e1eb0edcf53c221607b54b00cd28f3196fed0a24994dc308b8f611b682d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnerAddition",
+          "type": "event"
+        },
+        "0x8001553a916ef2f495d26a907cc54d96ed840d7bda71e73194bf5a9df7a76b90": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnerRemoval",
+          "type": "event"
+        },
+        "0xa3f1ee9126a074d9326c682f561767f710e927faa811f7a99829d49dc421797a": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "required",
+              "type": "uint256"
+            }
+          ],
+          "name": "RequirementChange",
+          "type": "event"
+        },
+        "0xf6a317157440607f36269043eb55f1287a5a19ba2216afeab88cd46cbcfb88e9": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "transactionId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Revocation",
+          "type": "event"
+        },
+        "0xc0ba8fe4b176c1714197d43b9cc6bcf797a4a7461c5fe8d0ef6e184ae7601e51": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "transactionId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Submission",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x062c74f9d27b1178bb76186C1756128ccb3ccD2e",
+      "transactionHash": "0xe2ad6cadfcd80152bfc67af839f40d05204c2f57efa8add49749dcefe89170ff"
+    }, 
     "30": {
       "events": {
         "0x4a504a94899432a9846e1aa406dceb1bcfd538bb839071d49d1e5e23f5be30ef": {
