@@ -25,6 +25,9 @@ echo "Enter pm2-secret-key:"
 read PM2_SECRET_KEY_VAL
 export PM2_PUBLIC_KEY=$PM2_PUBLIC_KEY_VAL
 export PM2_SECRET_KEY=$PM2_SECRET_KEY_VAL
+echo "Enter telegram key:"
+read TELEGRAM_KEY
+echo "$TELEGRAM_KEY" > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.key
 
 ./reset.sh
 ./stop.sh
