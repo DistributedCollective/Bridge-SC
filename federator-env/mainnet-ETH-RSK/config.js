@@ -71,10 +71,14 @@ module.exports = {
                 },
                 {
                     "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5000000000000000000,
+                    "amount": 100000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -127,10 +131,14 @@ module.exports = {
                 },
                 {
                     "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5000000000000000000,
+                    "amount": 100000000000000000000,
                     "confirmations": 50
                 }
             ],	
@@ -303,10 +311,14 @@ module.exports = {
                 },
                 {
                     "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5000000000000000000,
+                    "amount": 100000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -359,10 +371,14 @@ module.exports = {
                 },
                 {
                     "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5000000000000000000,
+                    "amount": 100000000000000000000,
                     "confirmations": 50
                 }
             ],
