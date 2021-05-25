@@ -77,10 +77,10 @@ resource "aws_iam_policy_attachment" "test-attach" {
   policy_arn = "${aws_iam_policy.policy.arn}"
 }
 
-resource "aws_iam_instance_profile" "main" {
-  name  = "fed-profile"
-  role = "${aws_iam_role.secret_mng.name}"
-}
+# resource "aws_iam_instance_profile" "main" {
+#   name  = "fed-profile"
+#   role = "${aws_iam_role.secret_mng.name}"
+# }
 
 
 
@@ -96,7 +96,7 @@ resource "aws_instance" "federator" {
   vpc_security_group_ids = [aws_security_group.federator.id]
 
   # Optional: comment out if not required
-  iam_instance_profile = aws_iam_instance_profile.main.name
+  # iam_instance_profile = aws_iam_instance_profile.main.name
 
   instance_type = var.instance_type
   key_name      = var.ssh_key
