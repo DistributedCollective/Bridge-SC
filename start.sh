@@ -19,18 +19,22 @@ then
         exit
 fi
 
+
+./reset.sh
+./stop.sh
+
 echo "Enter pm2-public-key:"
 read PM2_PUBLIC_KEY_VAL
 echo "Enter pm2-secret-key:"
 read PM2_SECRET_KEY_VAL
 export PM2_PUBLIC_KEY=$PM2_PUBLIC_KEY_VAL
 export PM2_SECRET_KEY=$PM2_SECRET_KEY_VAL
+rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.key
+
 echo "Enter telegram key:"
 read TELEGRAM_KEY
 echo "$TELEGRAM_KEY" > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.key
 
-./reset.sh
-./stop.sh
 
 sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
 
