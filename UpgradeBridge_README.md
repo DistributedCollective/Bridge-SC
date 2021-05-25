@@ -136,7 +136,7 @@ DONE
 11+ Set initialSymbolPrefixSetup
 No Need -Default is for mainnet: isSuffix = false, symbolPrefix = e
 
-12+ Update origin/master     federator-env/mainnet-ETH-RSK/ 
+12+ Update origin/master     federator-env/mainnet-ETH-RSK/
 	mainnet.json
 	config.js 
         .openzeppelin/dev-30.json

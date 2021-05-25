@@ -28,11 +28,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -42,11 +42,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -56,11 +56,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -70,11 +70,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -84,11 +84,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -98,11 +98,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -112,11 +112,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -126,11 +126,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],	
@@ -144,11 +144,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -158,11 +158,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -172,11 +172,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -186,11 +186,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -200,11 +200,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -214,11 +214,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -228,11 +228,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -242,11 +242,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -260,11 +260,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -274,11 +274,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -288,11 +288,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -302,11 +302,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -316,11 +316,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -330,11 +330,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -344,11 +344,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -358,11 +358,11 @@ module.exports = {
                     "confirmations": 10
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -376,11 +376,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -390,11 +390,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -404,11 +404,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -418,11 +418,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -432,11 +432,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -446,11 +446,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -460,11 +460,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -474,11 +474,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -486,76 +486,6 @@ module.exports = {
 	    "97": {
                "default": 10,
                "minConfirmation": 10,
-               "WETH": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
-            "WBTC": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
-            "DAI": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
-            "USDT": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
-            "renBTC": [
-                {
-                    "amount": 0,
-                    "confirmations": 10
-                },
-                {
-                    "amount": 0.2,
-                    "confirmations": 30
-                },
-                {
-                    "amount": 0.5,
-                    "confirmations": 50
-                }
-            ],
         },    
         "42": {
             "default": 4,
@@ -566,11 +496,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -580,11 +510,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -594,11 +524,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -608,11 +538,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -622,11 +552,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -636,11 +566,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -650,11 +580,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 2000,
+                    "amount": 2000000000000000000000,
                     "confirmations": 30
                 },
                 {
-                    "amount": 10000,
+                    "amount": 10000000000000000000000,
                     "confirmations": 50
                 }
             ],
@@ -664,11 +594,11 @@ module.exports = {
                     "confirmations": 2
                 },
                 {
-                    "amount": 1,
+                    "amount": 1000000000000000000,
                     "confirmations": 4
                 },
                 {
-                    "amount": 5,
+                    "amount": 5000000000000000000,
                     "confirmations": 50
                 }
             ],
