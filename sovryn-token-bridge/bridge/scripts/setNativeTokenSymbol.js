@@ -8,6 +8,20 @@ module.exports = async callback => {
         if (!nativeSymbol)
             console.error('You need to pass nativeSymbol');
         
+<<<<<<< HEAD
+=======
+        const net = process.argv[5];
+        console.log("net is:"+ net);
+    
+        const gasPrice = await web3.eth.getGasPrice();
+        console.log("gas price is: " + gasPrice);
+        let gasPriceNow = gasPrice;
+            if (net == "mainnet") {
+              gasPriceNow = Number.parseInt(gasPrice * 1.5);
+            }
+
+            console.log("gas price now is: " + gasPriceNow); 
+>>>>>>> RSK-V3-Upgrade-latest-merge
         const bridge_v0 = await Bridge.deployed();
         const bridgeAddress = bridge_v0.address;
         const bridge_v3 = new web3.eth.Contract(Bridge_v3.abi, bridgeAddress);
@@ -22,7 +36,11 @@ module.exports = async callback => {
         const multisigAddress = await bridge_v3.methods.owner().call();
         const multiSig = new web3.eth.Contract(MultiSigWallet.abi, multisigAddress);
         console.log('MultiSig address', multisigAddress);
+<<<<<<< HEAD
         const result = await multiSig.methods.submitTransaction(bridge_v0.address, 0, nativeSymbolData).send({ from: deployer });
+=======
+        const result = await multiSig.methods.submitTransaction(bridge_v0.address, 0, nativeSymbolData).send({ from: deployer, gasPrice: gasPriceNow  });
+>>>>>>> RSK-V3-Upgrade-latest-merge
 
         console.log('nativeSymbol was updates');
         console.log(result)

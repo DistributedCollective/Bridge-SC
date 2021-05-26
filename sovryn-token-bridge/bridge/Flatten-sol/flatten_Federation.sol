@@ -141,9 +141,9 @@ pragma solidity ^0.5.0;
 interface IBridge {
     function version() external pure returns (string memory);
 
-    function getFeePercentage() external view returns(uint);
+    //function getFeePercentage() external view returns(uint);
 
-    function calcMaxWithdraw() external view returns (uint);
+    //function calcMaxWithdraw() external view returns (uint);
 
     /**
      * ERC-20 tokens approve and transferFrom pattern
@@ -203,13 +203,18 @@ interface IBridge {
         bytes calldata userData
     ) external returns(bool);
 
+    function receiveEthAt(address _receiver, bytes calldata _extraData) external payable;
+
     event Cross(address indexed _tokenAddress, address indexed _to, uint256 _amount, string _symbol, bytes _userData,
         uint8 _decimals, uint256 _granularity);
     event NewSideToken(address indexed _newSideTokenAddress, address indexed _originalTokenAddress, string _newSymbol, uint256 _granularity);
     event AcceptedCrossTransfer(address indexed _tokenAddress, address indexed _to, uint256 _amount, uint8 _decimals, uint256 _granularity,
         uint256 _formattedAmount, uint8 _calculatedDecimals, uint256 _calculatedGranularity, bytes _userData);
-    event FeePercentageChanged(uint256 _amount);
+    //event FeePercentageChanged(uint256 _amount);
     event ErrorTokenReceiver(bytes _errorData);
+    //event AllowTokenChanged(address _newAllowToken);
+    //event PrefixUpdated(bool _isPrefix, string _prefix);
+
 }
 
 // File: contracts/zeppelin/GSN/Context.sol

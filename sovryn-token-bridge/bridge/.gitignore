@@ -1,6 +1,4 @@
 *.key
-build
-.openzeppelin/.session
 coverage/
 coverage.json
 .coverage_contracts

@@ -98,7 +98,7 @@ module.exports = {
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
       gas: 6700000,
-      gasPrice: 101000000000,  //140 GWei
+      gasPrice: 101000000000,  //101 GWei
       skipDryRun: true
     },
     //Binance
@@ -131,7 +131,6 @@ module.exports = {
       solc: {
         version: "0.5.17",
         settings: {
-          //evmVersion: "constantinople",
           evmVersion: "istanbul",
           optimizer: {
             enabled: true,

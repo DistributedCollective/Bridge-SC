@@ -939,9 +939,9 @@ pragma solidity ^0.5.0;
 interface IBridge {
     function version() external pure returns (string memory);
 
-    function getFeePercentage() external view returns(uint);
+    //function getFeePercentage() external view returns(uint);
 
-    function calcMaxWithdraw() external view returns (uint);
+    //function calcMaxWithdraw() external view returns (uint);
 
     /**
      * ERC-20 tokens approve and transferFrom pattern
@@ -1001,13 +1001,18 @@ interface IBridge {
         bytes calldata userData
     ) external returns(bool);
 
+    function receiveEthAt(address _receiver, bytes calldata _extraData) external payable;
+
     event Cross(address indexed _tokenAddress, address indexed _to, uint256 _amount, string _symbol, bytes _userData,
         uint8 _decimals, uint256 _granularity);
     event NewSideToken(address indexed _newSideTokenAddress, address indexed _originalTokenAddress, string _newSymbol, uint256 _granularity);
     event AcceptedCrossTransfer(address indexed _tokenAddress, address indexed _to, uint256 _amount, uint8 _decimals, uint256 _granularity,
         uint256 _formattedAmount, uint8 _calculatedDecimals, uint256 _calculatedGranularity, bytes _userData);
-    event FeePercentageChanged(uint256 _amount);
+    //event FeePercentageChanged(uint256 _amount);
     event ErrorTokenReceiver(bytes _errorData);
+    //event AllowTokenChanged(address _newAllowToken);
+    //event PrefixUpdated(bool _isPrefix, string _prefix);
+
 }
 
 // File: contracts/ISideToken.sol
@@ -1054,208 +1059,15 @@ interface ISideTokenFactory {
     event SideTokenCreated(address indexed sideToken, string symbol, uint256 granularity);
 }
 
-// File: contracts/zeppelin/ownership/Ownable.sol
+// File: contracts/IAllowTokens.sol
 
 pragma solidity ^0.5.0;
 
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
-contract Ownable is Context {
-    address private _owner;
+interface IAllowTokens {
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor () internal {
-        _owner = _msgSender();
-        emit OwnershipTransferred(address(0), _owner);
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(isOwner(), "Ownable: caller is not the owner");
-        _;
-    }
-
-    /**
-     * @dev Returns true if the caller is the current owner.
-     */
-    function isOwner() public view returns (bool) {
-        return _msgSender() == _owner;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
-     */
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
-     */
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     */
-    function _transferOwnership(address newOwner) internal {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
-}
-
-// File: contracts/AllowTokens.sol
-
-pragma solidity >=0.4.21 <0.6.0;
-
-
-
-contract AllowTokens is Ownable {
-    using SafeMath for uint256;
-
-    address constant private NULL_ADDRESS = address(0);
-
-    mapping (address => bool) public allowedTokens;
-    bool private validateAllowedTokens;
-    uint256 private maxTokensAllowed;
-    uint256 private minTokensAllowed;
-    uint256 public dailyLimit;
-
-    event AllowedTokenAdded(address indexed _tokenAddress);
-    event AllowedTokenRemoved(address indexed _tokenAddress);
-    event AllowedTokenValidation(bool _enabled);
-    event MaxTokensAllowedChanged(uint256 _maxTokens);
-    event MinTokensAllowedChanged(uint256 _minTokens);
-    event DailyLimitChanged(uint256 dailyLimit);
-
-    modifier notNull(address _address) {
-        require(_address != NULL_ADDRESS, "AllowTokens: Address cannot be empty");
-        _;
-    }
-
-    constructor(address _manager) public  {
-        transferOwnership(_manager);
-        validateAllowedTokens = true;
-        maxTokensAllowed = 10000 ether;
-        minTokensAllowed = 1 ether;
-        dailyLimit = 100000 ether;
-    }
-
-    function isValidatingAllowedTokens() external view returns(bool) {
-        return validateAllowedTokens;
-    }
-
-    function getMaxTokensAllowed() external view returns(uint256) {
-        return maxTokensAllowed;
-    }
-
-    function getMinTokensAllowed() external view returns(uint256) {
-        return minTokensAllowed;
-    }
-
-    function allowedTokenExist(address token) private view notNull(token) returns (bool) {
-        return allowedTokens[token];
-    }
-
-    function isTokenAllowed(address token) public view notNull(token) returns (bool) {
-        if (validateAllowedTokens) {
-            return allowedTokenExist(token);
-        }
-        return true;
-    }
-
-    function addAllowedToken(address token) external onlyOwner {
-        require(!allowedTokenExist(token), "AllowTokens: Token already exists in allowedTokens");
-        allowedTokens[token] = true;
-        emit AllowedTokenAdded(token);
-    }
-
-    function removeAllowedToken(address token) external onlyOwner {
-        require(allowedTokenExist(token), "AllowTokens: Token does not exis  in allowedTokenst");
-        allowedTokens[token] = false;
-        emit AllowedTokenRemoved(token);
-    }
-
-    function enableAllowedTokensValidation() external onlyOwner {
-        validateAllowedTokens = true;
-        emit AllowedTokenValidation(validateAllowedTokens);
-    }
-
-    function disableAllowedTokensValidation() external onlyOwner {
-        // Before disabling Allowed Tokens Validations some kind of contract validation system
-        // should be implemented on the Bridge for the methods receiveTokens, tokenFallback and tokensReceived
-        validateAllowedTokens = false;
-        emit AllowedTokenValidation(validateAllowedTokens);
-    }
-
-    function setMaxTokensAllowed(uint256 maxTokens) external onlyOwner {
-        require(maxTokens >= minTokensAllowed, "AllowTokens: Max Tokens should be equal or bigger than Min Tokens");
-        maxTokensAllowed = maxTokens;
-        emit MaxTokensAllowedChanged(maxTokensAllowed);
-    }
-
-    function setMinTokensAllowed(uint256 minTokens) external onlyOwner {
-        require(maxTokensAllowed >= minTokens, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
-        minTokensAllowed = minTokens;
-        emit MinTokensAllowedChanged(minTokensAllowed);
-    }
-
-    function changeDailyLimit(uint256 _dailyLimit) external onlyOwner {
-        require(_dailyLimit >= maxTokensAllowed, "AllowTokens: Daily Limit should be equal or bigger than Max Tokens");
-        dailyLimit = _dailyLimit;
-        emit DailyLimitChanged(_dailyLimit);
-    }
-
-    // solium-disable-next-line max-len
-    function isValidTokenTransfer(address tokenToUse, uint amount, uint spentToday, bool isSideToken) external view returns (bool) {
-        if(amount > maxTokensAllowed)
-            return false;
-        if(amount < minTokensAllowed)
-            return false;
-        if (spentToday + amount > dailyLimit || spentToday + amount < spentToday)
-            return false;
-        if(!isSideToken && !isTokenAllowed(tokenToUse))
-            return false;
-        return true;
-    }
-
-    function calcMaxWithdraw(uint spentToday) external view returns (uint) {
-        uint maxWithrow = dailyLimit - spentToday;
-        if (dailyLimit < spentToday)
-            return 0;
-        if(maxWithrow > maxTokensAllowed)
-            maxWithrow = maxTokensAllowed;
-        return maxWithrow;
-    }
-
+    function getFeePerToken(address token) external view returns(uint256); 
+    function isValidTokenTransfer(address tokenToUse, uint amount, uint spentToday, bool isSideToken) external view returns (bool);
+    function calcMaxWithdraw(uint spentToday) external view returns (uint);
 }
 
 // File: contracts/zeppelin/token/ERC777/IERC777.sol
@@ -1612,16 +1424,26 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     mapping (address => address) public originalTokens; // SideToken => OriginalToken
     mapping (address => bool) public knownTokens; // OriginalToken => true
     mapping(bytes32 => bool) public processed; // ProcessedHash => true
-    AllowTokens public allowTokens;
+    IAllowTokens public allowTokens;
     ISideTokenFactory public sideTokenFactory;
     //Bridge_v1 variables
     bool public isUpgrading;
     uint256 constant public feePercentageDivider = 10000; // Porcentage with up to 2 decimals
     bool private alreadyRun;
+    //Bridge_v3 variables
+    bool public initialPrefixSetup;
+    bool public isSuffix;
+    bool private ethFirstTransfer;
+    uint256 public ethFeeCollected;
+    address private WETHAddr;
+    string private nativeTokenSymbol;
+    //address public aggregatorAddr;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
+    //event AllowTokenChanged(address _newAllowToken);
+    //event PrefixUpdated(bool _isSuffix, string _prefix);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -1642,12 +1464,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //    }
 
     function version() external pure returns (string memory) {
-        return "v2";
+        return "v3";
     }
 
     modifier onlyFederation() {
-        require(msg.sender == federation, "Bridge: Sender not Federation");
-        _;
+       require(msg.sender == federation, "Bridge: Sender not Federation");
+       _;
     }
 
     modifier whenNotUpgrading() {
@@ -1749,7 +1571,14 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         require(decimals == 18, "Bridge: Invalid decimals cross back");
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
-        IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
+        //// Bridge v3 upgrade functions
+        if (tokenAddress == WETHAddr) {
+            address payable payableReceiver = address(uint160(receiver));
+            payableReceiver.transfer(amount);
+        }
+        else {
+            IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
+        }
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, "");
     }
 
@@ -1784,6 +1613,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         address receiver,
         bytes memory extraData
     ) private whenNotUpgrading whenNotPaused nonReentrant returns(bool) {
+        require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
         //Transfer the tokens on IERC20, they should be already Approved for the bridge Address to use them
         IERC20(tokenToUse).safeTransferFrom(_msgSender(), address(this), amount);
         crossTokens(tokenToUse, receiver, amount, extraData);
@@ -1803,36 +1633,50 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         bytes calldata
     ) external whenNotPaused whenNotUpgrading {
         //Hook from ERC777address
-        if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
+       if(operator == address(this)) return; // Avoid loop from bridge calling to ERC77transferFrom
         require(to == address(this), "Bridge: Not to address");
-        address tokenToUse = _msgSender();
-        //This can only be used with trusted contracts
-        crossTokens(tokenToUse, from, amount, userData);
+       address tokenToUse = _msgSender();
+       require(tokenToUse != WETHAddr, "Bridge: Cannot transfer WETH");
+       //This can only be used with trusted contracts
+       crossTokens(tokenToUse, from, amount, userData);
     }
 
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
-        //Send the payment to the MultiSig of the Federation
-        uint256 fee = amount.mul(feePercentage).div(feePercentageDivider);
+    //V3 upgrade change global token fee to per token fee
+        uint256 fee = allowTokens.getFeePerToken(tokenToUse);
+        if(fee>0 ){
+            if (tokenToUse== WETHAddr ) {
+                ethFeeCollected = ethFeeCollected.add(fee);
+            }
+            else {
+            //Send the payment to the MultiSig of the Federation
+                IERC20(tokenToUse).safeTransfer(owner(), fee);
+            }
+        }
         uint256 amountMinusFees = amount.sub(fee);
-        if (isASideToken) {
-            uint256 modulo = amountMinusFees.mod(ISideToken(tokenToUse).granularity());
-            fee = fee.add(modulo);
-            amountMinusFees = amountMinusFees.sub(modulo);
-        }
-        if(fee > 0) {
-            IERC20(tokenToUse).safeTransfer(owner(), fee);
-        }
         if (isASideToken) {
             verifyWithAllowTokens(tokenToUse, amount, isASideToken);
             //Side Token Crossing
             ISideToken(tokenToUse).burn(amountMinusFees, userData);
             // solium-disable-next-line max-len
             emit Cross(originalTokens[tokenToUse], receiver, amountMinusFees, ISideToken(tokenToUse).symbol(), userData, ISideToken(tokenToUse).decimals(), ISideToken(tokenToUse).granularity());
-        } else {
+        }
+        else {
             //Main Token Crossing
+            uint8 decimals;
+            uint256 granularity;
+            string memory symbol;
+
             knownTokens[tokenToUse] = true;
-            (uint8 decimals, uint256 granularity, string memory symbol) = Utils.getTokenInfo(tokenToUse);
+            if (tokenToUse== WETHAddr ) {
+                decimals = 18;
+                granularity = 1;
+                symbol = nativeTokenSymbol;
+            }
+            else {
+                ( decimals, granularity,  symbol) = Utils.getTokenInfo(tokenToUse);
+            }
             uint formattedAmount = amount;
             if(decimals != 18) {
                 formattedAmount = amount.mul(uint256(10)**(18-decimals));
@@ -1840,12 +1684,19 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             //We consider the amount before fees converted to 18 decimals to check the limits
             verifyWithAllowTokens(tokenToUse, formattedAmount, isASideToken);
             emit Cross(tokenToUse, receiver, amountMinusFees, symbol, userData, decimals, granularity);
-        }
+        }     
     }
 
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
-        //string memory newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
-        string memory newSymbol = string(abi.encodePacked(symbol, symbolPrefix));
+        initialPrefixSetup = true;
+        string memory newSymbol;
+        if(!isSuffix) {
+             newSymbol = string(abi.encodePacked(symbolPrefix, symbol));
+        }
+        else {
+             newSymbol = string(abi.encodePacked(symbol, symbolPrefix));    
+        }
+        
         address sideTokenAddress = sideTokenFactory.createSideToken(newSymbol, newSymbol, granularity);
         sideToken = ISideToken(sideTokenAddress);
         mappedTokens[token] = sideToken;
@@ -1891,15 +1742,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
-    function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
-        require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
-        feePercentage = amount;
-        emit FeePercentageChanged(feePercentage);
-    }
+    // function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
+    //     require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
+    //     feePercentage = amount;
+    //     emit FeePercentageChanged(feePercentage);
+    // }
 
-    function getFeePercentage() external view returns(uint) {
-        return feePercentage;
-    }
+    // function getFeePercentage() external view returns(uint) {
+    //     return feePercentage;
+    // }
 
     function calcMaxWithdraw() external view returns (uint) {
         uint spent = spentToday;
@@ -1909,7 +1760,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         return allowTokens.calcMaxWithdraw(spent);
     }
 
-    function changeFederation(address newFederation) external onlyOwner returns(bool) {
+  function changeFederation(address newFederation) external onlyOwner returns(bool) {
         _changeFederation(newFederation);
         return true;
     }
@@ -1943,6 +1794,63 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function endUpgrade() external onlyOwner {
         isUpgrading = false;
         emit Upgrading(isUpgrading);
+    }
+
+//// Bridge v3 upgrade functions
+    function receiveEthAt(address _receiver, bytes calldata _extraData) external payable {
+        require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        if (!ethFirstTransfer) {
+            ethFirstTransfer = true;
+        }
+        crossTokens(WETHAddr, _receiver, msg.value, _extraData);
+    }
+    //     if(aggregatorAddr != address(0)){
+    //         crossTokens(WETHAddr, aggregatorAddr, msg.value, abi.encodePacked(msg.sender));
+    //     }
+    //     else {
+    //         bytes memory _userData = "";        
+    //         crossTokens(WETHAddr, msg.sender, msg.value, _userData);
+    //     }
+    // }
+    // function setAggregatorAddr(address _aggregatorAddr) external onlyOwner {
+    //     aggregatorAddr = _aggregatorAddr;
+    // }
+
+    function setWETHAddress(address _WETHAddr) external onlyOwner {
+        require(_WETHAddr != address(0) && !ethFirstTransfer , "No set WETHAddr AF 1st transfer");
+        //require(!ethFirstTransfer, "cannot change WETHAddr after first transfer");
+        WETHAddr = _WETHAddr;
+    }
+
+    function changeAllowTokens(address newAllowTokens) external onlyOwner returns(bool) {
+        _changeAllowTokens(newAllowTokens);
+        return true;
+    }
+
+    function _changeAllowTokens(address newAllowTokens) internal {
+        require(newAllowTokens != NULL_ADDRESS, "Bridge: newAllowTokens is empty");
+        allowTokens = IAllowTokens(newAllowTokens);
+        //emit AllowTokenChanged(newAllowTokens);
+    }
+    function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
+        require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
+        isSuffix = _isSuffix;
+        symbolPrefix = _prefix;
+        //emit PrefixUpdated(isSuffix, _prefix);
+    }
+
+    function withdrawAllEthFees(address payable _to) public payable onlyOwner {
+        require(address(this).balance >= ethFeeCollected);
+        ethFeeCollected = 0;
+        _to.transfer(ethFeeCollected);
+    }
+
+    function setNativeTokenSymbol(string calldata _nativeTokenSymbol) external onlyOwner {
+        nativeTokenSymbol = _nativeTokenSymbol;
+    }
+
+    function getNativeTokenSymbol() external view returns(string memory) {
+        return nativeTokenSymbol;
     }
 
     // Commented because it is unused for us and need decrease contract size
