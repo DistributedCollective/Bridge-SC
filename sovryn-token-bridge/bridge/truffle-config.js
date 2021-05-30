@@ -103,12 +103,14 @@ module.exports = {
     },
     //Binance
     btestnet: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://data-seed-prebsc-1-s1.binance.org:8545/"),
+      // provider: () => new HDWalletProvider(MNEMONIC, "https://data-seed-prebsc-1-s1.binance.org:8545/"),
+      provider: () => new HDWalletProvider(MNEMONIC, "https://data-seed-prebsc-2-s3.binance.org:8545/"),
       network_id: 97,
-      gas: 6300000,
-      confirmations: 3,
-      timeoutBlocks: 200,
-      skipDryRun: true
+        gas: 6300000,
+       confirmations: 3,
+       networkCheckTimeout: 1000000,
+       timeoutBlocks: 200,
+       skipDryRun: true
     },
     bmainnet: {
       //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.binance.org`),
