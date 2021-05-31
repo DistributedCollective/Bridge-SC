@@ -513,7 +513,7 @@ module.exports = {
             }
         ],
       },
-    "97": {{
+    "97": {
         "default": 4,
         "minConfirmation": 2,
         "DAI": [
