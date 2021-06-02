@@ -40,13 +40,13 @@ sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/
 if [ "$FED_ENV" = "mainnet-ETH-RSK" ]; then
      echo "Enter etherium mainnet RPC url:"
      read ETHER_RPC
-     cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json | jq '. + {"host":"$ETHER_RPC"}' > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json
+     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json
 fi
 
 if [ "$FED_ENV" = "testnet-ETH-RSK" ]; then
      echo "Enter etherium testnet RPC url:"
      read ETHER_RPC
-     cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq '. + {"host":"$ETHER_RPC"}' > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json
+     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json
 fi
 
 echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
