@@ -1,11 +1,11 @@
 {
   "contracts": {
     "Bridge": {
-      "address": "0xFCEd26EE93D39b208b69e09eCd1437b8028E7679",
+      "address": "0x18E9bf235BaA3a7CbfD65b40465D25788b6e208c",
       "constructorCode": "60806040526144b5806100136000396000f3fe",
-      "bodyBytecodeHash": "a18982def8c81fccc29a31f31128b56ba8caedf2945d2976b720c0ef30cca032",
+      "bodyBytecodeHash": "4471f0ab90a8b6fe76e28459ebee46749f615f587708d6a7316aac5b7cd8c47f",
       "localBytecodeHash": "09e8ac998e971d01171a9e835e98b9f4bd811d680e8637b9350e7cd01b3a0cb6",
-      "deployedBytecodeHash": "fbfd44204f61db450438d8d7540310f57da2e58d02d86ce491d201ecdb10635d",
+      "deployedBytecodeHash": "fd4dbb9dce98bd09e55fc3c45e3d7198d59078dc37392fb5b195204622dad23f",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -279,7 +279,7 @@
       }
     },
     "Bridge_v0": {
-      "address": "0xa56DE6ADD4B9Ae9a669785E7b2a1F8eF4127bb91",
+      "address": "0xB995BE2d86Af2FFa05796F0059a4467F007f4c1B",
       "constructorCode": "60806040526134fc806100136000396000f3fe",
       "bodyBytecodeHash": "e59c8aebf19a090251c3edf9c7a046a973603db40d15bcefa75f7d4182303171",
       "localBytecodeHash": "c3b1253a7386a4bbcf6b1c7259f99be9ed5d134c13dca552cbe0e4f0f0df11c7",
@@ -495,7 +495,7 @@
   },
   "solidityLibs": {
     "Utils": {
-      "address": "0x21F99888197C7d8239682122a41220C2903BbA85",
+      "address": "0x4535Ba49262BF2D7681a833134a7bd83e9079838",
       "constructorCode": "610eaf610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe",
       "bodyBytecodeHash": "7b92c727771bd2be69e9ad2c2f1fe8eaae2fb49b79dc8791cdac574a46bd4e7d",
       "localBytecodeHash": "881acbaf40d56245f74ff09fb9da845e7dfc0f3a921b497072202c66312781f8",
@@ -505,10 +505,10 @@
   "proxies": {
     "bridge/Bridge_v0": [
       {
-        "address": "0x971B97C8cc82E7D27Bc467C2DC3F219c6eE2e350",
+        "address": "0xdfc7127593c8Af1a17146893F10e08528F4C2AA7",
         "version": "1.0.0",
-        "implementation": "0xa56DE6ADD4B9Ae9a669785E7b2a1F8eF4127bb91",
-        "admin": "0x68558A6cD89b4E93C9a01d7519a2d6C6568a3700",
+        "implementation": "0xB995BE2d86Af2FFa05796F0059a4467F007f4c1B",
+        "admin": "0xF3Fa3FE72EfAD000Febd5f7460C505224A08012F",
         "kind": "Upgradeable"
       }
     ]
@@ -516,6 +516,6 @@
   "manifestVersion": "2.2",
   "version": "1.0.0",
   "proxyAdmin": {
-    "address": "0x68558A6cD89b4E93C9a01d7519a2d6C6568a3700"
+    "address": "0xF3Fa3FE72EfAD000Febd5f7460C505224A08012F"
   }
 }

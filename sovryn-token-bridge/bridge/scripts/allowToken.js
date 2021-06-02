@@ -21,8 +21,8 @@ module.exports = async callback => {
         }
         console.log("gas price now is: " + gasPriceNow); 
         
-        //const deployer = (await web3.eth.getAccounts())[0];
-        const deployer = (await web3.eth.getAccounts())[3];
+        const deployer = (await web3.eth.getAccounts())[0];
+        //const deployer = (await web3.eth.getAccounts())[3];
         console.log("deployer is " + deployer);
 
         const bridge_v0 = await Bridge.deployed();
