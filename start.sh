@@ -20,7 +20,7 @@ then
 fi
 
 
-# ./reset.sh
+./reset.sh
 ./stop.sh
 
 echo "Enter pm2-public-key:"
