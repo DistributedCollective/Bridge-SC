@@ -35,8 +35,19 @@ echo "Enter telegram key:"
 read TELEGRAM_KEY
 echo "$TELEGRAM_KEY" > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.key
 
-
 sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
+
+if [ "$FED_ENV" = "mainnet-ETH-RSK" ]; then
+     echo "Enter etherium mainnet RPC url:"
+     read ETHER_RPC
+     cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json | jq '. + {"host":"$ETHER_RPC"}' > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json
+fi
+
+if [ "$FED_ENV" = "testnet-ETH-RSK" ]; then
+     echo "Enter etherium testnet RPC url:"
+     read ETHER_RPC
+     cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq '. + {"host":"$ETHER_RPC"}' > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json
+fi
 
 echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
