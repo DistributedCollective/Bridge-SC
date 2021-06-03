@@ -31,7 +31,7 @@ describe('TransactionSender module tests', () => {
 
     it('should getGasPrice Eth', async () => {
         let gasPrice = 111;
-        const multiplier = 1.1;
+        const multiplier = 1.5;
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve(gasPrice.toString()));
         let sender = new TransactionSender(web3Mock, logger, {});
         let result = await sender.getGasPrice(42); //Kovna chain id
