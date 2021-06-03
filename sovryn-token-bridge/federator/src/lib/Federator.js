@@ -21,8 +21,6 @@ module.exports = class Federator {
         this.sideBridgeContract = new this.sideWeb3.eth.Contract(abiBridge, this.config.sidechain.bridge);
         this.federationContract = new this.sideWeb3.eth.Contract(abiFederation, this.config.sidechain.federation);
 
-        this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
-
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
         const failingTxIdsPath = `${config.storagePath || __dirname}/failingTxIds.txt`;
         this.failingTxIds = new AppendOnlyFileStorage(failingTxIdsPath);
