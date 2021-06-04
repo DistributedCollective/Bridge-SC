@@ -239,8 +239,25 @@ module.exports = class Federator {
             }
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
-            await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
+            const result = await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
             this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
+
+            // If the transaction timeouts, TransactionSender doesn't return a full transaction receipt (just the
+            // txhash). This probably indicates a low gas price.
+            if(!result.blockHash) {
+                try {
+                    const message = (
+                        `Full receipt not received for transaction ${result.transactionHash}. ` +
+                        `It may not have been mined correctly. ` +
+                        `(Voting ${amount} ${symbol} to ${receiver}, txid: ${txId})`
+                    );
+                    await this.chatBot.sendMessage(message);
+                } catch (e) {
+                    // catch the error here to be extra safe
+                    console.error(e);
+                }
+            }
+
             return true;
         } catch (err) {
             if (txId && this._isEVMRevert(err)) {
