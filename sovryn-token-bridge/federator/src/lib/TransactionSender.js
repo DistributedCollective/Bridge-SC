@@ -6,11 +6,13 @@ const CustomError = require('./CustomError');
 const fs = require('fs');
 
 module.exports = class TransactionSender {
-    constructor(client, logger, config) {
+    constructor(client, logger, config, gasPriceEstimator) {
         this.client = client;
         this.logger = logger;
         this.chainId = null;
         this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
+
+        this.gasPriceEstimator = gasPriceEstimator;
     }
 
     async getNonce(address) {
@@ -28,6 +30,14 @@ module.exports = class TransactionSender {
         chainId = parseInt(chainId)
         if(chainId>= 30 && chainId <=33) {
             return this.getRskGasPrice();
+        }
+
+        if (this.gasPriceEstimator && this.gasPriceEstimator.isEnabledForChain(chainId)) {
+            try {
+                return await this.gasPriceEstimator.getGasPrice();
+            } catch (e) {
+                this.logger.warn('Error getting gas price from Etherscan, falling back to node gas price.', e);
+            }
         }
         return this.getEthGasPrice();
     }

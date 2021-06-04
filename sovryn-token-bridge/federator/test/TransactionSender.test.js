@@ -15,6 +15,21 @@ const logger = {
 };
 var web3Mock = jest.fn();
 
+class MockGasPriceEstimator {
+    constructor({ gasPrice, chainId }) {
+        this.gasPrice = gasPrice;
+        this.chainId = chainId;
+    }
+
+    isEnabledForChain(chainId) {
+        return chainId === this.chainId;
+    }
+
+    async getGasPrice() {
+        return this.gasPrice;
+    }
+}
+
 describe('TransactionSender module tests', () => {
     beforeEach(async function () {
         jest.clearAllMocks();
@@ -43,6 +58,24 @@ describe('TransactionSender module tests', () => {
         sender = new TransactionSender(web3Mock, logger, {});
         result = await sender.getGasPrice(1);
         expect(result).toEqual(1);
+    });
+
+    it('should getGasPrice from gasPriceEstimator', async () => {
+        const gasPriceFromNode = 111;
+        const gasPriceFromEstimator = 999;
+        const multiplier = 1.5;
+        web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve(gasPriceFromNode.toString()));
+
+        const gasPriceEstimator = new MockGasPriceEstimator({
+            gasPrice: gasPriceFromEstimator,
+            chainId: 1,
+        });
+        const sender = new TransactionSender(web3Mock, logger, {}, gasPriceEstimator);
+        let result = await sender.getGasPrice(1);
+        expect(result).toEqual(gasPriceFromEstimator);
+
+        result = await sender.getGasPrice(2);
+        expect(result).toEqual(Math.round(gasPriceFromNode*multiplier));
     });
 
     it('should getGasPrice Rsk', async () => {

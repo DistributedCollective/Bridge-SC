@@ -6,6 +6,7 @@ const TransactionSender = require('./TransactionSender');
 const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
 const AppendOnlyFileStorage = require('../helpers/AppendOnlyFileStorage');
 const CustomError = require('./CustomError');
+const EtherscanGasPriceEstimator = require('./EtherscanGasPriceEstimator');
 const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
@@ -28,6 +29,10 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
+        this.gasPriceEstimator = new EtherscanGasPriceEstimator({
+            apiKey: config.etherscanApiKey,
+            logger: this.logger,
+        });
     }
 
     async run() {
@@ -108,7 +113,7 @@ module.exports = class Federator {
 
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, this.gasPriceEstimator);
             const from = await transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this._getCurrentBlockNumber();
 
@@ -183,7 +188,7 @@ module.exports = class Federator {
         let txId;
         try {
 
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, this.gasPriceEstimator);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
             txId = await this.federationContract.methods.getTransactionId(
