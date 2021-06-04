@@ -9,6 +9,7 @@ log4js.configure(logConfig);
 // Services
 const Scheduler = require('./services/Scheduler.js');
 const Federator = require('./lib/Federator.js');
+const EtherscanGasPriceEstimator = require('./lib/EtherscanGasPriceEstimator.js');
 const {TelegramBot, NullBot} = require('./lib/chatBots.js');
 
 const logger = log4js.getLogger('Federators');
@@ -40,6 +41,14 @@ const mainFederator = new Federator(
     web3,
     chatBot,
 );
+
+let gasPriceEstimator = null;
+if (config.enableEtherscanGasPriceEstimator) {
+    gasPriceEstimator = new EtherscanGasPriceEstimator({
+        apiKey: config.etherscanApiKey,
+        logger: log4js.getLogger('SIDE-FEDERATOR'),
+    });
+}
 const sideFederator = new Federator(
     {
         ...config,
@@ -50,6 +59,7 @@ const sideFederator = new Federator(
     log4js.getLogger('SIDE-FEDERATOR'),
     web3,
     chatBot,
+    gasPriceEstimator,
 );
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes

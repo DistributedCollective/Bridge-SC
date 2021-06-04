@@ -23,6 +23,7 @@ module.exports = {
     storagePath: './db',
     federatorInstanceId: 'federatorInstanceId_replace_this',
     etherscanApiKey: etherscanApiKey,
+    enableEtherscanGasPriceEstimator: true, // enabled for sidechain
 	telegramBot: {
 		token: telegramToken,
         groupId: -543088999,

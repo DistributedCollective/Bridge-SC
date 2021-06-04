@@ -6,12 +6,11 @@ const TransactionSender = require('./TransactionSender');
 const {ConfirmationTableReader} = require('../helpers/ConfirmationTableReader');
 const AppendOnlyFileStorage = require('../helpers/AppendOnlyFileStorage');
 const CustomError = require('./CustomError');
-const EtherscanGasPriceEstimator = require('./EtherscanGasPriceEstimator');
 const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3, chatBot = null) {
+    constructor(config, logger, Web3 = web3, chatBot = null, gasPriceEstimator = null) {
         this.config = config;
         this.logger = logger;
 
@@ -29,10 +28,7 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
-        this.gasPriceEstimator = new EtherscanGasPriceEstimator({
-            apiKey: config.etherscanApiKey,
-            logger: this.logger,
-        });
+        this.gasPriceEstimator = gasPriceEstimator;
     }
 
     async run() {
