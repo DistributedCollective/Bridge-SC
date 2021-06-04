@@ -6,6 +6,14 @@ try {
     console.debug(`Cannot load telegram token from ${__dirname}/telegram.key, bot disabled`);
     telegramToken = '';
 }
+let etherscanApiKey;
+try {
+    etherscanApiKey = fs.readFileSync(`${__dirname}/etherscan.key`, 'utf8').trim();
+} catch(e) {
+    console.debug(`Cannot load Etherscan API key from ${__dirname}/etherscan.key, lower rate limits apply`);
+    etherscanApiKey = '';
+}
+
 module.exports = {
     mainchain: require('./rsktestnet-kovan.json'), //the json containing the smart contract addresses in rsk
     sidechain: require('./kovan.json'), //the json containing the smart contract addresses in eth
@@ -14,6 +22,7 @@ module.exports = {
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
     federatorInstanceId: '',
+    etherscanApiKey: etherscanApiKey,
     telegramBot: {
         token: telegramToken,
         groupId: 0, // Telegram group id to send the messages to
