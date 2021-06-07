@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 const TransactionSender = require('../src/lib/TransactionSender');
-const eth = require('./web3Mock/eth.js');
-const mockData = require('./web3Mock/mockData.json');
 
 
 const logger = {
@@ -15,19 +13,10 @@ const logger = {
 };
 var web3Mock = jest.fn();
 
-class MockGasPriceEstimator {
-    constructor({ gasPrice, chainId }) {
-        this.gasPrice = gasPrice;
-        this.chainId = chainId;
-    }
-
-    isEnabledForChain(chainId) {
-        return chainId === this.chainId;
-    }
-
-    async getGasPrice() {
-        return this.gasPrice;
-    }
+const disableEtherscanGasPrices = (sender) => {
+    sender.gasPriceEstimator.getEtherscanGasPrices = jest.fn().mockRejectedValue(
+        new Error('expected etherscan error')
+    );
 }
 
 describe('TransactionSender module tests', () => {
@@ -48,7 +37,10 @@ describe('TransactionSender module tests', () => {
         let gasPrice = 111;
         const multiplier = 1.5;
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve(gasPrice.toString()));
+
         let sender = new TransactionSender(web3Mock, logger, {});
+        disableEtherscanGasPrices(sender);
+
         let result = await sender.getGasPrice(42); //Kovna chain id
         expect(result).toEqual(Math.round(gasPrice*multiplier));
         result = await sender.getGasPrice(1); //Ethereum mainnet
@@ -56,23 +48,28 @@ describe('TransactionSender module tests', () => {
 
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve('0'));
         sender = new TransactionSender(web3Mock, logger, {});
+        disableEtherscanGasPrices(sender);
+
         result = await sender.getGasPrice(1);
         expect(result).toEqual(1);
     });
 
     it('should getGasPrice from gasPriceEstimator', async () => {
         const gasPriceFromNode = 111;
-        const gasPriceFromEstimator = 999;
+        const safeGasPrice = 555;
+        const proposeGasPrice = 777;
+        const fastGasPrice = 999;
         const multiplier = 1.5;
         web3Mock.eth.getGasPrice = jest.fn().mockReturnValue(Promise.resolve(gasPriceFromNode.toString()));
 
-        const gasPriceEstimator = new MockGasPriceEstimator({
-            gasPrice: gasPriceFromEstimator,
-            chainId: 1,
+        const sender = new TransactionSender(web3Mock, logger, {});
+        sender.gasPriceEstimator.getEtherscanGasPrices = jest.fn().mockReturnValue({
+            safeGasPrice,
+            proposeGasPrice,
+            fastGasPrice,
         });
-        const sender = new TransactionSender(web3Mock, logger, {}, gasPriceEstimator);
         let result = await sender.getGasPrice(1);
-        expect(result).toEqual(gasPriceFromEstimator);
+        expect(result).toEqual(fastGasPrice);
 
         result = await sender.getGasPrice(2);
         expect(result).toEqual(Math.round(gasPriceFromNode*multiplier));

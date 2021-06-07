@@ -10,7 +10,7 @@ const {NullBot} = require('./chatBots');
 const utils = require('./utils');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3, chatBot = null, gasPriceEstimator = null) {
+    constructor(config, logger, Web3 = web3, chatBot = null) {
         this.config = config;
         this.logger = logger;
 
@@ -21,6 +21,8 @@ module.exports = class Federator {
         this.sideBridgeContract = new this.sideWeb3.eth.Contract(abiBridge, this.config.sidechain.bridge);
         this.federationContract = new this.sideWeb3.eth.Contract(abiFederation, this.config.sidechain.federation);
 
+        this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
         const failingTxIdsPath = `${config.storagePath || __dirname}/failingTxIds.txt`;
         this.failingTxIds = new AppendOnlyFileStorage(failingTxIdsPath);
@@ -28,7 +30,6 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
-        this.gasPriceEstimator = gasPriceEstimator;
     }
 
     async run() {
@@ -109,8 +110,7 @@ module.exports = class Federator {
 
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, this.gasPriceEstimator);
-            const from = await transactionSender.getAddress(this.config.privateKey);
+            const from = await this.transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
@@ -183,8 +183,6 @@ module.exports = class Federator {
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
         let txId;
         try {
-
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, this.gasPriceEstimator);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
             txId = await this.federationContract.methods.getTransactionId(
@@ -235,7 +233,7 @@ module.exports = class Federator {
             }
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
-            const result = await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
+            const result = await this.transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
             this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
 
             // If the transaction timeouts, TransactionSender doesn't return a full transaction receipt (just the

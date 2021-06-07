@@ -26,8 +26,15 @@ const testFailingTxIdsPath = `${storagePath}/failingTxIds.txt`;
 
 let testConfig = { ...config, storagePath };
 
+const disableEtherscanGasPrices = (sender) => {
+    sender.gasPriceEstimator.getEtherscanGasPrices = jest.fn().mockRejectedValue(
+        new Error('expected etherscan error')
+    );
+}
+
 function mockFederatorMethods(federator, methods) {
     federator.mainWeb3.eth = federator.mainWeb3.eth.mockMethods(methods);
+    disableEtherscanGasPrices(federator.transactionSender);
 }
 
 function cleanUpTestPaths() {
@@ -120,6 +127,7 @@ describe('Federator module tests', () => {
         eth.sendSignedTransaction = jest.fn().mockImplementation(() => { throw new Error("Some Error") });
 
         let federator = new Federator(testConfig, logger, web3Mock);
+        disableEtherscanGasPrices(federator.transactionSender);
         try{
             await federator._voteTransaction(null, null);
             expect(false).toBeTruthy();
@@ -131,6 +139,7 @@ describe('Federator module tests', () => {
 
     it('Votes a transaction from a log entry', async () => {
         let federator = new Federator(testConfig, logger, web3Mock);
+        disableEtherscanGasPrices(federator.transactionSender);
         let log = {
             logIndex: 2,
             blockNumber: 2557,
@@ -172,6 +181,7 @@ describe('Federator module tests', () => {
 
     it('Should return undefined for a list of 1 confirmed log', async () => {
         let federator = new Federator(testConfig, logger, web3Mock);
+        disableEtherscanGasPrices(federator.transactionSender);
         let logs = [{
             logIndex: 2,
             blockNumber: 10000,
@@ -214,6 +224,7 @@ describe('Federator module tests', () => {
 
     it('Should return the logBlockNumber for a list of 1 unconfirmed log', async () => {
         let federator = new Federator(testConfig, logger, web3Mock);
+        disableEtherscanGasPrices(federator.transactionSender);
         const logBlockNumber = 2683000;
         let logs = [{
             logIndex: 2,
@@ -258,6 +269,7 @@ describe('Federator module tests', () => {
 
     it('Should return the second logBlockNumber for a list of 2 log, only first confirmed', async () => {
         let federator = new Federator(testConfig, logger, web3Mock);
+        disableEtherscanGasPrices(federator.transactionSender);
         const firstLogBlockNumber = 15000;
         const currentBlockNumber = 42000;
         const ctr = new ConfirmationTableReader(3, testConfig.confirmationTable);
@@ -375,6 +387,7 @@ describe('Federator module tests', () => {
 
         beforeEach(() => {
             federator = new Federator(testConfig, logger, web3Mock);
+            disableEtherscanGasPrices(federator.transactionSender);
             sendTransactionSpy = jest.spyOn(TransactionSender.prototype, 'sendTransaction');
         })
 
