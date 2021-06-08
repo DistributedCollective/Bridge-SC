@@ -1,0 +1,23 @@
+{
+	"54741525": "getTransactionCount(bool,bool)",
+	"d74f8edd": "MAX_OWNER_COUNT()",
+	"7065cb48": "addOwner(address)",
+	"ba51a6df": "changeRequirement(uint256)",
+	"c01a8c84": "confirmTransaction(uint256)",
+	"3411c81c": "confirmations(uint256,address)",
+	"ee22610b": "executeTransaction(uint256)",
+	"8b51d13f": "getConfirmationCount(uint256)",
+	"b5dc40c3": "getConfirmations(uint256)",
+	"a0e67e2b": "getOwners()",
+	"a8abe69a": "getTransactionIds(uint256,uint256,bool,bool)",
+	"784547a7": "isConfirmed(uint256)",
+	"2f54bf6e": "isOwner(address)",
+	"025e7c27": "owners(uint256)",
+	"173825d9": "removeOwner(address)",
+	"e20056e6": "replaceOwner(address,address)",
+	"dc8452cd": "required()",
+	"20ea8d86": "revokeConfirmation(uint256)",
+	"c6427474": "submitTransaction(address,uint256,bytes)",
+	"b77bf600": "transactionCount()",
+	"9ace38c2": "transactions(uint256)"
+}

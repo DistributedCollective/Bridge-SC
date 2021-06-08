@@ -1,0 +1,9 @@
+{
+	"35729130": "receiveTokens(address,uint256)",
+	"96989407": "receiveEthAt(address,bytes)",
+	"0e6ec779": "acceptTransfer(address,address,uint256,string,bytes32,bytes32,uint32,uint8,uint256)",
+	"d058ae96": "acceptTransferAt(address,address,uint256,string,bytes32,bytes32,uint32,uint8,uint256,bytes)",
+	"7e5d3620": "receiveTokensAt(address,uint256,address,bytes)",
+	"0023de29": "tokensReceived(address,address,address,uint256,bytes,bytes)",
+	"54fd4d50": "version()"
+}

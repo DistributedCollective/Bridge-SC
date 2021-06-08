@@ -1,0 +1,10 @@
+{
+	"dc98f6b7": "calculateDecimalsAndAmount(address,uint256,uint256)",
+	"db8a2e3c": "calculateGranularityAndAmount(uint8,uint256,uint256)",
+	"cffaec7e": "decimalsToGranularity(uint8)",
+	"cf54aaa0": "getDecimals(address)",
+	"05cbf8e5": "getGranularity(address)",
+	"c9b2e522": "getSymbol(address)",
+	"1f69565f": "getTokenInfo(address)",
+	"19bd2045": "granularityToDecimals(uint256)"
+}

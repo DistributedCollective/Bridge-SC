@@ -1,0 +1,5 @@
+{
+	"680dc640": "calcMaxWithdraw(uint256)",
+	"1da0dff1": "getFeePerToken(address)",
+	"9a4819bc": "isValidTokenTransfer(address,uint256,uint256,bool)"
+}
