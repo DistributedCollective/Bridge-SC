@@ -296,12 +296,17 @@ module.exports = class Federator {
     }
 
     _isEVMRevert(error) {
-        const revertMessage = 'Transaction has been reverted by the EVM';
-        if (error.message.indexOf(revertMessage) !== -1) {
-            return true;
-        }
-        if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
-            return true;
+        const revertMessages = [
+            'Transaction has been reverted by the EVM',
+            'Returned error: execution reverted',
+        ];
+        for (let revertMessage of revertMessages) {
+            if (error.message.indexOf(revertMessage) !== -1) {
+                return true;
+            }
+            if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
+                return true;
+            }
         }
         return false;
     }
