@@ -156,29 +156,30 @@ module.exports = class Federator {
         this.logger.info('get transaction id:', transactionId);
 
         let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
-        if (!wasProcessed) {
-            let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
-            if (!hasVoted) {
-                this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
-                await this._voteTransaction(tokenAddress,
-                    receiver,
-                    amount,
-                    symbol,
-                    log.blockHash,
-                    log.transactionHash,
-                    log.logIndex,
-                    decimals,
-                    granularity,
-                    userData
-                );
-            } else {
-                this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
-            }
-        } else {
+        if (wasProcessed) {
             this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
+            return;
         }
-    }
 
+        let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
+        if (hasVoted) {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
+            return;
+        }
+
+        this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
+        await this._voteTransaction(tokenAddress,
+            receiver,
+            amount,
+            symbol,
+            log.blockHash,
+            log.transactionHash,
+            log.logIndex,
+            decimals,
+            granularity,
+            userData
+        );
+    }
 
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
         let txId;
