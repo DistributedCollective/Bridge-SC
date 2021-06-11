@@ -4,6 +4,7 @@ const path = require('path');
 const Web3PromiEvent = require('web3-core-promievent');
 
 const Federator = require('../src/lib/Federator');
+const utils = require('../src/lib/utils');
 const TransactionSender = require('../src/lib/TransactionSender');
 const CustomError = require('../src/lib/CustomError');
 const eth = require('./web3Mock/eth.js');
@@ -55,14 +56,41 @@ function createPromiEventError(message) {
     return promiEvent.eventEmitter;
 }
 
+let savedSleepRandomNumberOfBlocks = null;
+let savedExponentialSleep = null;
+function disableSleep() {
+    if(!savedSleepRandomNumberOfBlocks) {
+        savedSleepRandomNumberOfBlocks = utils.sleepRandomNumberOfBlocks;
+        utils.sleepRandomNumberOfBlocks = jest.fn();
+    }
+    if(!savedExponentialSleep) {
+        savedExponentialSleep = utils.exponentialSleep;
+        utils.exponentialSleep = jest.fn().mockRejectedValue(
+            new Error('reaching exponential sleep means there is an error!')
+        );
+    }
+}
+function enableSleep() {
+    if(savedSleepRandomNumberOfBlocks) {
+        utils.sleepRandomNumberOfBlocks = savedSleepRandomNumberOfBlocks;
+        savedSleepRandomNumberOfBlocks = null;
+    }
+    if(savedExponentialSleep) {
+        utils.exponentialSleep = savedExponentialSleep;
+        savedExponentialSleep = null;
+    }
+}
+
 describe('Federator module tests', () => {
-    beforeEach(async function () {
+    beforeEach(function () {
         jest.clearAllMocks();
         cleanUpTestPaths();
+        disableSleep();
     });
 
     afterEach(() => {
         cleanUpTestPaths();
+        enableSleep();
     });
 
     it('Runs the main federator process sucessfully', async () => {
