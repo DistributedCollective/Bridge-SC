@@ -33,6 +33,34 @@ async function exponentialSleep(attempt = 0, opts = {}) {
     return await sleep(sleepMs);
 }
 
+async function sleepRandomNumberOfBlocks(chainId, opts = {}) {
+    const {
+        minBlocks = 0,
+        maxBlocks = 7,
+        logger = null,
+    } = opts;
+    chainId = parseInt(chainId);
+    let blockTime = 13; // ethereum
+    if (chainId === 30 || chainId === 31) {
+        // rsk
+        blockTime = 30;
+    } else if (chainId === 56 || chainId === 97) {
+        // bsc
+        blockTime = 5;
+    }
+
+    const numBlocks = Math.floor(
+        Math.random() * (maxBlocks - minBlocks) + minBlocks
+    );
+    const sleepMs = blockTime * numBlocks * 1000;
+    if (logger) {
+        logger.info(
+            `Sleeping ~${numBlocks} blocks with block time ${blockTime} s = ${sleepMs} ms`
+        )
+    }
+    return await sleep(sleepMs);
+}
+
 async function waitForReceipt(txHash) {
     let timeElapsed = 0;
     let interval = 10000;
@@ -110,6 +138,7 @@ module.exports = {
     waitBlocks: waitBlocks,
     sleep: sleep,
     exponentialSleep: exponentialSleep,
+    sleepRandomNumberOfBlocks: sleepRandomNumberOfBlocks,
     hexStringToBuffer: hexStringToBuffer,
     privateToAddress: privateToAddress,
     stripHexPrefix: stripHexPrefix,

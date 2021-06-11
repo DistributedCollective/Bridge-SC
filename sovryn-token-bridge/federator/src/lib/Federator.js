@@ -156,7 +156,7 @@ module.exports = class Federator {
         this.logger.info('get transaction id:', transactionId);
 
         if (this.failingTxIds.contains(transactionId)) {
-            this.logger.debug(
+            this.logger.info(
                 `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} Txid: ${transactionId} is marked as failing`
             );
             return;
@@ -171,6 +171,17 @@ module.exports = class Federator {
         let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
         if (hasVoted) {
             this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
+            return;
+        }
+
+        const chainId = await this.sideWeb3.eth.net.getId();
+        await utils.sleepRandomNumberOfBlocks(chainId, {
+            logger: this.logger,
+        })
+
+        wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
+        if (wasProcessed) {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was processed after waiting`);
             return;
         }
 
