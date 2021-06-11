@@ -155,6 +155,13 @@ module.exports = class Federator {
         ).call();
         this.logger.info('get transaction id:', transactionId);
 
+        if (this.failingTxIds.contains(transactionId)) {
+            this.logger.debug(
+                `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} Txid: ${transactionId} is marked as failing`
+            );
+            return;
+        }
+
         let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
         if (wasProcessed) {
             this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
