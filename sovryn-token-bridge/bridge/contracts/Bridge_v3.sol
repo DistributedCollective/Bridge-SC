@@ -20,7 +20,7 @@ import "./ISideTokenFactory.sol";
 import "./IAllowTokens.sol";
 import "./Utils.sol";
 
-contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
+contract Bridge_v3 is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
@@ -52,16 +52,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 public ethFeeCollected;
     address private WETHAddr;
     string private nativeTokenSymbol;
-    //Bridge_V4 variables
-    mapping(bytes32 => bool) public revokeTX; // revoke transactionId => true
-    bool setRevoke;
-
-    bytes32 private revokeBlockHash;
-    bytes32 private revokeTransactionHash;
-    address private revokeReceiver;
-    uint256 private revokeAmount.
-    uint32 private revokeLogIndex;
-    bool setRevoke;
+    //address public aggregatorAddr;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -475,11 +466,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
     function getNativeTokenSymbol() external view returns(string memory) {
         return nativeTokenSymbol;
-    }
-
-    function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
-        require(_revokeTransactionID != NULL_HASH), "_revokeTransactionID cannot be NULL");
-        processed[_revokeTransactionID] = false;
     }
 
     // Commented because it is unused for us and need decrease contract size
