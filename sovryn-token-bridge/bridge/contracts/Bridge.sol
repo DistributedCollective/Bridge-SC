@@ -170,12 +170,12 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         }
         sideToken.mint(receiver, formattedAmount, userData, "");
 
-        if (receiver.isContract()) {
-            (bool success, bytes memory errorData) = receiver.call(
-                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
-            );
-            if (!success) {
-                emit ErrorTokenReceiver(errorData);
+       if (receiver.isContract() && (userData != NULL_HASH)) {
+           (bool success, bytes memory errorData) = receiver.call(
+               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
+           );
+           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver")
+               emit ErrorTokenReceiver(errorData);
             }
         }
 

@@ -4,13 +4,12 @@ import "./zeppelin/token/ERC777/ERC777.sol";
 import "./IERC677Receiver.sol";
 import "./ISideToken.sol";
 
-contract SideToken is ISideToken, ERC777 {
+contract SideToken_v1 is ISideToken, ERC777 {
     using Address for address;
     using SafeMath for uint256;
 
     address public minter;
     uint256 private _granularity;
-    bytes32 constant private NULL_HASH = bytes32(0);
 
     event Transfer(address,address,uint256,bytes);
 
@@ -35,11 +34,7 @@ contract SideToken is ISideToken, ERC777 {
     )
     external onlyMinter
     {
-        if(userData == NULL_HASH) {
-            _mint(_msgSender(), account, amount, userData, operatorData);
-        }
-        else super._mint(_msgSender(), account, amount, userData, operatorData);
-        }
+        _mint(_msgSender(), account, amount, userData, operatorData);
     }
 
     /**
@@ -61,30 +56,6 @@ contract SideToken is ISideToken, ERC777 {
 
     function granularity() public view returns (uint256) {
         return _granularity;
-    }
-
-    /**
-    * @dev enable mint to non ERC777 interface contract if userData is empty.
-    */    
-    function _mint(
-    address operator,
-    address account,
-    uint256 amount,
-    bytes memory userData,
-    bytes memory operatorData
-    )
-    internal
-    {
-        require(account != address(0), "ERC777: mint to zero address");
-
-        // Update state variables
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
-
-        _callTokensReceived(operator, address(0), account, amount, userData, operatorData, false);
-
-        emit Minted(operator, account, amount, userData, operatorData);
-        emit Transfer(address(0), account, amount);
     }
 
 }
