@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 import "./IBridge.sol";
 import "./zeppelin/ownership/Ownable.sol";
 
-contract Federation is Ownable {
+contract Federation_v2 is Ownable {
     uint constant public MAX_MEMBER_COUNT = 50;
     address constant private NULL_ADDRESS = address(0);
 
@@ -205,14 +205,4 @@ contract Federation is Ownable {
         emit RequirementChange(_required);
     }
 
-    function setRevokeTransactionAndVote(bytes32 _revokeTransactionID) external onlyOwner {
-        require(_revokeTransactionID != NULL_HASH), "_revokeTransactionID cannot be NULL");
-        
-        processed[_revokeTransactionID] = false;
-        
-        for (uint i = 0; i < members.length; i++) {
-            votes[transactionId][members[i]]) = false;
-        }
-    }
-    
 }
