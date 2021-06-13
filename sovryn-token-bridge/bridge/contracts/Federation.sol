@@ -11,6 +11,8 @@ contract Federation is Ownable {
     address[] public members;
     uint public required;
 
+    bytes32 constant private NULL_HASH = bytes32(0);
+
     mapping (address => bool) public isMember;
     mapping (bytes32 => mapping (address => bool)) public votes;
     mapping(bytes32 => bool) public processed;
@@ -206,12 +208,12 @@ contract Federation is Ownable {
     }
 
     function setRevokeTransactionAndVote(bytes32 _revokeTransactionID) external onlyOwner {
-        require(_revokeTransactionID != NULL_HASH), "_revokeTransactionID cannot be NULL");
+        require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
         
         processed[_revokeTransactionID] = false;
         
         for (uint i = 0; i < members.length; i++) {
-            votes[transactionId][members[i]]) = false;
+            votes[_revokeTransactionID][members[i]] = false;
         }
     }
     

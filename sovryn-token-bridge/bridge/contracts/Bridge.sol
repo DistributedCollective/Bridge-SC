@@ -53,15 +53,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     address private WETHAddr;
     string private nativeTokenSymbol;
     //Bridge_V4 variables
-    mapping(bytes32 => bool) public revokeTX; // revoke transactionId => true
-    bool setRevoke;
-
-    bytes32 private revokeBlockHash;
-    bytes32 private revokeTransactionHash;
-    address private revokeReceiver;
-    uint256 private revokeAmount.
-    uint32 private revokeLogIndex;
-    bool setRevoke;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -478,7 +469,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     }
 
     function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
-        require(_revokeTransactionID != NULL_HASH), "_revokeTransactionID cannot be NULL");
+        require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
         processed[_revokeTransactionID] = false;
     }
 
