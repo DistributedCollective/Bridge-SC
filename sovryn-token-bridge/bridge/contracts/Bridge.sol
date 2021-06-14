@@ -53,7 +53,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     address private WETHAddr;
     string private nativeTokenSymbol;
     //Bridge_V4 variables
-    bytes public erc777Converter;
+    address public erc777ConverterAddr;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -170,21 +170,24 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
     // Enable mint to SC without ERC777 interface by using erc777Converter
-        if(receiver.isContract() && (userData.length == 0)) {
-            sideToken.mint(receiver, formattedAmount, erc777Converter, "");    
-        } 
-        else {
-            sideToken.mint(receiver, formattedAmount, userData, "");
-        }
+        address receiverU = receiver;
+        bytes memory userDataU = userData;
 
-        if (receiver.isContract() && (userData.length != 0)) {
-           (bool success, bytes memory errorData) = receiver.call(
-               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
-           );
-           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
-           //    emit ErrorTokenReceiver(errorData);
+        if(receiverU.isContract() && (userDataU.length == 0)) {
+            userDataU = abi.encodePacked(receiverU);
+            receiverU = erc777ConverterAddr;
         }
-        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
+    
+        sideToken.mint(receiverU, formattedAmount, userDataU, "");    
+
+        if (receiverU.isContract()) {
+           (bool success, bytes memory errorData) = receiverU.call(
+               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userDataU)
+           );
+           emit ErrorTokenReceiver(errorData);
+           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
+        }
+        emit AcceptedCrossTransfer(tokenAddress, receiverU, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userDataU);
     }
 
     function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) private {
@@ -478,9 +481,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[_revokeTransactionID] = false;
     }
 
-    function setErc777Converter(bytes calldata _erc777Converter) external onlyOwner {
-        require(_erc777Converter.length != 0 , "erc777Converter cannot be Zero address");
-        erc777Converter = _erc777Converter;
+    function setErc777Converter(address _erc777ConverterAddr) external onlyOwner {
+        require(_erc777ConverterAddr!= NULL_ADDRESS , "erc777Converter cannot be Zero address");
+        erc777ConverterAddr = _erc777ConverterAddr;
     }
 
     // Commented because it is unused for us and need decrease contract size
