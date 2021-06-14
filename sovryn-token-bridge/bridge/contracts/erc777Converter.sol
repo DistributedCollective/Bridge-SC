@@ -7,7 +7,7 @@ import "./ISideToken.sol";
 import "./IErc777Receiver.sol";
 import "./zeppelin/ownership/Ownable.sol";
 
-contract erc777Converter is IErc77Receiver, Ownable {
+contract Erc777Converter is IErc77Receiver, Ownable {
 
     IBridge public bridgeContract; // Bridge Address
     address constant private NULL_ADDRESS = address(0);
