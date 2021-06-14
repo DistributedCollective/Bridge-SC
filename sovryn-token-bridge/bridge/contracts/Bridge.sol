@@ -53,6 +53,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     address private WETHAddr;
     string private nativeTokenSymbol;
     //Bridge_V4 variables
+    bytes public erc777Converter;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -168,17 +169,21 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         } else {
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
-        sideToken.mint(receiver, formattedAmount, userData, "");
+    // Enable mint to SC without ERC777 interface by using erc777Converter
+        if(receiver.isContract() && (userData.length == 0)) {
+            sideToken.mint(receiver, formattedAmount, erc777Converter, "");    
+        } 
+        else {
+            sideToken.mint(receiver, formattedAmount, userData, "");
+        }
 
-       if (receiver.isContract() && (userData != NULL_HASH)) {
+        if (receiver.isContract() && (userData.length != 0)) {
            (bool success, bytes memory errorData) = receiver.call(
                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
            );
-           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver")
-               emit ErrorTokenReceiver(errorData);
-            }
+           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
+           //    emit ErrorTokenReceiver(errorData);
         }
-
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
@@ -471,6 +476,11 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
         processed[_revokeTransactionID] = false;
+    }
+
+    function setErc777Converter(bytes calldata _erc777Converter) external onlyOwner {
+        require(_erc777Converter.length != 0 , "erc777Converter cannot be Zero address");
+        erc777Converter = _erc777Converter;
     }
 
     // Commented because it is unused for us and need decrease contract size
