@@ -31,6 +31,34 @@ module.exports = {
         "1": {
             "default": 400,
             "minConfirmation": 10,
+            "SOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "eSOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500000000000000000000,
+                    "confirmations": 50
+                }
+            ],
             "DAI": [
                 {
                     "amount": 0,
@@ -271,6 +299,34 @@ module.exports = {
         "30": {
             "default": 100,
             "minConfirmation": 10,
+            "SOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "eSOV": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 500000000000000000000,
+                    "confirmations": 50
+                }
+            ],
             "DAI": [
                 {
                     "amount": 0,
