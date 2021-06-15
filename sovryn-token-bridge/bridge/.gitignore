@@ -1,4 +1,5 @@
 *.key
+build/
 coverage/
 coverage.json
 .coverage_contracts
