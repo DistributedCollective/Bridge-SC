@@ -54,12 +54,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     string private nativeTokenSymbol;
     //Bridge_V4 variables
     address public erc777ConverterAddr;
+    bool testI;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
-    //event AllowTokenChanged(address _newAllowToken);
-    //event PrefixUpdated(bool _isSuffix, string _prefix);
+    event AllowTokenChanged(address _newAllowToken);
+    event PrefixUpdated(bool _isSuffix, string _prefix);
+    event RevokeTx(bytes32 tx_revoked);
+    event erc777ConverterSet(address erc777ConverterAddress);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -170,24 +173,33 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
     // Enable mint to SC without ERC777 interface by using erc777Converter
-        address receiverU = receiver;
-        bytes memory userDataU = userData;
+        // address receiverU = receiver;
+        // bytes memory userDataB = userData;
+        // bytes memory bytes32Null = abi.encodePacked(address(0));
+        // bytes32 memory userDataB = bytesToBytes32(userData) ;
+        // varA32 = bytesToBytes32(abi.encodePacked(address(0)));
+        // varB32 = bytesToBytes32(userData) ;
 
-        if(receiverU.isContract() && (userDataU.length == 0)) {
-            userDataU = abi.encodePacked(receiverU);
-            receiverU = erc777ConverterAddr;
+        //if(receiverU.isContract() && (userData.length == 0)) {
+            if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
+            userData = abi.encodePacked(receiver);
+            receiver = erc777ConverterAddr;
+            testI = true;
         }
     
-        sideToken.mint(receiverU, formattedAmount, userDataU, "");    
+        sideToken.mint(receiver, formattedAmount, userData, "");    
 
-        if (receiverU.isContract()) {
-           (bool success, bytes memory errorData) = receiverU.call(
-               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userDataU)
+        if (receiver.isContract()) {
+           (bool success, bytes memory errorData) = receiver.call(
+               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
            );
-           emit ErrorTokenReceiver(errorData);
+           if (!success) {
+                emit ErrorTokenReceiver(errorData);
+            }
+           //emit ErrorTokenReceiver(errorData);
            require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
         }
-        emit AcceptedCrossTransfer(tokenAddress, receiverU, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userDataU);
+        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
     function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) private {
@@ -479,12 +491,34 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
         processed[_revokeTransactionID] = false;
+        emit RevokeTx( _revokeTransactionID);
+
     }
 
     function setErc777Converter(address _erc777ConverterAddr) external onlyOwner {
         require(_erc777ConverterAddr!= NULL_ADDRESS , "erc777Converter cannot be Zero address");
         erc777ConverterAddr = _erc777ConverterAddr;
+        emit erc777ConverterSet(erc777ConverterAddr);
+
     }
+
+    function getErc777Converter() external view returns(address) {
+        return erc777ConverterAddr;
+    }
+    // function getFederation() external view returns(address) {
+    //     return federation;
+    // }
+
+
+    function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
+    if (source.length == 0) {
+        return 0x0;
+    }
+    assembly {
+        _result := mload(add(source, 32))
+    }
+  }
+
 
     // Commented because it is unused for us and need decrease contract size
     //This method is only to recreate the USDT and USDC tokens on rsk without granularity restrictions.

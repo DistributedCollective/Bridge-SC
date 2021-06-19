@@ -6,7 +6,7 @@ const MultiSigWallet = artifacts.require("MultiSigWallet");
 module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
-            const erc777Converter = await deployer.deploy(Erc777Converter, [accounts[0]], 1);
+            const erc777Converter = await deployer.deploy(Erc777Converter);
 
             const multiSig = await MultiSigWallet.deployed();
             const bridge = await Bridge.deployed();
