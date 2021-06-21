@@ -9,7 +9,7 @@ on:
   push:
     branches: [ master ]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: [ '*.*' ]
 
 env:
   # Use docker.io for Docker Hub if empty
