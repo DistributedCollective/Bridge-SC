@@ -54,7 +54,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     string private nativeTokenSymbol;
     //Bridge_V4 variables
     address public erc777ConverterAddr;
-    bool testI;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -172,32 +171,23 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         } else {
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
-    // Enable mint to SC without ERC777 interface by using erc777Converter
-        // address receiverU = receiver;
-        // bytes memory userDataB = userData;
-        // bytes memory bytes32Null = abi.encodePacked(address(0));
-        // bytes32 memory userDataB = bytesToBytes32(userData) ;
-        // varA32 = bytesToBytes32(abi.encodePacked(address(0)));
-        // varB32 = bytesToBytes32(userData) ;
-
-        //if(receiverU.isContract() && (userData.length == 0)) {
-            if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
-            userData = abi.encodePacked(receiver);
+    // Enable Mint to SC without ERC777 interface with user data = 0x00, by using erc777Converter
+        if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
+            userData = abi.encode(receiver);
             receiver = erc777ConverterAddr;
-            testI = true;
         }
     
         sideToken.mint(receiver, formattedAmount, userData, "");    
 
         if (receiver.isContract()) {
-           (bool success, bytes memory errorData) = receiver.call(
+       (bool success, bytes memory errorData) = receiver.call(
                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
            );
-           if (!success) {
-                emit ErrorTokenReceiver(errorData);
-            }
-           //emit ErrorTokenReceiver(errorData);
-           require(success, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
+        //    if (!success) {
+        //         emit ErrorTokenReceiver(errorData);
+        //     }
+    // Revert on error      
+          require(success == true, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
         }
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
@@ -505,9 +495,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function getErc777Converter() external view returns(address) {
         return erc777ConverterAddr;
     }
-    // function getFederation() external view returns(address) {
-    //     return federation;
-    // }
+    function getDEBUG() external view returns(string memory) {
+        return nativeTokenSymbol;
+    }
 
 
     function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
