@@ -1,6 +1,4 @@
-const Federation = artifacts.require("Federation");
-// const Bridge = artifacts.require("Bridge_v0");
-// const MultiSigWallet = artifacts.require("MultiSigWallet");
+const AllowTokens = artifacts.require("AllowTokens");
 
 // Uncomment relevant 'const multisigAddress' before deploymnet
 
@@ -33,14 +31,10 @@ const Federation = artifacts.require("Federation");
 // // BSC bridge rskmainnet
 // const multiSigAddress = "0xee9ea57555d9533d71f6f77e0e480961f068a6c5";
 
+
 module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
-            const federation = await deployer.deploy(Federation, [accounts[0]], 1);
-            await federation.transferOwnership(multiSigAddress);
-            // const bridge = await Bridge.deployed();
-            // await federation.setBridge(bridge.address);
-            // const changeFederationData = bridge.contract.methods.changeFederation(federation.address).encodeABI();
-            // await multiSig.submitTransaction(bridge.address, 0, changeFederationData, { from: accounts[0] });
+           return deployer.deploy(AllowTokens, multiSigAddress);
         });
 };

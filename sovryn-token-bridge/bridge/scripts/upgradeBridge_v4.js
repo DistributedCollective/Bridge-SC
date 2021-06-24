@@ -77,9 +77,11 @@ async function upgradeBridge({
     console.log('Bridge proxy admin:', await proxyAdmin.methods.getProxyAdmin(bridgeProxyAddress).call());
 
     const startUpgradeData = bridgeProxy.methods.startUpgrade().encodeABI();
-    const pauseData = bridgeProxy.methods.pause().encodeABI();
-    const unPauseData = bridgeProxy.methods.unpause().encodeABI();
     const pauseAllowTokensData = bridgeProxy.methods.changeAllowTokens(pauseAllowTokensAddress).encodeABI();
+    const pauseData = bridgeProxy.methods.pause().encodeABI();
+    const changeFederationData = bridgeProxy.methods.changeFederation(federationAddress).encodeABI();
+    const setBridgeFederationData = federation.methods.setBridge(bridgeProxyAddress).encodeABI();
+    const unPauseData = bridgeProxy.methods.unpause().encodeABI();
     const upgradeData = proxyAdmin.methods.upgrade(bridgeProxyAddress, newBridgeAddress).encodeABI();
     const endUpgradeData = bridgeProxy.methods.endUpgrade().encodeABI();
     const unpauseAllowTokens = bridgeProxy.methods.changeAllowTokens(allowTokensAddress).encodeABI();
@@ -92,7 +94,7 @@ async function upgradeBridge({
 // Stage A
 // Should be executed for both main-chain and side-chain
 // StartUpgrade
-// set AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need this set AlloTokens)
+// set AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need pauseAllowTokensData step)
     console.log('Calling startUpgrade with multisig')
     const startUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, startUpgradeData).send(txOpts);
     console.log('Result:', startUpgradeResult);
@@ -112,12 +114,22 @@ async function upgradeBridge({
 // Stage C
 // Should be executed for both main-chain and side-chain    
 // Upgrade brigde
+// Change federation address on the Bridge
+// Set bridge address on federation
 // EndUpgrade
 // Set original AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need this set AlloTokens)
 // UnPause
     // console.log('Calling upgrade with multisig')
     // const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
     // console.log('Result:', upgradeResult);
+
+    // console.log('change Federation address on the bridge')
+    // const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
+    // console.log('Result:', changeFedAddressResult);
+   
+    // console.log('set Bridge address on Federation')
+    // const setBridgeFederationResult = await multiSig.methods.submitTransaction(federationAddress, 0, setBridgeFederationData).send(txOpts);
+    // console.log('Result:', setBridgeFederationResult);
 
     // console.log('Calling endUpgrade with multisig')
     // const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
@@ -127,7 +139,7 @@ async function upgradeBridge({
     // const unpauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unpauseAllowTokens).send(txOpts);
     // console.log('Result:', unpauseAllowtokensResult);
     
-    // console.log('Calling pause with multisig')
+    // console.log('Calling unpause with multisig')
     // const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
     // console.log('Result:', pauseResult);
 
