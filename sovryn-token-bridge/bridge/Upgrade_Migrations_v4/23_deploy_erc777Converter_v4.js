@@ -1,8 +1,6 @@
-const AllowTokens = artifacts.require("AllowTokens");
+const Erc777Converter = artifacts.require("Erc777Converter");
 
 // Uncomment relevant 'const multisigAddress' before deploymnet
-// Should run this depoly only for ETH bridge on upgrade from bridge_v3 to brigde_v4
-// This is an allowTokens SC that is set as a pauser for ETH bridge 
 
 // /////////////////////
 // // Testnet  /////////
@@ -33,10 +31,10 @@ const AllowTokens = artifacts.require("AllowTokens");
 // // BSC bridge rskmainnet
 // const multiSigAddress = "0xee9ea57555d9533d71f6f77e0e480961f068a6c5";
 
-
 module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
-           return deployer.deploy(AllowTokens, multiSigAddress);
+            const erc777Converter = await deployer.deploy(Erc777Converter);
+            await erc777Converter.transferOwnership(multiSigAddress);
         });
 };

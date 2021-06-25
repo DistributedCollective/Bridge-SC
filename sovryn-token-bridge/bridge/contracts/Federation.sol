@@ -23,6 +23,7 @@ contract Federation is Ownable {
     event MemberRemoval(address indexed member);
     event RequirementChange(uint required);
     event BridgeChanged(address bridge);
+    event RevokeTxAndVote(bytes32 tx_revoked);
 
     modifier onlyMember() {
         require(isMember[_msgSender()], "Federation: Caller not a Federator");
@@ -209,12 +210,12 @@ contract Federation is Ownable {
 
     function setRevokeTransactionAndVote(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
-        
         processed[_revokeTransactionID] = false;
-        
         for (uint i = 0; i < members.length; i++) {
             votes[_revokeTransactionID][members[i]] = false;
         }
+        emit RevokeTxAndVote(_revokeTransactionID);
+
     }
     
 }

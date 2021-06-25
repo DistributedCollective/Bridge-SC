@@ -367,12 +367,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
+    // Starting from V3, fee is set per token in allowTokens.sol
+    // FeePercentage is not used
     // function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
     //     require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
     //     feePercentage = amount;
     //     emit FeePercentageChanged(feePercentage);
     // }
-
     // function getFeePercentage() external view returns(uint) {
     //     return feePercentage;
     // }
@@ -429,21 +430,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         }
         crossTokens(WETHAddr, _receiver, msg.value, _extraData);
     }
-    //     if(aggregatorAddr != address(0)){
-    //         crossTokens(WETHAddr, aggregatorAddr, msg.value, abi.encodePacked(msg.sender));
-    //     }
-    //     else {
-    //         bytes memory _userData = "";        
-    //         crossTokens(WETHAddr, msg.sender, msg.value, _userData);
-    //     }
-    // }
-    // function setAggregatorAddr(address _aggregatorAddr) external onlyOwner {
-    //     aggregatorAddr = _aggregatorAddr;
-    // }
 
     function setWETHAddress(address _WETHAddr) external onlyOwner {
         require(_WETHAddr != address(0) && !ethFirstTransfer , "No set WETHAddr AF 1st transfer");
-        //require(!ethFirstTransfer, "cannot change WETHAddr after first transfer");
         WETHAddr = _WETHAddr;
     }
 
@@ -455,19 +444,20 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function _changeAllowTokens(address newAllowTokens) internal {
         require(newAllowTokens != NULL_ADDRESS, "Bridge: newAllowTokens is empty");
         allowTokens = IAllowTokens(newAllowTokens);
-        //emit AllowTokenChanged(newAllowTokens);
+        emit AllowTokenChanged(newAllowTokens);
     }
     function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
         require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
         isSuffix = _isSuffix;
         symbolPrefix = _prefix;
-        //emit PrefixUpdated(isSuffix, _prefix);
+        emit PrefixUpdated(isSuffix, _prefix);
     }
 
     function withdrawAllEthFees(address payable _to) public payable onlyOwner {
         require(address(this).balance >= ethFeeCollected);
+        uint256 sendEthFeeCollected = ethFeeCollected;
         ethFeeCollected = 0;
-        _to.transfer(ethFeeCollected);
+        _to.transfer(sendEthFeeCollected);
     }
 
     function setNativeTokenSymbol(string calldata _nativeTokenSymbol) external onlyOwner {
@@ -478,13 +468,15 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         return nativeTokenSymbol;
     }
 
+//// Bridge v4 upgrade functions
+// Revoke transaction sent from the federation. MultiSig operation to release stucked transactions   
     function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
         processed[_revokeTransactionID] = false;
         emit RevokeTx( _revokeTransactionID);
-
     }
 
+// Enable the bridge to send to receiver SC without ERC777 interface, using a ERC77Converter  
     function setErc777Converter(address _erc777ConverterAddr) external onlyOwner {
         require(_erc777ConverterAddr!= NULL_ADDRESS , "erc777Converter cannot be Zero address");
         erc777ConverterAddr = _erc777ConverterAddr;
@@ -495,11 +487,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function getErc777Converter() external view returns(address) {
         return erc777ConverterAddr;
     }
-    function getDEBUG() external view returns(string memory) {
-        return nativeTokenSymbol;
-    }
 
-
+// Convert bytes to bytes32
     function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
     if (source.length == 0) {
         return 0x0;

@@ -1,6 +1,4 @@
 const Federation = artifacts.require("Federation");
-// const Bridge = artifacts.require("Bridge_v0");
-// const MultiSigWallet = artifacts.require("MultiSigWallet");
 
 // Uncomment relevant 'const multisigAddress' before deploymnet
 
@@ -18,7 +16,7 @@ const Federation = artifacts.require("Federation");
 // const multiSigAddress = "0x7db96fcc37b652ceefa2523c3d25f55d9b9e9973";
 // //
 // // ETH bridge ropstenDEV
-// const multiSigAddress = "0x314d9163dd122368b3c6329b081d2400a9f238d1";
+ const multiSigAddress = "0x314d9163dd122368b3c6329b081d2400a9f238d1";
 
 // /////////////////////
 // // Mainnet  /////////
@@ -38,9 +36,5 @@ module.exports = function(deployer, networkName, accounts) {
         .then(async () => {
             const federation = await deployer.deploy(Federation, [accounts[0]], 1);
             await federation.transferOwnership(multiSigAddress);
-            // const bridge = await Bridge.deployed();
-            // await federation.setBridge(bridge.address);
-            // const changeFederationData = bridge.contract.methods.changeFederation(federation.address).encodeABI();
-            // await multiSig.submitTransaction(bridge.address, 0, changeFederationData, { from: accounts[0] });
         });
 };
