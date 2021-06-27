@@ -471,7 +471,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //// Bridge v4 upgrade functions
 // Revoke transaction sent from the federation. MultiSig operation to release stucked transactions   
     function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
-        require(_revokeTransactionID != NULL_HASH, "_revokeTransactionID cannot be NULL");
+        require(_revokeTransactionID != NULL_HASH, "Bridge: _revokeTransactionID cannot be NULL");
+        require(processed[_revokeTransactionID] == true, "Bridge: cannot revoke unprocessed TX");   
         processed[_revokeTransactionID] = false;
         emit RevokeTx( _revokeTransactionID);
     }
