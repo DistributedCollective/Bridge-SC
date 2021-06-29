@@ -1,9 +1,6 @@
 /*
- *
- * NOTE!! this script doesn't actually need to be used, since everything should be done by Truffle migrations!!
- *
  * Upgrade the bridge contract.
- * Run like this: truffle exec scripts/upgradeBridge.js ./myConfig.json
+ * Run like this: npx truffle exec scripts/upgradeBridge_v4.js  --network ropsten scripts/Upgrade_Configs/UpgradeTestnet_EthBridge_Rsktestnet_Config.json
  */
 const fs = require('fs');
 const bridgeAbi = require("../../abis/Bridge.json");
@@ -29,7 +26,7 @@ module.exports = async callback => {
 function readConfig() {
     const configJsonPath = process.argv[6];
     if(!configJsonPath) {
-        throw new Error('specify path to config.json, eg. `npx truffle exec scripts/upgradeBridge.js --network ropsten scripts/ropstenDEVConfig.json`');
+        throw new Error('specify path to config.json, eg. `npx truffle exec scripts/upgradeBridge_v4.js  --network ropsten scripts/Upgrade_Configs/UpgradeTestnet_EthBridge_Rsktestnet_Config.json`');
     }
     if(!fs.existsSync(configJsonPath)) {
         throw new Error(`file ${configJsonPath} does not exists`);
@@ -70,7 +67,6 @@ async function upgradeBridge({
     console.log('New bridge address is:', newBridgeAddress);
     console.log('erc777Converter address is:', erc777ConverterAddress);
 
-
     const multiSig = new web3.eth.Contract(multisigAbi, multiSigAddress);
     const allowTokens = new web3.eth.Contract(allowTokensAbi, allowTokensAddress);
     const pauseAllowTokens = new web3.eth.Contract(allowTokensAbi, pauseAllowTokensAddress);
@@ -107,16 +103,16 @@ async function upgradeBridge({
 // set AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need pauseAllowTokensData step)
 // //1
 //     console.log('Calling startUpgrade with multisig')
-    // console.log(startUpgradeData)
+//     console.log(startUpgradeData)
 //     const startUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, startUpgradeData).send(txOpts);
 //     console.log('Result:', startUpgradeResult);
 // // //2
-//     if( netType== "mainnet" ||  netType== "ropsten" ) {
+//    // if( netType== "mainnet" ||  netType== "ropsten" ) {
 //         console.log('Pause the bridge Calling changeAllowTokens with multisig')
-    // console.log(pauseAllowTokensData)
+//         console.log(pauseAllowTokensData)
 //         const pauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, pauseAllowTokensData).send(txOpts);
 //         console.log('Result:', pauseAllowtokensResult);
-//     }
+//    // }
 
 // Stage B
 // Should be executed for both main-chain and side-chain
@@ -140,46 +136,46 @@ async function upgradeBridge({
 // UnPause
 // //4
 //     console.log('Calling upgrade with multisig')
-//     console.log('upgradeData')
+//     console.log(upgradeData);
 //     const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
 //     console.log('Result:', upgradeResult);
 // //5
 //     console.log('change Federation address on the bridge')
-//     console.log('changeFederationData')
+//     console.log(changeFederationData);
 //     const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
 //     console.log('Result:', changeFedAddressResult);
 // //6   
 //     console.log('set Bridge address on Federation')
-//     console.log('setBridgeFederationData')
+//     console.log(setBridgeFederationData);
 //     const setBridgeFederationResult = await multiSig.methods.submitTransaction(federationAddress, 0, setBridgeFederationData).send(txOpts);
 //     console.log('Result:', setBridgeFederationResult);
 // //7
 //     console.log('set erc777Converter address on the bridge')
-//     console.log('setErc777ConverterData')
+//     console.log(setErc777ConverterData);
 //     const setErc777ConverterResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, setErc777ConverterData).send(txOpts);
 //     console.log('Result:', setErc777ConverterResult);
 // //8   
-    // console.log('set Bridge address on erc777Converter')
-    // console.log('setBridgeErc777ConverterData')
-    // const setBridgeErc777ConverterResult = await multiSig.methods.submitTransaction(erc777ConverterAddress, 0, setBridgeErc777ConverterData).send(txOpts);
-    // console.log('Result:', setBridgeErc777ConverterResult);
+//     console.log('set Bridge address on erc777Converter')
+//     console.log(setBridgeErc777ConverterData);
+//     const setBridgeErc777ConverterResult = await multiSig.methods.submitTransaction(erc777ConverterAddress, 0, setBridgeErc777ConverterData).send(txOpts);
+//     console.log('Result:', setBridgeErc777ConverterResult);
 // //9
 //     console.log('Calling endUpgrade with multisig')
-//     console.log('endUpgradeData')
+//     console.log(endUpgradeData);
 //     const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
 //     console.log('Result:', endUpgradeResult);
 // //10
-//     if( netType== "mainnet" ||  netType== "ropsten" ) {
+//     //if( netType== "mainnet" ||  netType== "ropsten" ) {
 //          console.log('UnPause the bridge Calling changeAllowTokens with multisig')
-//          console.log('unpauseAllowTokensData')
+//          console.log(unpauseAllowTokensData);
 //          const unpauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unpauseAllowTokensData).send(txOpts);
 //          console.log('Result:', unpauseAllowtokensResult);
-//     }
-//11    
-    // console.log('Calling unpause with multisig')
-        // console.log('unPauseData')
-    // const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
-    // console.log('Result:', unPauseResult);
+//     //}
+// //11    
+//     console.log('Calling unpause with multisig')
+//         console.log(unPauseData);
+//     const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
+//     console.log('Result:', unPauseResult);
 
     console.log('All done.')
 }

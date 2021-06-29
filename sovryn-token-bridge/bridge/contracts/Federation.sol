@@ -12,6 +12,7 @@ contract Federation is Ownable {
     uint public required;
 
     bytes32 constant private NULL_HASH = bytes32(0);
+    bool public initStageDone;
 
     mapping (address => bool) public isMember;
     mapping (bytes32 => mapping (address => bool)) public votes;
@@ -24,6 +25,7 @@ contract Federation is Ownable {
     event RequirementChange(uint required);
     event BridgeChanged(address bridge);
     event RevokeTxAndVote(bytes32 tx_revoked);
+    event StoreFormerFederationExecutedTx(bytes32 tx_stored);
 
     modifier onlyMember() {
         require(isMember[_msgSender()], "Federation: Caller not a Federator");
@@ -98,6 +100,7 @@ contract Federation is Ownable {
         bytes memory userData
     ) internal onlyMember returns(bool) {
         // solium-disable-next-line max-len
+        require(initStageDone == true, "Federation: Cannot process TX while initStageDone == false");
         bytes32 transactionId = getTransactionId(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
         if (processed[transactionId])
             return true;
@@ -208,6 +211,8 @@ contract Federation is Ownable {
         emit RequirementChange(_required);
     }
 
+// Revoke state of txID (from true to false), to enable nultiSig release of stucked txID on the bridge
+// setRevokeTransaction() should be called on the bridge as well to enable revoke of txID
     function setRevokeTransactionAndVote(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "Federation: _revokeTransactionID cannot be NULL");
         require(processed[_revokeTransactionID] == true, "Federation: cannot revoke unprocessed TX");   
@@ -218,5 +223,20 @@ contract Federation is Ownable {
         emit RevokeTxAndVote(_revokeTransactionID);
 
     }
-    
+
+// Store former Federation contract version processed[] state
+// Can be used only at deployment stage. Cannot _voteTransaction txID while this stage is active (initStageDone is false)
+    function initStoreOldFederation(bytes32 _TransactionID) external onlyOwner {
+        require(initStageDone == false, "Federation: initStoreOldFederation enabled only during deployment setup Stage");
+        require(_TransactionID != NULL_HASH, "Federation: _revokeTransactionID cannot be NULL");
+        processed[_TransactionID] = true;
+        
+        emit StoreFormerFederationExecutedTx(_TransactionID);
+    }
+
+// Finish stage of store of former Federation contract version
+// Must be set to true before _voteTransaction is called 
+    function endDeploymentSetup() external onlyOwner {
+        initStageDone = true;
+    }
 }

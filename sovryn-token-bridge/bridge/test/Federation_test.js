@@ -267,7 +267,7 @@ contract('Federation', async function (accounts) {
 
     });
 
-    describe('Transactions', async function() {
+    describe('Store Former federation state', async function() {
         const originalTokenAddress = randomHex(20);
         const amount = web3.utils.toWei('10');
         const symbol = 'r';
@@ -295,6 +295,103 @@ contract('Federation', async function (accounts) {
             await this.sideTokenFactory.transferPrimary(this.bridge.address);
             await this.federation.setBridge(this.bridge.address);
         });
+
+        it('should fail to vote at initial setup stage', async function() {
+            await utils.expectThrow(this.federation.voteTransaction(
+                originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
+                {from: fedMember1}));
+        });
+        
+        it('should store processed[] state', async function() {
+            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+
+            await this.federation.initStoreOldFederation(transactionId);
+            transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, true);
+        });
+
+        it('should fail to store processed[] state after initial stage is done', async function() {
+            await this.federation.endDeploymentSetup();
+            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+
+            await utils.expectThrow(this.federation.initStoreOldFederation(transactionId));
+            transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+        });
+
+        it('should store processed[] state from multiSig', async function() {
+            const multiSigOnwerA = accounts[5];
+            const multiSigOnwerB = accounts[6];
+            
+            this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
+            this.federation.transferOwnership(this.multiSig.address);
+            
+            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+
+            let data = this.federation.contract.methods.initStoreOldFederation(transactionId).encodeABI();
+            await this.multiSig.submitTransaction(this.federation.address, 0, data, { from: multiSigOnwerA });
+            await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
+    
+            transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, true);
+        });
+
+        it('should fail store processed[] state call not from multiSig', async function() {
+            const multiSigOnwerA = accounts[5];
+            const multiSigOnwerB = accounts[6];
+            
+            this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
+            this.federation.transferOwnership(this.multiSig.address);
+            
+            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+
+            let data = this.federation.contract.methods.initStoreOldFederation(transactionId).encodeABI();
+            await utils.expectThrow(this.multiSig.submitTransaction(this.federation.address, 0, data, { from: accounts[4] }));
+    
+            transactionWasProcessed = await this.federation.processed(transactionId);
+            assert.equal(transactionWasProcessed, false);
+        });
+    });
+
+    describe('Transactions', async function() {
+        const originalTokenAddress = randomHex(20);
+        const amount = web3.utils.toWei('10');
+        const symbol = 'r';
+        const blockHash = randomHex(32);
+        const transactionHash = randomHex(32);
+        const logIndex = 1;
+        const decimals = 18;
+        const granularity = 1;
+
+
+        beforeEach(async function () {
+            this.allowTokens = await AllowTokens.new(deployer);
+            await this.allowTokens.addAllowedToken(originalTokenAddress);
+            this.sideTokenFactory = await SideTokenFactory.new();
+            this.utilsContract = await UtilsContract.deployed();
+            this.project = await TestHelper();
+
+            Bridge_v1.link({ "Utils": this.utilsContract.address });
+            Bridge.link({ "Utils": this.utilsContract.address });
+            this.proxy = await this.project.createProxy(Bridge_v1,
+                { initMethod: 'initialize', initArgs: [deployer, this.federation.address, this.allowTokens.address, this.sideTokenFactory.address, 'e'] });
+            this.proxy = await this.project.upgradeProxy(this.proxy.address, Bridge);
+            this.bridge = await BridgeArtifact.at(this.proxy.address);
+
+            await this.sideTokenFactory.transferPrimary(this.bridge.address);
+            await this.federation.setBridge(this.bridge.address);
+            await this.federation.endDeploymentSetup();
+        });
+        
+    
 
         it('voteTransaction should be successful with 1/1 feds require 1', async function() {
             this.federation.removeMember(fedMember2)
