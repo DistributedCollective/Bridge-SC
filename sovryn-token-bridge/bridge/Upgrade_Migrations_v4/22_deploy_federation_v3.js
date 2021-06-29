@@ -7,7 +7,7 @@ const Federation = artifacts.require("Federation");
 // /////////////////////
 
 // // ETH bridge ropsten
- const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
+// const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
 // // ETH bridge rsktestnet
 // const multiSigAddress = "0x34055C3f23bFE1d8A45c9ABA53b66ffcA4353600";
 const feds = [
@@ -61,14 +61,14 @@ let federation;
 module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
-        if(networkName == mainnet || networkName == bmainnet ||networkName == rskmainnet) {
+        if(networkName == "mainnet" || networkName == "bmainnet" ||networkName == "rskmainnet") {
             federation = await deployer.deploy(Federation, [feds[0], feds[1], feds[2], feds[3], feds[4]], 1);
         }
-        else if(networkName == ropsten || networkName == rsktestnet || networkName == btestnet) {
+        else if(networkName == "ropsten" || networkName == "rsktestnet" || networkName == "btestnet") {
             federation = await deployer.deploy(Federation, [accounts[0], feds[0], feds[1]], 1);
         }
         else {
-            federation = await deployer.deploy(Federation, [accounts[0], 1);
+            federation = await deployer.deploy(Federation, [accounts[0]], 1);
         }
 // TransferOwnership moved to Upgrade script (to execute getFederationState.js before multisig ownership)
         //await federation.transferOwnership(multiSigAddress);
