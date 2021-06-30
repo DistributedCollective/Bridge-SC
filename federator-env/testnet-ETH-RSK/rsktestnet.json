@@ -1,6 +1,6 @@
 {
     "bridge": "0xc0e7a7fff4aba5e7286d5d67dd016b719dcc9156",
-    "federation": "0xa98ba82fd6b1f37292840ace06939df0a4eca135",
+    "federation": "0xe8c5ed307cd1e2cd1227ec4a0f10312d1935775c",
     "multiSig": "0x34055c3f23bfe1d8a45c9aba53b66ffca4353600",
     "allowTokens": "0x918b9fd8c2e9cf5625ea00ca6cfa270a44050d01",
     "erc777Converter": "0xff81c64ab2bbbbb18fe271a865dfae45f148108d",

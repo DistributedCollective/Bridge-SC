@@ -25,7 +25,8 @@ contract Federation is Ownable {
     event RequirementChange(uint required);
     event BridgeChanged(address bridge);
     event RevokeTxAndVote(bytes32 tx_revoked);
-    event StoreFormerFederationExecutedTx(bytes32 tx_stored);
+    event StoreFormerFederationExecutedTx(bytes32[] tx_stored);
+    //event StoreFormerFederationExecutedTx(bytes32 tx_stored);
 
     modifier onlyMember() {
         require(isMember[_msgSender()], "Federation: Caller not a Federator");
@@ -226,21 +227,14 @@ contract Federation is Ownable {
 
 // Store former Federation contract version processed[] state
 // Can be used only at deployment stage. Cannot _voteTransaction txID while this stage is active (initStageDone is false)
-    // function initStoreOldFederation(bytes32 _TransactionID) external onlyOwner {
-    //     require(initStageDone == false, "Federation: initStoreOldFederation enabled only during deployment setup Stage");
-    //     require(_TransactionID != NULL_HASH, "Federation: _revokeTransactionID cannot be NULL");
-    //     processed[_TransactionID] = true;
-        
-    //     emit StoreFormerFederationExecutedTx(_TransactionID);
-    // }
     function initStoreOldFederation(bytes32[] calldata _TransactionIDs) external onlyOwner {
         require(initStageDone == false, "Federation: initStoreOldFederation enabled only during deployment setup Stage");
-        //require(_TransactionID != NULL_HASH, "Federation: _revokeTransactionID cannot be NULL");
         for (uint i = 0; i < _TransactionIDs.length; i++) {
             require(_TransactionIDs[i] != NULL_HASH, "Federation: _storeTransactionID cannot be NULL");
             processed[_TransactionIDs[i]] = true;
-            emit StoreFormerFederationExecutedTx(_TransactionIDs[i]);
+           // emit StoreFormerFederationExecutedTx(_TransactionIDs[i]);
         }
+        emit StoreFormerFederationExecutedTx(_TransactionIDs);
     }
 
 // Finish stage of store of former Federation contract version
