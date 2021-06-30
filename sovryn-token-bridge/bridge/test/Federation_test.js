@@ -303,23 +303,36 @@ contract('Federation', async function (accounts) {
         });
         
         it('should store processed[] state', async function() {
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
-            let transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId1 = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId1);
             assert.equal(transactionWasProcessed, false);
 
-            await this.federation.initStoreOldFederation(transactionId);
-            transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId2 = await this.federation.getTransactionId(originalTokenAddress, accounts[5], amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
+            assert.equal(transactionWasProcessed, false);
+
+            await this.federation.initStoreOldFederation([transactionId1,transactionId2]);
+            transactionWasProcessed = await this.federation.processed(transactionId1);
             assert.equal(transactionWasProcessed, true);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
+            assert.equal(transactionWasProcessed, true);
+
         });
 
         it('should fail to store processed[] state after initial stage is done', async function() {
             await this.federation.endDeploymentSetup();
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
-            let transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId1 = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId1);
             assert.equal(transactionWasProcessed, false);
 
-            await utils.expectThrow(this.federation.initStoreOldFederation(transactionId));
-            transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId2 = await this.federation.getTransactionId(originalTokenAddress, accounts[5], amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
+            assert.equal(transactionWasProcessed, false);
+
+            await utils.expectThrow(this.federation.initStoreOldFederation([transactionId1,transactionId2]));
+            transactionWasProcessed = await this.federation.processed(transactionId1);
+            assert.equal(transactionWasProcessed, false);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
             assert.equal(transactionWasProcessed, false);
         });
 
@@ -330,15 +343,21 @@ contract('Federation', async function (accounts) {
             this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
             this.federation.transferOwnership(this.multiSig.address);
             
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
-            let transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId1 = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId1);
             assert.equal(transactionWasProcessed, false);
 
-            let data = this.federation.contract.methods.initStoreOldFederation(transactionId).encodeABI();
+            let transactionId2 = await this.federation.getTransactionId(originalTokenAddress, accounts[5], amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
+            assert.equal(transactionWasProcessed, false);
+
+            let data = this.federation.contract.methods.initStoreOldFederation([transactionId1,transactionId2]).encodeABI();
             await this.multiSig.submitTransaction(this.federation.address, 0, data, { from: multiSigOnwerA });
             await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
     
-            transactionWasProcessed = await this.federation.processed(transactionId);
+            transactionWasProcessed = await this.federation.processed(transactionId1);
+            assert.equal(transactionWasProcessed, true);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
             assert.equal(transactionWasProcessed, true);
         });
 
@@ -349,14 +368,20 @@ contract('Federation', async function (accounts) {
             this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
             this.federation.transferOwnership(this.multiSig.address);
             
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
-            let transactionWasProcessed = await this.federation.processed(transactionId);
+            let transactionId1 = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionWasProcessed = await this.federation.processed(transactionId1);
             assert.equal(transactionWasProcessed, false);
 
-            let data = this.federation.contract.methods.initStoreOldFederation(transactionId).encodeABI();
+            let transactionId2 = await this.federation.getTransactionId(originalTokenAddress, accounts[5], amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
+            assert.equal(transactionWasProcessed, false);
+
+            let data = this.federation.contract.methods.initStoreOldFederation([transactionId1,transactionId2]).encodeABI();
             await utils.expectThrow(this.multiSig.submitTransaction(this.federation.address, 0, data, { from: accounts[4] }));
     
-            transactionWasProcessed = await this.federation.processed(transactionId);
+            transactionWasProcessed = await this.federation.processed(transactionId1);
+            assert.equal(transactionWasProcessed, false);
+            transactionWasProcessed = await this.federation.processed(transactionId2);
             assert.equal(transactionWasProcessed, false);
         });
     });
