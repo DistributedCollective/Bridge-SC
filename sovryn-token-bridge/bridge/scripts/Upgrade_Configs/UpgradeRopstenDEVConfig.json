@@ -2,6 +2,7 @@
     "bridgeProxyAddress": "0x4Ff0E83e443467a1723FC2F0B74C91f31CEacB83",
     "newBridgeAddress": "0xEe695AcCecc1AEbE0a411E558454d786b972ee47",
     "deployerAddress": "0x12D90403733b6DD1f88240C773a6613331e60bCF",
+    "ownerAddress": "0x12D90403733b6DD1f88240C773a6613331e60bCF",
     "multiSigAddress": "0x314d9163Dd122368b3c6329b081d2400a9f238d1",
     "proxyAdminAddress": "0x9b9F87e4B9F3f93c920eEAd01593573bEb21F737",
     "allowTokensAddress": "0x95e0733f924f8f423fc87a201e56e56d9634efd2",

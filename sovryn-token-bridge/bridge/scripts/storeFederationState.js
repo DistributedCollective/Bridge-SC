@@ -42,7 +42,6 @@ module.exports = async callback => {
 
 
 async function getState() {    
-    // fromPageBlock = 10222073;
     const toPagedBlock = await web3.eth.getBlockNumber()
     console.log("from Block TO Block: " + fromPageBlock + " TO " + toPagedBlock);
     console.log("federation_v2Address: "+ federation_v2Address);

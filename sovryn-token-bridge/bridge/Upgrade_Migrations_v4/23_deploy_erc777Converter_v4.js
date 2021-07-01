@@ -35,6 +35,7 @@ module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
             const erc777Converter = await deployer.deploy(Erc777Converter);
-            await erc777Converter.transferOwnership(multiSigAddress);
+            // Moved to upgradeBridge_v4.js script
+            // await erc777Converter.transferOwnership(multiSigAddress);
         });
 };
