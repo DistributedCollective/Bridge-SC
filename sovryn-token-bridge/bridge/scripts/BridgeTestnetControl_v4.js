@@ -31,7 +31,7 @@ module.exports = async callback => {
         const input2 = process.argv[11];
 
         
-        if( bridgeType == "h") {
+        if( bridgeType == "h" || bridgeType == "help" ) {
             throw new Error('npx truffle exec ./scripts/BridgeControl.js --network <net> <bridgeType> <tokenType> <enableMethod> <input0> <input1> <input2>\n' + 
             'net: testnet, btestnet, rsktestnet, ropsten, btestnet, rsktestnet\n' +
             'bridgeType: bsc, eth\n'+
@@ -41,10 +41,10 @@ module.exports = async callback => {
             'input1: second input to function\n'+
             'input2: third input to function\n' +
             'enableMethod list:\n' +
-            'Bridge: pause changeAllowTokens setNativeTokenSymbol initialSymbolPrefixSetup setWETHAddress\n' +
+            'Bridge: pause changeAllowTokens setNativeTokenSymbol initialSymbolPrefixSetup setWETHAddress setRevokeTransaction\n' +
             'MultiSig: changeRequirement removeOwner addOwner\n' +
             'AllowTokens: addAllowedToken removeAllowedToken setFeeAndMinPerToken setMaxTokensAllowed changeDailyLimit\n' +
-            'Federation: removeMember addMember\n\n' +
+            'Federation: removeMember addMember setRevokeTransactionAndVote\n\n' +
             'Example: \n' + 
             'npx truffle exec ./scripts/BridgeControl.js --network rsktestnet bsc bnb "setFeeAndMinPerToken" "" 10000000000000000 100000000000000000\n' +
             'npx truffle exec ./scripts/BridgeControl.js --network rsktestnet bsc "" "removeOwner" "0xdc83580abf622ec75f69b56ddf945dd6cdbf53d2" "" ""');   
@@ -230,7 +230,6 @@ module.exports = async callback => {
         console.log("multiSigAddress: "+ multiSigAddress);
         console.log("allowTokensAddress: "+ allowTokensAddress);
         console.log("erc777ConverterAddress: "+ erc777ConverterAddress);
-
         const multiSig = new web3.eth.Contract(multisigAbi, multiSigAddress, {from: deployer});
         const bridge =  new web3.eth.Contract(bridgeAbi, bridgeAddress, {from: deployer});
         const allowTokens =  new web3.eth.Contract(AllowTokensAbi, allowTokensAddress, {from: deployer});
@@ -271,6 +270,12 @@ module.exports = async callback => {
                 smartContract = "bridge";
                 functionData = bridge.methods
                 .setWETHAddress(input0)
+                .encodeABI();
+            }
+            else if(enableMethod == "setRevokeTransaction") {
+                smartContract = "bridge";
+                functionData = bridge.methods
+                .setRevokeTransaction(input0)
                 .encodeABI();
             }
         // MultiSig control
@@ -341,6 +346,12 @@ module.exports = async callback => {
                 smartContract = "federation";
                 functionData = federation.methods
                 .addMember(input0)
+                .encodeABI();
+            }
+            else if(enableMethod == "setRevokeTransactionAndVote") {
+                smartContract = "federation";
+                functionData = federation.methods
+                .setRevokeTransactionAndVote(input0)
                 .encodeABI();
             }
         // erc777Converter control
