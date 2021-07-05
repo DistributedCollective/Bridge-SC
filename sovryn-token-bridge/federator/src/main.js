@@ -40,6 +40,7 @@ const mainFederator = new Federator(
     web3,
     chatBot,
 );
+
 const sideFederator = new Federator(
     {
         ...config,

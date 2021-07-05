@@ -3,6 +3,7 @@ const Tx = require('ethereumjs-tx');
 const ethUtils = require('ethereumjs-util');
 const utils = require('./utils');
 const CustomError = require('./CustomError');
+const GasPriceEstimator = require('./GasPriceEstimator');
 const fs = require('fs');
 
 module.exports = class TransactionSender {
@@ -11,6 +12,12 @@ module.exports = class TransactionSender {
         this.logger = logger;
         this.chainId = null;
         this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
+
+        this.gasPriceEstimator = new GasPriceEstimator({
+            web3: this.client,
+            logger: this.logger,
+            etherscanApiKey: config.etherscanApiKey,
+        });
     }
 
     async getNonce(address) {
@@ -25,11 +32,7 @@ module.exports = class TransactionSender {
     }
 
     async getGasPrice(chainId) {
-        chainId = parseInt(chainId)
-        if(chainId>= 30 && chainId <=33) {
-            return this.getRskGasPrice();
-        }
-        return this.getEthGasPrice();
+        return this.gasPriceEstimator.getGasPrice(chainId);
     }
 
     async getGasLimit(rawTx) {
@@ -42,17 +45,6 @@ module.exports = class TransactionSender {
         estimatedGas = (estimatedGas < minimum) ? minimum : 3500000;
 
         return estimatedGas;
-    }
-
-    async getEthGasPrice() {
-        const gasPrice = parseInt(await this.client.eth.getGasPrice());
-        return gasPrice <= 1 ? 1: Math.round(gasPrice * 1.5);
-    }
-
-    async getRskGasPrice() {
-        let block = await this.client.eth.getBlock('latest');
-        let gasPrice= parseInt(block.minimumGasPrice);
-        return gasPrice <= 1 ? 1: Math.round(gasPrice * 1.05);
     }
 
     async createRawTransaction(from, to, data, value) {

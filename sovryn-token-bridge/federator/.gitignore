@@ -6,6 +6,7 @@ latestBlock.txt
 db
 config/federator.key
 config/telegram.key
+config/etherscan.key
 federator.log
 test/lib/*.txt
 coverage

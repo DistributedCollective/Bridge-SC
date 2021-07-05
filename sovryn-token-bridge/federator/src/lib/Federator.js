@@ -110,8 +110,7 @@ module.exports = class Federator {
 
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
-            const from = await transactionSender.getAddress(this.config.privateKey);
+            const from = await this.transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
@@ -156,36 +155,53 @@ module.exports = class Federator {
         ).call();
         this.logger.info('get transaction id:', transactionId);
 
-        let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
-        if (!wasProcessed) {
-            let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
-            if (!hasVoted) {
-                this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
-                await this._voteTransaction(tokenAddress,
-                    receiver,
-                    amount,
-                    symbol,
-                    log.blockHash,
-                    log.transactionHash,
-                    log.logIndex,
-                    decimals,
-                    granularity,
-                    userData
-                );
-            } else {
-                this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
-            }
-        } else {
-            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
+        if (this.failingTxIds.contains(transactionId)) {
+            this.logger.info(
+                `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} Txid: ${transactionId} is marked as failing`
+            );
+            return;
         }
-    }
 
+        let wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
+        if (wasProcessed) {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`);
+            return;
+        }
+
+        let hasVoted = await this.federationContract.methods.hasVoted(transactionId).call({from: from});
+        if (hasVoted) {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
+            return;
+        }
+
+        const chainId = await this.sideWeb3.eth.net.getId();
+        await utils.sleepRandomNumberOfBlocks(chainId, {
+            logger: this.logger,
+        })
+
+        wasProcessed = await this.federationContract.methods.transactionWasProcessed(transactionId).call();
+        if (wasProcessed) {
+            this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was processed after waiting`);
+            return;
+        }
+
+        this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
+        await this._voteTransaction(tokenAddress,
+            receiver,
+            amount,
+            symbol,
+            log.blockHash,
+            log.transactionHash,
+            log.logIndex,
+            decimals,
+            granularity,
+            userData
+        );
+    }
 
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
         let txId;
         try {
-
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
             txId = await this.federationContract.methods.getTransactionId(
@@ -236,8 +252,25 @@ module.exports = class Federator {
             }
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
-            await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
+            const result = await this.transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
             this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
+
+            // If the transaction timeouts, TransactionSender doesn't return a full transaction receipt (just the
+            // txhash). This probably indicates a low gas price.
+            if(!result.blockHash) {
+                try {
+                    const message = (
+                        `Full receipt not received for transaction ${result.transactionHash}. ` +
+                        `It may not have been mined correctly. ` +
+                        `(Voting ${amount} ${symbol} to ${receiver}, txid: ${txId})`
+                    );
+                    await this.chatBot.sendMessage(message);
+                } catch (e) {
+                    // catch the error here to be extra safe
+                    console.error(e);
+                }
+            }
+
             return true;
         } catch (err) {
             if (txId && this._isEVMRevert(err)) {
@@ -296,12 +329,17 @@ module.exports = class Federator {
     }
 
     _isEVMRevert(error) {
-        const revertMessage = 'Transaction has been reverted by the EVM';
-        if (error.message.indexOf(revertMessage) !== -1) {
-            return true;
-        }
-        if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
-            return true;
+        const revertMessages = [
+            'Transaction has been reverted by the EVM',
+            'Returned error: execution reverted',
+        ];
+        for (let revertMessage of revertMessages) {
+            if (error.message.indexOf(revertMessage) !== -1) {
+                return true;
+            }
+            if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
+                return true;
+            }
         }
         return false;
     }
