@@ -395,7 +395,7 @@ contract('Federation', async function (accounts) {
         const logIndex = 1;
         const decimals = 18;
         const granularity = 1;
-
+        const extraData = '';
 
         beforeEach(async function () {
             this.allowTokens = await AllowTokens.new(deployer);
@@ -420,7 +420,8 @@ contract('Federation', async function (accounts) {
 
         it('voteTransaction should be successful with 1/1 feds require 1', async function() {
             this.federation.removeMember(fedMember2)
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -453,7 +454,8 @@ contract('Federation', async function (accounts) {
         it('voteTransaction should fail with wrong acceptTransfer arguments', async function() {
             this.federation.removeMember(fedMember2);
             const wrongTokenAddress = "0x0000000000000000000000000000000000000000";
-            let transactionId = await this.federation.getTransactionId(wrongTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(wrongTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(wrongTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -475,7 +477,8 @@ contract('Federation', async function (accounts) {
         });
 
         it('voteTransaction should be pending with 1/2 feds require 1', async function() {
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -499,7 +502,8 @@ contract('Federation', async function (accounts) {
 
         it('voteTransaction should be pending with 1/2 feds require 2', async function() {
             await this.federation.changeRequirement(2);
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -528,7 +532,8 @@ contract('Federation', async function (accounts) {
         });
 
         it('voteTransaction should be successful with 2/2 feds require 1', async function() {
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -565,7 +570,8 @@ contract('Federation', async function (accounts) {
 
         it('voteTransaction should be successful with 2/2 feds require 2', async function() {
             await this.federation.changeRequirement(2);
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -605,7 +611,8 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                  {from: fedMember1});
 
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
 
             let hasVoted = await this.federation.hasVoted(transactionId, {from: fedMember1});
             assert.equal(hasVoted, true);
@@ -636,7 +643,8 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                  {from: fedMember1});
 
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
 
             let hasVoted = await this.federation.hasVoted(transactionId, {from: fedMember1});
             assert.equal(hasVoted, true);
@@ -666,7 +674,8 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                  {from: fedMember1});
 
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
 
             let hasVoted = await this.federation.hasVoted(transactionId, {from: fedMember1});
             assert.equal(hasVoted, true);
@@ -706,7 +715,8 @@ contract('Federation', async function (accounts) {
             let receipt = await this.federation.voteTransaction(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity,
                  {from: fedMember1});
 
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
 
             let hasVoted = await this.federation.hasVoted(transactionId, {from: fedMember1});
             assert.equal(hasVoted, true);
@@ -753,7 +763,8 @@ contract('Federation', async function (accounts) {
         });
 
         it('voteTransaction should be successfull if already voted', async function() {
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -772,7 +783,8 @@ contract('Federation', async function (accounts) {
         it('voteTransaction should be successful sending extra data', async function() {
             const extraData = 'Extra data';
             this.federation.removeMember(fedMember2)
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 
@@ -800,7 +812,8 @@ contract('Federation', async function (accounts) {
 
         it('revoke transaction', async function() {
         // 2 out of 2 federators votes. transcation get processed
-            let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+            let transactionId = await this.federation.getTransactionIdU(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, Buffer.from(extraData));
             let transactionCount = await this.federation.getTransactionCount(transactionId);
             assert.equal(transactionCount, 0);
 

@@ -24,7 +24,6 @@ const { expectRevert } = require('@openzeppelin/test-helpers');
 const mockERC20Receiver = artifacts.require('./mockERC20Receiver');
 const Erc777Converter = artifacts.require('./Erc777Converter');
 
-
 const utils = require('./utils');
 const BN = web3.utils.BN;
 const randomHex = web3.utils.randomHex;
@@ -120,14 +119,6 @@ contract('Bridge', async function (accounts) {
                 const fee = web3.utils.toWei('0.5');
                 await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
                 await utils.expectThrow(this.bridge.receiveEthAt(accounts[6], Buffer.from(""), {from: accounts[7], value: amount}))
-            })
-
-            it('should revert if sender is contract address', async function() {
-                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
-                const amount = web3.utils.toWei('5');
-                const fee = web3.utils.toWei('0.5');
-                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
-                await utils.expectThrow(this.bridge.receiveEthAt(accounts[6], Buffer.from(""), {from: this.weth.address, value: amount}))
             })
         })
 

@@ -172,7 +172,9 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
     // Enable Mint to SC without ERC777 interface with user data = 0x00, by using erc777Converter
-        if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
+    // Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
+        //if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
+        if(receiver.isContract() && _isZeroValue(userData) == true ) {
             userData = abi.encode(receiver);
             receiver = erc777ConverterAddr;
         }
@@ -424,7 +426,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
 //// Bridge v3 upgrade functions
     function receiveEthAt(address _receiver, bytes calldata _extraData) whenNotUpgrading whenNotPaused nonReentrant external payable {
-        require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        //require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        require(msg.value > 0  && (WETHAddr != address(0)), "Set WETHAddr");
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
         }
@@ -489,15 +492,26 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         return erc777ConverterAddr;
     }
 
-// Convert bytes to bytes32
-    function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
-    if (source.length == 0) {
-        return 0x0;
+// Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
+// // Convert bytes to bytes32
+//     function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
+//     if (source.length == 0) {
+//         return 0x0;
+//     }
+//     assembly {
+//         _result := mload(add(source, 32))
+//     }
+//   }
+
+function _isZeroValue(bytes memory _data) internal pure returns (bool) {
+        uint length = _data.length;
+        for(uint i = 0; i < length ; i++) {
+            if (uint8(_data[i]) != 0) {
+                     return false;
+            }
+        }
+        return true;
     }
-    assembly {
-        _result := mload(add(source, 32))
-    }
-  }
 
 
     // Commented because it is unused for us and need decrease contract size

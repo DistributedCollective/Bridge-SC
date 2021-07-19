@@ -18,7 +18,7 @@ contract Federation is Ownable {
     mapping (bytes32 => mapping (address => bool)) public votes;
     mapping(bytes32 => bool) public processed;
     // solium-disable-next-line max-len
-    event Voted(address indexed sender, bytes32 indexed transactionId, address originalTokenAddress, address receiver, uint256 amount, string symbol, bytes32 blockHash, bytes32 indexed transactionHash, uint32 logIndex, uint8 decimals, uint256 granularity);
+    event Voted(address indexed sender, bytes32 indexed transactionId, address originalTokenAddress, address receiver, uint256 amount, string symbol, bytes32 blockHash, bytes32 indexed transactionHash, uint32 logIndex, uint8 decimals, uint256 granularity, bytes userData);
     event Executed(bytes32 indexed transactionId);
     event MemberAddition(address indexed member);
     event MemberRemoval(address indexed member);
@@ -26,7 +26,6 @@ contract Federation is Ownable {
     event BridgeChanged(address bridge);
     event RevokeTxAndVote(bytes32 tx_revoked);
     event StoreFormerFederationExecutedTx(bytes32[] tx_stored);
-    //event StoreFormerFederationExecutedTx(bytes32 tx_stored);
 
     modifier onlyMember() {
         require(isMember[_msgSender()], "Federation: Caller not a Federator");
@@ -85,7 +84,7 @@ contract Federation is Ownable {
         bytes calldata userData)
     external returns(bool)
     {
-        return _voteTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+       return _voteTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
     }
 
     function _voteTransaction(
@@ -102,20 +101,56 @@ contract Federation is Ownable {
     ) internal onlyMember returns(bool) {
         // solium-disable-next-line max-len
         require(initStageDone == true, "Federation: Cannot process TX while initStageDone == false");
+               
         bytes32 transactionId = getTransactionId(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
         if (processed[transactionId])
             return true;
+       
+       // Bug fix //
+       // UserData is not included in transactionId hash.
+       // In order to keep backward competability, since transctions that were already processed are marked as processed[transactionId],
+       // We keep the transactionId and adding transactionIdU (that includes userData hashing)
+       // Assuming  processed[transactionId) == false from this line
+       // Depreciating transactionId for unprocessed transaction.
+       // Using transactionIdU instead.
+       // This should be updated in Federator BE as well.
+       // Function processTransaction() created to solve EVM stack to deep error
+        if (processTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData)) {    
+            // No need to update processed[transactionId], since it is used only for backward competability
+            // processed[transactionId] = true;
+            return true;
+        }
+        return true;
+    }
 
-        if (votes[transactionId][_msgSender()])
+    function processTransaction(
+        address originalTokenAddress,
+        address receiver,
+        uint256 amount,
+        string memory symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes memory userData)
+    internal returns(bool) 
+    {
+        bytes32 transactionIdU = getTransactionIdU(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+
+        if (processed[transactionIdU])
             return true;
 
-        votes[transactionId][_msgSender()] = true;
-        // solium-disable-next-line max-len
-        emit Voted(_msgSender(), transactionId, originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
+        if (votes[transactionIdU][_msgSender()])
+            return true;
 
-        uint transactionCount = getTransactionCount(transactionId);
+        votes[transactionIdU][_msgSender()] = true;
+        // solium-disable-next-line max-len
+       emit Voted(_msgSender(), transactionIdU, originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+        
+        uint transactionCount = getTransactionCount(transactionIdU);
         if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
-            processed[transactionId] = true;
+            processed[transactionIdU] = true;
             bool acceptTransfer = bridge.acceptTransferAt(
                 originalTokenAddress,
                 receiver,
@@ -129,13 +164,11 @@ contract Federation is Ownable {
                 userData
             );
             require(acceptTransfer, "Federation: Bridge acceptTransfer error");
-            emit Executed(transactionId);
+            emit Executed(transactionIdU);
             return true;
+
         }
-
-        return true;
     }
-
     function getTransactionCount(bytes32 transactionId) public view returns(uint) {
         uint count = 0;
         for (uint i = 0; i < members.length; i++) {
@@ -169,6 +202,23 @@ contract Federation is Ownable {
     {
         // solium-disable-next-line max-len
         return keccak256(abi.encodePacked(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity));
+    }
+
+    function getTransactionIdU(
+        address originalTokenAddress,
+        address receiver,
+        uint256 amount,
+        string memory symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes memory userData)
+    public pure returns(bytes32)
+    {
+        // solium-disable-next-line max-len
+        return keccak256(abi.encodePacked(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData));
     }
 
     function addMember(address _newMember) external onlyOwner
@@ -212,7 +262,7 @@ contract Federation is Ownable {
         emit RequirementChange(_required);
     }
 
-// Revoke state of txID (from true to false), to enable nultiSig release of stucked txID on the bridge
+// Revoke state of txID (from true to false), to enable multiSig release of stucked txID on the bridge
 // setRevokeTransaction() should be called on the bridge as well to enable revoke of txID
     function setRevokeTransactionAndVote(bytes32 _revokeTransactionID) external onlyOwner {
         require(_revokeTransactionID != NULL_HASH, "Federation: _revokeTransactionID cannot be NULL");
@@ -232,7 +282,6 @@ contract Federation is Ownable {
         for (uint i = 0; i < _TransactionIDs.length; i++) {
             require(_TransactionIDs[i] != NULL_HASH, "Federation: _storeTransactionID cannot be NULL");
             processed[_TransactionIDs[i]] = true;
-           // emit StoreFormerFederationExecutedTx(_TransactionIDs[i]);
         }
         emit StoreFormerFederationExecutedTx(_TransactionIDs);
     }
