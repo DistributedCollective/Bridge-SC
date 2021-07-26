@@ -187,7 +187,7 @@ module.exports = class Federator {
 
             this.logger.info('get transaction id U:', transactionIdU);
             let wasProcessedU = await this.federationContract.methods.transactionWasProcessed(transactionIdU).call();
-            this.logger.info('wasProcessedU:', transactionIdU);
+            this.logger.info('wasProcessedU:', wasProcessedU);
             if (!wasProcessedU) {
                 let hasVoted = await this.federationContract.methods.hasVoted(transactionIdU).call({ from: from });
                 if (!hasVoted) {
@@ -216,14 +216,13 @@ module.exports = class Federator {
 
 
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData, transactionId, transactionIdU) {
-        let txId;
         try {
 
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
             const isFailing = this._isFailingByTxId(transactionId, transactionIdU, transactionHash)
-            if (isFailing) return false
+            if (!isFailing) return false
 
             let txData;
             if(userData) {
@@ -255,7 +254,7 @@ module.exports = class Federator {
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
             await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
-            this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${transactionIdU}`);
+            this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionIdU:${transactionIdU}`);
             return true;
         } catch (err) {
             if (transactionIdU && this._isEVMRevert(err)) {
