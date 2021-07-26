@@ -189,7 +189,7 @@ module.exports = class Federator {
             let wasProcessedU = await this.federationContract.methods.transactionWasProcessed(transactionIdU).call();
             this.logger.info('wasProcessedU:', transactionIdU);
             if (!wasProcessedU) {
-                let hasVoted = await this.federationContract.methods.hasVoted(transactionIdU || transactionId).call({ from: from });
+                let hasVoted = await this.federationContract.methods.hasVoted(transactionIdU).call({ from: from });
                 if (!hasVoted) {
                     this.logger.info(`Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`);
                     await this._voteTransaction(tokenAddress,
