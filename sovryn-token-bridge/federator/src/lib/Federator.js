@@ -201,7 +201,9 @@ module.exports = class Federator {
                         log.logIndex,
                         decimals,
                         granularity,
-                        userData
+                        userData,
+                        transactionId,
+                        transactionIdU
                     );
                 } else {
                     this.logger.debug(`Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`);
@@ -213,31 +215,15 @@ module.exports = class Federator {
     }
 
 
-    async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData) {
+    async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData, transactionId, transactionIdU) {
         let txId;
         try {
 
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
-            txId = await this.federationContract.methods.getTransactionId(
-                tokenAddress,
-                receiver,
-                amount,
-                symbol,
-                blockHash,
-                transactionHash,
-                logIndex,
-                decimals,
-                granularity
-            ).call();
-
-            if (this.failingTxIds.contains(txId)) {
-                this.logger.info(
-                    `Transaction with id ${txId}, hash: ${transactionHash} is marked as failing -- not voting for it`
-                );
-                return false;
-            }
+            const isFailing = this._isFailingByTxId(transactionId, transactionIdU, transactionHash)
+            if (isFailing) return false
 
             let txData;
             if(userData) {
@@ -269,20 +255,20 @@ module.exports = class Federator {
 
             this.logger.info(`voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`);
             await transactionSender.sendTransaction(this.federationContract.options.address, txData, 0, this.config.privateKey);
-            this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${txId}`);
+            this.logger.info(`Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionId:${transactionIdU}`);
             return true;
         } catch (err) {
-            if (txId && this._isEVMRevert(err)) {
+            if (transactionIdU && this._isEVMRevert(err)) {
                 // we don't want to crash everything when there's a single failed transaction, so we keep a dead-letter
                 // queue of those
                 const msgHeader = (
                     `EVM revert when voting for tx with ` +
-                    `id: ${txId} hash: ${transactionHash} block: ${blockHash} token: ${symbol}.`
+                    `idU: ${transactionIdU} hash: ${transactionHash} block: ${blockHash} token: ${symbol}.`
                 );
                 const msgFooter = `The transaction will be marked as failing and not retried automatically again.`;
                 this.logger.error(msgHeader + ` Detailed error: ${err}\n` + msgFooter);
 
-                this.failingTxIds.append(txId);
+                this.failingTxIds.append(transactionIdU);
 
                 await this.chatBot.sendMessage(`${msgHeader}\n${msgFooter}`);
                 return false;
@@ -290,6 +276,23 @@ module.exports = class Federator {
                 throw new CustomError(`Exception Voting tx:${transactionHash} block: ${blockHash} token ${symbol}`, err);
             }
         }
+    }
+
+    _isFailingByTxId(transactionId, transactionIdU, transactionHash) {
+        if (this.failingTxIds.contains(transactionId)) {
+            this.logger.info(
+                `Transaction with id ${transactionId}, hash: ${transactionHash} is marked as failing -- not voting for it`
+            );
+            return false;
+        }
+
+        if (this.failingTxIds.contains(transactionIdU)) {
+            this.logger.info(
+                `Transaction with idU ${transactionIdU}, hash: ${transactionHash} is marked as failing -- not voting for it`
+            );
+            return false;
+        }
+        return true
     }
 
     _getFromBlock(toBlock) {
