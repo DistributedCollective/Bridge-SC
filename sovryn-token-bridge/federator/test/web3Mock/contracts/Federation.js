@@ -11,6 +11,10 @@ methods.getTransactionId = () => ({
     call: () => Promise.resolve(defaults.data.transactionId)
 });
 
+methods.getTransactionIdU = () => ({
+    call: () => Promise.resolve(defaults.data.transactionIdU)
+});
+
 methods.transactionWasProcessed = () => ({
     call: () => Promise.resolve(false)
 });
