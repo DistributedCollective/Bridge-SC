@@ -221,8 +221,8 @@ module.exports = class Federator {
             const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
-            const isFailing = this._isFailingByTxId(transactionId, transactionIdU, transactionHash)
-            if (!isFailing) return false
+            const isFailing = this._isFailingByTxId(transactionId, transactionHash) || this._isFailingByTxId(transactionIdU, transactionHash)
+            if (isFailing) return false
 
             let txData;
             if(userData) {
@@ -277,21 +277,14 @@ module.exports = class Federator {
         }
     }
 
-    _isFailingByTxId(transactionId, transactionIdU, transactionHash) {
-        if (this.failingTxIds.contains(transactionId)) {
+    _isFailingByTxId(txId, transactionHash) {
+        if (this.failingTxIds.contains(txId)) {
             this.logger.info(
-                `Transaction with id ${transactionId}, hash: ${transactionHash} is marked as failing -- not voting for it`
+                `Transaction with id ${txId}, hash: ${transactionHash} is marked as failing -- not voting for it`
             );
-            return false;
+            return true;
         }
-
-        if (this.failingTxIds.contains(transactionIdU)) {
-            this.logger.info(
-                `Transaction with idU ${transactionIdU}, hash: ${transactionHash} is marked as failing -- not voting for it`
-            );
-            return false;
-        }
-        return true
+        return false;
     }
 
     _getFromBlock(toBlock) {
