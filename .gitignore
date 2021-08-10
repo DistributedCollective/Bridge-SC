@@ -7,3 +7,4 @@ aws-deployment/environments/federator/terraform.tfstate
 aws-deployment/environments/federator/terraform.tfstate.backup
 aws-deployment/environments/federator/.terraform.tfstate.lock.info
 federator-env/testnet-BSC-RSK/federator.key
+.vscode
