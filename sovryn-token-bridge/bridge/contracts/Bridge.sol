@@ -182,7 +182,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         sideToken.mint(receiver, formattedAmount, userData, "");    
 
         if (receiver.isContract()) {
-       (bool success, bytes memory errorData) = receiver.call(
+       //(bool success, bytes memory errorData) = receiver.call(
+           (bool success,) = receiver.call(
                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
            );
         //    if (!success) {
@@ -199,9 +200,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
         //// Bridge v3 upgrade functions
+        //if (tokenAddress == WETHAddr) {
+        //    address payable payableReceiver = address(uint160(receiver));
+        //    payableReceiver.transfer(amount);
+        // }
+        //// Bridge v4 upgrade functions
         if (tokenAddress == WETHAddr) {
             address payable payableReceiver = address(uint160(receiver));
-            payableReceiver.transfer(amount);
+            (bool success, ) =
+                payableReceiver.call.value(amount)("");
+            require(success, "Bridge: Failed to send ETH to receiver");
         }
         else {
             IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);

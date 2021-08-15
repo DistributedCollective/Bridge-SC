@@ -35,6 +35,7 @@
     "eth-gas-reporter": "^0.2.17",
     "ethereumjs-testrpc": "^6.0.3",
     "ethlint": "^1.2.5",
+    "follow-redirects": "^1.14.1",
     "npm-force-resolutions": "0.0.3",
     "resolve": "^1.13.0",
     "solidity-coverage": "^0.7.11",
