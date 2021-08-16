@@ -8,17 +8,22 @@ const federationAbi = require("../../abis/Federation.json");
 // const bscBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/btestnet_v2.json");
 // const rskBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/rsktestnet_v2.json");
 
-const ethETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/ropsten_v2.json");
-const ethETHBridge = require("../../../federator-env/testnet-ETH-RSK/ropsten.json");
-const rskETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/rsktestnet_v2.json");
-const rskETHBridge = require("../../../federator-env/testnet-ETH-RSK/rsktestnet.json");
+// const ethETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/ropsten_v2.json");
+// const ethETHBridge = require("../../../federator-env/testnet-ETH-RSK/ropsten.json");
+// const rskETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/rsktestnet_v2.json");
+// const rskETHBridge = require("../../../federator-env/testnet-ETH-RSK/rsktestnet.json");
+
+const ethETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/mainnet_v2.json");
+const ethETHBridge = require("../../../federator-env/mainnet-ETH-RSK/mainnet.json");
+const rskETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet_v2.json");
+const rskETHBridge = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet.json");
 
 let fromPageBlock
 
 ////Testnet:
-const deployer = "0x12D90403733b6DD1f88240C773a6613331e60bCF";
+// const deployer = "0x12D90403733b6DD1f88240C773a6613331e60bCF";
 ////Mainnet:
-//const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
+const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 
 fromPageBlock = ethETHBridge.fromBlock;
 //ethETHBridge_v2.federation Creation Block

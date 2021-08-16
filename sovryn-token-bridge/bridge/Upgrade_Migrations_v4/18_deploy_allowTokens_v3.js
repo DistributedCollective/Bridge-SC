@@ -8,7 +8,7 @@ const AllowTokens = artifacts.require("AllowTokens");
 // // Testnet  /////////
 // /////////////////////
 // // ETH bridge ropsten
- const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
+//  const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
 // // ETH bridge rsktestnet
 // const multiSigAddress = "0x34055C3f23bFE1d8A45c9ABA53b66ffcA4353600";
 // //
@@ -24,7 +24,7 @@ const AllowTokens = artifacts.require("AllowTokens");
 // // Mainnet  /////////
 // /////////////////////
 // // ETH bridge mainnet
-// const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
+const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
 // // ETH bridge rskmainnet
 // const multiSigAddress = "0xB64322e10b5aE1BE121B8Bb0dead560c53d9Dbc3";
 // //

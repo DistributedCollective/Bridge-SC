@@ -1,12 +1,12 @@
 {
     "bridgeProxyAddress": "0x33c0d33a0d4312562ad622f91d12b0ac47366ee1",
-    "newBridgeAddress": "",
+    "newBridgeAddress": "0x882619AF8AA0f1946d9F375E64994e1246F9b52f",
     "deployerAddress": "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2",
     "ownerAddress": "0x4844B0C25b1208602604939cFCae68EC4Ddc5D77",
     "multiSigAddress": "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e",
     "proxyAdminAddress": "0xd6001073Ef1BA973e53719766780B95667512C07",
     "allowTokensAddress": "0x8df20c2c85bee0c3da250da96d892598c70aa1be",
-    "federationAddress": "",
-    "erc777ConverterAddress": "",
-    "pauseAllowTokensAddress": ""
+    "federationAddress": "0x74aa9b461CAd174cA066fc80AF2151c96Bd4D45f",
+    "erc777ConverterAddress": "0xC0b2A9E31f69e4F0bC24584C678C582714a4fA1b",
+    "pauseAllowTokensAddress": "0xaD95D2857F6a657B0B3Ff538DF028b0E2E806453"
 }

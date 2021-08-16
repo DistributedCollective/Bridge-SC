@@ -10,11 +10,11 @@ const Federation = artifacts.require("Federation");
 // const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
 // // ETH bridge rsktestnet
 // const multiSigAddress = "0x34055C3f23bFE1d8A45c9ABA53b66ffcA4353600";
-const feds = [
-    // "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35",
-    // "0x5fC4D8b1F96A916683954272721Cfe96ED5a3953"
-    "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35"
-    ];
+// const feds = [
+//     // "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35",
+//     // "0x5fC4D8b1F96A916683954272721Cfe96ED5a3953"
+//     "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35"
+//     ];
 
 // // BSC bridge btestnet
 // const multiSigAddress = "0x1d8cb60d35fcd42a8bd18d027386be9c0f9c509b";
@@ -33,16 +33,16 @@ const feds = [
 // /////////////////////
 
 // // ETH bridge mainnet
-// const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
+const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
 // // ETH bridge rskmainnet
 // const multiSigAddress = "0xB64322e10b5aE1BE121B8Bb0dead560c53d9Dbc3";
-// const feds = [
-        // "0xa420512B06B23d14Beb25Bae524a9B5F8789c45C",
-        // "0xcd1b561207e20a7ccbcf004bb0a4bc897ba8f2ee",
-        // "0x778898877A3277F7306b19879F426A86d078E115",
-        // "0x66d0a5238340bD1589eF56b1e39F73Df32815285",
-        // "0x5E7847e22DFb937672815Cdfe28724bbdf5773fd"
-        // ];
+const feds = [
+        "0xa420512B06B23d14Beb25Bae524a9B5F8789c45C",
+        "0xcd1b561207e20a7ccbcf004bb0a4bc897ba8f2ee",
+        "0x778898877A3277F7306b19879F426A86d078E115",
+        "0x66d0a5238340bD1589eF56b1e39F73Df32815285",
+        "0x5E7847e22DFb937672815Cdfe28724bbdf5773fd"
+        ];
 
 
 // // BSC bridge bmainnet
