@@ -6,7 +6,7 @@ const Erc777Converter = artifacts.require("Erc777Converter");
 // // Testnet  /////////
 // /////////////////////
 // // ETH bridge ropsten
- const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
+// const multiSigAddress = "0x75Ea52aC8219a8F16a2DC6778874943ef2c24C45";
 // // ETH bridge rsktestnet
 // const multiSigAddress = "0x34055C3f23bFE1d8A45c9ABA53b66ffcA4353600";
 // //
@@ -34,7 +34,7 @@ const Erc777Converter = artifacts.require("Erc777Converter");
 module.exports = function(deployer, networkName, accounts) {
     deployer
         .then(async () => {
-            const erc777Converter = await deployer.deploy(Erc777Converter);
+            return deployer.deploy(Erc777Converter);
             // Moved to upgradeBridge_v4.js script
             // await erc777Converter.transferOwnership(multiSigAddress);
         });

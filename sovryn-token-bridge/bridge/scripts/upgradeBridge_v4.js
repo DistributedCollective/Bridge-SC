@@ -120,8 +120,8 @@ async function upgradeBridge({
 //         from: deployerAddress,
 //     });
 //     console.log('Result:', finishInitStageFederationResult);
-// //Transfer federation ownership to multisig
-// //0.3
+// Transfer federation ownership to multisig
+// 0.3
 //     console.log('Transfer federation ownership to multisig')
 //     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send({
 //         from: deployerAddress,
@@ -158,12 +158,12 @@ async function upgradeBridge({
 //     const startUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, startUpgradeData).send(txOpts);
 //     console.log('Result:', startUpgradeResult);
 //  //2
-//    // if( netType== "mainnet" ||  netType== "ropsten" ) {
+//    if( netType== "mainnet" ||  netType== "ropsten" ) {
 //         console.log('Pause the bridge Calling changeAllowTokens with multisig')
 //         console.log(pauseAllowTokensData)
 //         const pauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, pauseAllowTokensData).send(txOpts);
 //         console.log('Result:', pauseAllowtokensResult);
-//    // }
+//    }
 
 // Stage B
 // Should be executed for both main-chain and side-chain
@@ -204,23 +204,23 @@ async function upgradeBridge({
 // Set original AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need this set AlloTokens)
 // UnPause
 
-// //7
-//     console.log('Calling endUpgrade with multisig')
-//     console.log(endUpgradeData);
-//     const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
-//     console.log('Result:', endUpgradeResult);
-// //8
-//     //if( netType== "mainnet" ||  netType== "ropsten" ) {
-//          console.log('UnPause the bridge Calling changeAllowTokens with multisig')
-//          console.log(unpauseAllowTokensData);
-//          const unpauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unpauseAllowTokensData).send(txOpts);
-//          console.log('Result:', unpauseAllowtokensResult);
-//     //}
-// //9    
-//     console.log('Calling unpause with multisig')
-//     console.log(unPauseData);
-//     const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
-//     console.log('Result:', unPauseResult);
+//7
+    console.log('Calling endUpgrade with multisig')
+    console.log(endUpgradeData);
+    const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
+    console.log('Result:', endUpgradeResult);
+//8
+    if( netType== "mainnet" ||  netType== "ropsten" ) {
+         console.log('UnPause the bridge Calling changeAllowTokens with multisig')
+         console.log(unpauseAllowTokensData);
+         const unpauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unpauseAllowTokensData).send(txOpts);
+         console.log('Result:', unpauseAllowtokensResult);
+    }
+//9    
+    console.log('Calling unpause with multisig')
+    console.log(unPauseData);
+    const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
+    console.log('Result:', unPauseResult);
 
     console.log('All done.')
 }

@@ -98,7 +98,7 @@ module.exports = {
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
       gas: 6700000,
-      gasPrice: 101000000000,  //101 GWei
+      gasPrice: 50000000000,  //50 GWei
       skipDryRun: true
     },
     //Binance

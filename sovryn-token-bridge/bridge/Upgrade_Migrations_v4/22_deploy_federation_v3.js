@@ -11,8 +11,9 @@ const Federation = artifacts.require("Federation");
 // // ETH bridge rsktestnet
 // const multiSigAddress = "0x34055C3f23bFE1d8A45c9ABA53b66ffcA4353600";
 const feds = [
-    "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35",
-    "0x5fC4D8b1F96A916683954272721Cfe96ED5a3953"
+    // "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35",
+    // "0x5fC4D8b1F96A916683954272721Cfe96ED5a3953"
+    "0xD8bc75a79f6d63fE6E1307139d3BfDc0Bd090e35"
     ];
 
 // // BSC bridge btestnet
@@ -65,7 +66,8 @@ module.exports = function(deployer, networkName, accounts) {
             federation = await deployer.deploy(Federation, [feds[0], feds[1], feds[2], feds[3], feds[4]], 1);
         }
         else if(networkName == "ropsten" || networkName == "rsktestnet" || networkName == "btestnet") {
-            federation = await deployer.deploy(Federation, [accounts[0], feds[0], feds[1]], 1);
+            //federation = await deployer.deploy(Federation, [accounts[0], feds[0], feds[1]], 1);
+            federation = await deployer.deploy(Federation, [feds[0]], 1);
         }
         else {
             federation = await deployer.deploy(Federation, [accounts[0]], 1);

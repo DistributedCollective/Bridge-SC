@@ -1,3 +1,6 @@
+////
+//// npx truffle exec scripts/storeFederationState.js --network rsktestnet
+////
 //const web3 = require('web3');
 const fs = require('fs');
 const federationAbi = require("../../abis/Federation.json");
@@ -17,17 +20,17 @@ const deployer = "0x12D90403733b6DD1f88240C773a6613331e60bCF";
 ////Mainnet:
 //const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 
-// fromPageBlock = ethETHBridge.fromBlock;
-// //ethETHBridge_v2.federation Creation Block
-// fromPageBlock = 9998777;
-// const federationAddress = ethETHBridge.federation;
-// const federation_v2Address = ethETHBridge_v2.federation;
-
-fromPageBlock = rskETHBridge.fromBlock;
+fromPageBlock = ethETHBridge.fromBlock;
 //ethETHBridge_v2.federation Creation Block
-fromPageBlock = 1745628;
-const federationAddress = rskETHBridge.federation;
-const federation_v2Address = rskETHBridge_v2.federation;
+fromPageBlock = 9998777;
+const federationAddress = ethETHBridge.federation;
+const federation_v2Address = ethETHBridge_v2.federation;
+
+// fromPageBlock = rskETHBridge.fromBlock;
+// //ethETHBridge_v2.federation Creation Block
+// fromPageBlock = 1745628;
+// const federationAddress = rskETHBridge.federation;
+// const federation_v2Address = rskETHBridge_v2.federation;
 
 module.exports = async callback => {
     try {
