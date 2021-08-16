@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: sovryn/fed-tokenbridge:8.5
+    image: sovryn/fed-tokenbridge:8.6
     command: --name ${FED_ID}
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
