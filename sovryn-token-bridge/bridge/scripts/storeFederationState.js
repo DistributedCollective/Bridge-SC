@@ -25,17 +25,23 @@ let fromPageBlock
 ////Mainnet:
 const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 
-fromPageBlock = ethETHBridge.fromBlock;
+//fromPageBlock = ethETHBridge.fromBlock;
 //ethETHBridge_v2.federation Creation Block
-fromPageBlock = 9998777;
-const federationAddress = ethETHBridge.federation;
-const federation_v2Address = ethETHBridge_v2.federation;
+// Mainnet bridge creation block
+// fromPageBlock = 12110034
+// Ropsten bridge creation block
+// fromPageBlock = 9998777;
+// const federationAddress = ethETHBridge.federation;
+// const federation_v2Address = ethETHBridge_v2.federation;
 
 // fromPageBlock = rskETHBridge.fromBlock;
 // //ethETHBridge_v2.federation Creation Block
+// RSKMainnet bridge creation block
+fromPageBlock = 3258718
+// Ropsten bridge creation block
 // fromPageBlock = 1745628;
-// const federationAddress = rskETHBridge.federation;
-// const federation_v2Address = rskETHBridge_v2.federation;
+const federationAddress = rskETHBridge.federation;
+const federation_v2Address = rskETHBridge_v2.federation;
 
 module.exports = async callback => {
     try {
@@ -50,6 +56,9 @@ module.exports = async callback => {
 
 
 async function getState() {    
+    const net = process.argv[5];
+    console.log("net is:"+ net);
+
     const toPagedBlock = await web3.eth.getBlockNumber()
     console.log("from Block TO Block: " + fromPageBlock + " TO " + toPagedBlock);
     console.log("federation_v2Address: "+ federation_v2Address);
@@ -66,10 +75,22 @@ async function getState() {
         },
     );
     
+    const gasPrice = await web3.eth.getGasPrice();
+    console.log("gas price is: " + gasPrice);
+    let gasPriceNow = gasPrice;
+    if (net == "mainnet") {
+        gasPriceNow = Number.parseInt(gasPrice * 1.5);
+    }
+    console.log("gas price now is: " + gasPriceNow); 
+
+
     const logsLength = await logs.length;
     console.log("logsLength: " + logsLength) ; 
-    let arrSize = 200;
+    // let arrSize = 200;
+    // let i = 0;
+    let arrSize = 150;
     let i = 0;
+
     while(i < logsLength){
         if((i+arrSize) > logsLength){
             arrSize = logsLength - i ;
@@ -83,7 +104,8 @@ async function getState() {
         }
         console.log("TXArr: \n" + TXArr);
         await federation.methods.initStoreOldFederation(TXArr).send({
-            from: deployer,
+            //from: deployer, gasPrice: gasPriceNow  
+            from: deployer, 
          })
         i = i + arrSize;
         console.log("index: " + i);
