@@ -4,6 +4,7 @@
 //const web3 = require('web3');
 const fs = require('fs');
 const federationAbi = require("../../abis/Federation.json");
+const federationAbi_v2 = require("../../abis/Federation_v2.json");
 
 // const bscBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/btestnet_v2.json");
 // const rskBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/rsktestnet_v2.json");
@@ -37,7 +38,11 @@ const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 // fromPageBlock = rskETHBridge.fromBlock;
 // //ethETHBridge_v2.federation Creation Block
 // RSKMainnet bridge creation block
-fromPageBlock = 3258718
+// fromPageBlock = 3258718;
+fromPageBlock = 3424935;
+// fromPageBlock = 3385920; // update till i = 900
+// const toPagedBlock = 3268718  // update till i = 900
+
 // Ropsten bridge creation block
 // fromPageBlock = 1745628;
 const federationAddress = rskETHBridge.federation;
@@ -54,26 +59,73 @@ module.exports = async callback => {
       console.log('All done.')
 };    
 
+/////
+// const fromBlock = fromPageBlock;
+// const toBlock = await web3.eth.getBlockNumber();
+// const batchSize = 100;
 
+// const logs = [];
+// let batchFromBlock = fromBlock;
+// while (batchFromBlock <= toBlock) {
+//     const batchToBlock = Math.min(batchFromBlock + batchSize, toBlock);
+//     const batchLogs = await federation_v2.getPastEvents(
+//         "Executed",
+//         {
+//             fromBlock: batchFromBlock,
+//             toBlock: batchToBlock,
+//         },
+//     );
+//     logs.push(...batchLogs);
+//     batchFromBlock = batchToBlock + 1;
+// }
+
+
+///
 async function getState() {    
     const net = process.argv[5];
     console.log("net is:"+ net);
 
-    const toPagedBlock = await web3.eth.getBlockNumber()
-    console.log("from Block TO Block: " + fromPageBlock + " TO " + toPagedBlock);
+    //const toPagedBlock = await web3.eth.getBlockNumber()
+    // console.log("from Block TO Block: " + fromPageBlock + " TO " + toPagedBlock);
     console.log("federation_v2Address: "+ federation_v2Address);
     console.log("federationAddress: "+ federationAddress);
 
-    const federation_v2 = new web3.eth.Contract(federationAbi, federation_v2Address);
+    const federation_v2 = new web3.eth.Contract(federationAbi_v2, federation_v2Address);
     const federation = new web3.eth.Contract(federationAbi, federationAddress);
 
-    const logs = await federation_v2.getPastEvents(
-        "Executed",
-        {                            
-            fromBlock: fromPageBlock,
-            toBlock: toPagedBlock
-        },
-    );
+
+    const fromBlock = fromPageBlock;
+    const toBlock = await web3.eth.getBlockNumber();
+    const batchSize = 100;
+    console.log("from Block TO Block: " + fromBlock + " TO " + toBlock);
+
+    const logs = [];
+    let batchFromBlock = fromBlock;
+    while (batchFromBlock <= toBlock) {
+        const batchToBlock = Math.min(batchFromBlock + batchSize, toBlock);
+        console.log("fetching from", batchFromBlock, "to", batchToBlock);
+        const batchLogs = await federation_v2.getPastEvents(
+            "Executed",
+            {
+                fromBlock: batchFromBlock,
+                toBlock: batchToBlock,
+            },
+        );
+        console.log("found", batchLogs.length, "logs");
+        logs.push(...batchLogs);
+        batchFromBlock = batchToBlock + 1;
+    }
+    
+
+
+
+    // const logs = await federation_v2.getPastEvents(
+    //     "Executed",
+    //     {                            
+    //         fromBlock: fromPageBlock,
+    //         toBlock: toPagedBlock
+    //     },
+    // );
     
     const gasPrice = await web3.eth.getGasPrice();
     console.log("gas price is: " + gasPrice);
