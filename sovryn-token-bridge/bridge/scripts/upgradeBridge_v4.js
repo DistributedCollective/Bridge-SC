@@ -15,6 +15,7 @@ module.exports = async callback => {
     try {
         const config = readConfig();
         console.log('Config:', config);
+        
         await upgradeBridge(config);
     } catch (e) {
         callback(e);
@@ -57,6 +58,13 @@ async function upgradeBridge({
     }
 
     let gasPrice = await web3.eth.getGasPrice();
+    const net = process.argv[5];
+    console.log("net is:"+ net);
+
+    if (net == "mainnet") {
+        gasPrice = 2*gasPrice;
+    }
+
     console.log(`Gas price is: ${gasPrice}`);
     console.log(`Deployer is: ${deployerAddress}`);
     console.log(`Owner is: ${ownerAddress}`);
@@ -109,39 +117,54 @@ async function upgradeBridge({
 // //Set bridge address on federation
 // //0.1
 //     console.log('set Bridge address on Federation')
-//     const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send({
-//         from: deployerAddress,
-//     });
+//     const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
 //     console.log('Result:', setBridgeFederationResult);
-// //Finish initStage on federation
-// //0.2
+//Finish initStage on federation
+//0.2
 //     console.log('Finish initStage on federation')
-//     const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send({
-//         from: deployerAddress,
-//     });
+//     const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
 //     console.log('Result:', finishInitStageFederationResult);
-// Transfer federation ownership to multisig
-// 0.3
+// //Transfer federation ownership to multisig
+// //0.3
 //     console.log('Transfer federation ownership to multisig')
-//     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send({
-//         from: deployerAddress,
-//     });
+//     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
 //     console.log('Result:', transferFederationToMultiSigResult);
 
 // //Set bridge address on erc777Converter
 // //0.4
 //     console.log('set Bridge address on erc777Converter')
-//     const setBridgeErc777ConverterResult = await erc777Converter.methods.setBridgeContract(bridgeProxyAddress).send({
-//         from: deployerAddress,
-//     });
+//     const setBridgeErc777ConverterResult = await erc777Converter.methods.setBridgeContract(bridgeProxyAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
 //     console.log('Result:', setBridgeErc777ConverterResult);
 
 // //Transfer erc777Converter ownership to multisig
 // //0.5
 //     console.log('Transfer erc777Converter ownership to multisig')
-//     const transferERC777ConverterToMultiSigResult = await erc777Converter.methods.transferOwnership(multiSigAddress).send({
-//         from: deployerAddress,
-//     });
+//     const transferERC777ConverterToMultiSigResult = await erc777Converter.methods.transferOwnership(multiSigAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
 //     console.log('Result:', transferERC777ConverterToMultiSigResult);
 
 // MultiSig calls

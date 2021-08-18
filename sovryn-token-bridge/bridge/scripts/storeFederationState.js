@@ -30,23 +30,27 @@ const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 //ethETHBridge_v2.federation Creation Block
 // Mainnet bridge creation block
 // fromPageBlock = 12110034
+fromPageBlock = 13041698; //ETHmainnnetMY
+//fromPageBlock = 13043151
+
 // Ropsten bridge creation block
 // fromPageBlock = 9998777;
-// const federationAddress = ethETHBridge.federation;
-// const federation_v2Address = ethETHBridge_v2.federation;
+const federationAddress = ethETHBridge.federation;
+const federation_v2Address = ethETHBridge_v2.federation;
 
 // fromPageBlock = rskETHBridge.fromBlock;
 // //ethETHBridge_v2.federation Creation Block
 // RSKMainnet bridge creation block
 // fromPageBlock = 3258718;
-fromPageBlock = 3424935;
+//fromPageBlock = 3424935;
+// fromPageBlock =3609478  //  latest rskmainnet block to update from <---
 // fromPageBlock = 3385920; // update till i = 900
 // const toPagedBlock = 3268718  // update till i = 900
 
 // Ropsten bridge creation block
 // fromPageBlock = 1745628;
-const federationAddress = rskETHBridge.federation;
-const federation_v2Address = rskETHBridge_v2.federation;
+// const federationAddress = rskETHBridge.federation;
+// const federation_v2Address = rskETHBridge_v2.federation;
 
 module.exports = async callback => {
     try {
@@ -95,7 +99,8 @@ async function getState() {
 
 
     const fromBlock = fromPageBlock;
-    const toBlock = await web3.eth.getBlockNumber();
+    const toBlock = await web3.eth.getBlockNumber();  
+    //const toBlock = 13043151;  //ETHmainnnetMY
     const batchSize = 100;
     console.log("from Block TO Block: " + fromBlock + " TO " + toBlock);
 
@@ -156,8 +161,8 @@ async function getState() {
         }
         console.log("TXArr: \n" + TXArr);
         await federation.methods.initStoreOldFederation(TXArr).send({
-            //from: deployer, gasPrice: gasPriceNow  
-            from: deployer, 
+            from: deployer, gasPrice: gasPriceNow  
+            //from: deployer, 
          })
         i = i + arrSize;
         console.log("index: " + i);
