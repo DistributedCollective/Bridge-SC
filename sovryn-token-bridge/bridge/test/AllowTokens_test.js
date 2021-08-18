@@ -122,7 +122,7 @@ contract('AllowTokens', async function (accounts) {
 
         it('should set initial values', async function() {
             let maxTokens = await this.allowTokens.getMaxTokensAllowed();
-            assert.equal(maxTokens.toString(), web3.utils.toWei('10000'));
+            assert.equal(maxTokens.toString(), web3.utils.toWei('100000'));
         });
 
         it ('sets a new amount of max tokens', async function() {
@@ -233,11 +233,11 @@ contract('AllowTokens', async function (accounts) {
 
         it('should set initial values', async function() {
             let dailyLimit = await this.allowTokens.dailyLimit();
-            assert.equal(dailyLimit, web3.utils.toWei('100000'));
+            assert.equal(new BN(dailyLimit), web3.utils.toWei('1000000'));
         });
 
         it ('change daily limit', async function() {
-            let newDailyLimit = web3.utils.toWei('50000');
+            let newDailyLimit = web3.utils.toWei('100001');
             await this.allowTokens.changeDailyLimit(newDailyLimit, { from: manager });
 
             let dailyLimit = await this.allowTokens.dailyLimit();
@@ -318,7 +318,7 @@ contract('AllowTokens', async function (accounts) {
         });
 
         it('should allow side token', async function() {
-            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5')), web3.utils.toWei('0.5');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'), { from: manager });
             let maxTokensAllowed = await this.allowTokens.getMaxTokensAllowed();
             let result = await this.allowTokens.isValidTokenTransfer(this.token.address, maxTokensAllowed, 0, true);
             assert.equal(result, true);
@@ -539,8 +539,8 @@ contract('AllowTokens', async function (accounts) {
             assert.equal(maxTokensAfter.toString(), newMin.toString());
         });
 
-        it('should change daily limit', async function() {
-            let newDailyLimit = web3.utils.toWei('50000');
+        it('should change daily limit', async function(){
+            let newDailyLimit = web3.utils.toWei('100002');
             let data = this.allowTokens.contract.methods.changeDailyLimit(newDailyLimit).encodeABI();
             await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
             await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });

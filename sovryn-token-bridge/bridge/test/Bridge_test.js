@@ -1,5 +1,6 @@
 const { TestHelper } = require('@openzeppelin/cli');
 const { Contracts, ZWeb3 } = require('@openzeppelin/upgrades');
+const truffleAssert = require('truffle-assertions');
 
 ZWeb3.initialize(web3.currentProvider);
 
@@ -7,6 +8,9 @@ ZWeb3.initialize(web3.currentProvider);
 const Bridge_v1 = Contracts.getFromLocal('Bridge_v1');
 const Bridge = Contracts.getFromLocal('Bridge');
 const BridgeArtifact = artifacts.require('./Bridge');
+
+// const mockBridge = Contracts.getFromLocal('mockBridge');
+// const mockBridgeArtifact = artifacts.require('./mockBridge');
 
 const MainToken = artifacts.require('./MainToken');
 const AlternativeERC20Detailed = artifacts.require('./AlternativeERC20Detailed');
@@ -17,6 +21,9 @@ const MultiSigWallet = artifacts.require('./MultiSigWallet');
 const UtilsContract = artifacts.require('./Utils');
 const mockReceiveTokensCall = artifacts.require('./mockReceiveTokensCall');
 const TokenReceiver = artifacts.require('./TokenReceiverImpl');
+const { expectRevert } = require('@openzeppelin/test-helpers');
+const mockERC20Receiver = artifacts.require('./mockERC20Receiver');
+const Erc777Converter = artifacts.require('./Erc777Converter');
 
 const utils = require('./utils');
 const BN = web3.utils.BN;
@@ -38,7 +45,7 @@ contract('Bridge', async function (accounts) {
         this.token = await MainToken.new("MAIN", "MAIN", 18, web3.utils.toWei('1000000000'), { from: tokenOwner });
         await this.allowTokens.addAllowedToken(this.token.address, {from: bridgeManager});
         
-        this.weth = await MainToken.new("WETH", "WETH", 18, 0, { from: tokenOwner });
+        this.weth = await MainToken.new("Sovryn ETH wrapper", "ETH", 18, 0, { from: tokenOwner });
         await this.allowTokens.addAllowedToken(this.weth.address, {from: bridgeManager});
 
         this.sideTokenFactory = await SideTokenFactory.new();
@@ -65,8 +72,20 @@ contract('Bridge', async function (accounts) {
             assert.equal(result, "v3");
         });
 
+        ///data = this.allowTokens.contract.methods.addAllowedToken(this.token.address).encodeABI();
+        describe('set native token symbol', async function () {
+            it('check native token symbol', async function() {
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
 
-        describe('recieveEth without any initiation', async function () {
+                const updatedNativeTokenSymbol = await this.bridge.getNativeTokenSymbol()
+                assert.equal(updatedNativeTokenSymbol, nativeTokenSymbol);
+            })
+        })
+
+
+        
+        describe('receiveEthAt without any initiation', async function () {
             it('should revert if weth address called by non-admin', async function() {
                 await utils.expectThrow(this.bridge.setWETHAddress(this.weth.address, {from: accounts[6]}))
             })
@@ -102,17 +121,9 @@ contract('Bridge', async function (accounts) {
                 await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
                 await utils.expectThrow(this.bridge.receiveEthAt(accounts[6], Buffer.from(""), {from: accounts[7], value: amount}))
             })
-
-            it('should revert if sender is contract address', async function() {
-                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager})
-                const amount = web3.utils.toWei('5');
-                const fee = web3.utils.toWei('0.5');
-                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
-                await utils.expectThrow(this.bridge.receiveEthAt(accounts[6], Buffer.from(""), {from: this.weth.address, value: amount}))
-            })
         })
 
-        describe('recieveEth', async function () {
+        describe('receiveEthAt', async function () {
             beforeEach(async function () {
                 const nativeTokenSymbol = await this.weth.symbol()
                 await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
@@ -183,7 +194,7 @@ contract('Bridge', async function (accounts) {
                 const bridgeBalance = await this.weth.balanceOf(this.bridge.address);
                 assert.equal(bridgeBalance.toString(), 0);
             });
-
+        })
             // NOT SURE IF WE NEED THIS TEST CASES SINCE THE MAX TOKEN ALLOWED IS TOO HIGH FOR ETHEREUM
 /*
             it('clear spent today and successfully receives eth', async function() {
@@ -203,8 +214,128 @@ contract('Bridge', async function (accounts) {
                 utils.checkRcpt(receipt);
             });
 */
-        })
+        
 
+        describe('withdraw All Eth Fees from the bridge', async function () {
+            beforeEach(async function () {
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+            })
+
+            it('withdrawAllEthFees', async function () {
+                const fee = web3.utils.toWei('0.5');
+                const amount = web3.utils.toWei('2');
+                const sender = accounts[2];
+                const receiver = accounts[3];
+                
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+
+                const bridgeBalanceETHBF = new BN(await web3.eth.getBalance(this.bridge.address));
+                const senderETHBalanceBF = await web3.eth.getBalance(sender);
+                const ethFeeCollectedBF = new BN(await this.bridge.ethFeeCollected());
+
+                await this.bridge.receiveEthAt(tokenOwner, Buffer.from(""), {from: sender, value: amount});
+
+                const bridgeBalanceETHAF = new BN(await web3.eth.getBalance(this.bridge.address));
+                console.log("bridgeBalanceETHBF " + bridgeBalanceETHBF +  ".   bridgeBalanceETHAF "+bridgeBalanceETHAF);
+
+                const OwnerETHBalanceAF = new BN(await web3.eth.getBalance(receiver));
+                const senderETHBalanceAF = await web3.eth.getBalance(sender);
+                const ethFeeCollectedAF = new BN(await this.bridge.ethFeeCollected());
+
+                assert.equal(amount.toString(), (bridgeBalanceETHAF.sub(bridgeBalanceETHBF)).toString());
+                assert.equal(fee.toString(), (ethFeeCollectedAF.sub(ethFeeCollectedBF)).toString());
+                
+                await this.bridge.withdrawAllEthFees(receiver, {from: bridgeManager});
+
+                const bridgeBalanceETHAF1 = new BN(await web3.eth.getBalance(this.bridge.address));
+                const OwnerETHBalanceAF1 = new BN(await web3.eth.getBalance(receiver));
+                const ethFeeCollectedAF1 = new BN(await this.bridge.ethFeeCollected());
+
+                assert.equal(bridgeBalanceETHAF.sub(bridgeBalanceETHAF1).toString(), (OwnerETHBalanceAF1.sub(OwnerETHBalanceAF)).toString());
+                assert.equal(ethFeeCollectedAF1.toString(), (0).toString());
+            });
+        });
+        describe('Set Prefix', async function () {
+            
+            it('set prefix', async function () {
+                const amount = web3.utils.toWei('2');
+                const isSuffix = true;
+                const symbolPrefix = "TTT";
+                await this.bridge.initialSymbolPrefixSetup(isSuffix, symbolPrefix, {from: bridgeManager});
+                let receipt = await this.bridge.acceptTransferAt(this.token.address, anAccount, amount, "MAIN",
+                randomHex(32), randomHex(32), 1, '18', '1', Buffer.from(""), { from: federation });
+                utils.checkRcpt(receipt);
+
+                let sideTokenAddress = await this.bridge.mappedTokens(this.token.address);
+                let sideToken = await SideToken.at(sideTokenAddress);
+                const sideTokenSymbol = await sideToken.symbol();
+                assert.equal(sideTokenSymbol, "MAINTTT");
+            })    
+            it('cannot set prefix after first transfer to the bridge', async function () {
+                const amount = web3.utils.toWei('2');
+                const isSuffix = false;
+                const symbolPrefix = "tt";
+                await this.bridge.initialSymbolPrefixSetup(isSuffix, symbolPrefix, {from: bridgeManager});
+                
+                let receipt = await this.bridge.acceptTransferAt(this.token.address, anAccount, amount, "MAIN",
+                randomHex(32), randomHex(32), 1, '18', '1', Buffer.from(""), { from: federation });
+
+                const isSuffix1 = true;
+                const symbolPrefix1 = "kk";
+                await utils.expectThrow(this.bridge.initialSymbolPrefixSetup(isSuffix1, symbolPrefix1, {from: bridgeManager}));
+
+                let sideTokenAddress = await this.bridge.mappedTokens(this.token.address);
+                let sideToken = await SideToken.at(sideTokenAddress);
+                const sideTokenSymbol = await sideToken.symbol();
+                assert.equal(sideTokenSymbol, "ttMAIN");
+            })    
+
+            beforeEach(async function () {
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+            })
+
+            it('recieveEth and emit cross event', async function () {
+                const fee = web3.utils.toWei('0.5');
+                const amount = web3.utils.toWei('2');
+                const sender = accounts[2]
+                
+                await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+
+                const bridgeBalanceETHBF = await web3.eth.getBalance(this.bridge.address);
+                const tokenOwnerETHBalanceBF = await web3.eth.getBalance(tokenOwner);
+                const senderETHBalanceBF = await web3.eth.getBalance(sender);
+                const ethFeeCollectedBF = await this.bridge.ethFeeCollected();
+
+                receipt = await this.bridge.receiveEthAt(tokenOwner, Buffer.from(""), {from: sender, value: amount});
+                utils.checkRcpt(receipt);
+
+                const etherGasCost = await utils.etherGasCost(receipt)
+                const bridgeBalanceETHAF = await web3.eth.getBalance(this.bridge.address);
+                const tokenOwnerETHBalanceAF = await web3.eth.getBalance(tokenOwner);
+                const senderETHBalanceAF = await web3.eth.getBalance(sender);
+                const ethFeeCollectedAF = await this.bridge.ethFeeCollected();
+
+                assert.equal(receipt.logs[0].event, 'Cross');
+                assert.equal(receipt.logs[0].args[0], this.weth.address);
+                assert.equal(receipt.logs[0].args[1], tokenOwner);
+                assert.equal((receipt.logs[0].args[2]).toString(), new BN(amount).sub(new BN(fee)).toString());
+                assert.equal(receipt.logs[0].args[3], await this.weth.symbol());
+                assert.equal(receipt.logs[0].args[4], null);
+                assert.equal(receipt.logs[0].args[5].toString(), (await this.weth.decimals()).toString());
+                assert.equal(receipt.logs[0].args[6].toString(), '1');
+
+                assert.equal(tokenOwnerETHBalanceBF.toString(), tokenOwnerETHBalanceAF.toString())
+                assert.equal(amount.toString(), (new BN(bridgeBalanceETHBF).add(new BN(bridgeBalanceETHAF))).toString() )
+                assert.equal(ethFeeCollectedAF.toString(), (new BN(fee).add(ethFeeCollectedBF)).toString())
+                assert.equal(senderETHBalanceAF.toString(), (new BN(senderETHBalanceBF).sub(new BN(amount)).sub(new BN(etherGasCost))).toString() )
+                const isKnownToken = await this.bridge.knownTokens(this.weth.address);
+                assert.equal(isKnownToken, true);
+            });
+// //////////
         describe('owner', async function () {
             it('check manager', async function () {
                 const manager = await this.bridge.owner();
@@ -223,28 +354,6 @@ contract('Bridge', async function (accounts) {
                 const manager = await this.bridge.owner();
                 assert.equal(manager, bridgeManager);
             });
-
-            it('setFeePercentage successful', async function () {
-                const payment = 999; //9.99%
-                const feePercentageDivider = (await this.bridge.feePercentageDivider()).toNumber();
-                await this.bridge.setFeePercentage(payment, { from: bridgeManager});
-                let result = await this.bridge.getFeePercentage();
-                assert.equal(result, payment);
-                assert.equal((9.99/100).toFixed(4), payment/feePercentageDivider);
-            });
-
-            it('setFeePercentage should fail if not the owner', async function () {
-                const payment = 1000;
-                await utils.expectThrow(this.bridge.setFeePercentage(payment, { from: tokenOwner}));
-                let result = await this.bridge.getFeePercentage();
-                assert.equal(result, 0);
-            });
-
-            it('setFeePercentage should fail if 10% or more', async function () {
-                const payment = await this.bridge.feePercentageDivider()/10;
-                await utils.expectThrow(this.bridge.setFeePercentage(payment, { from: bridgeManager}));
-            });
-
 
             it('check federation', async function () {
                 const fedAddress = await this.bridge.getFederation();
@@ -270,7 +379,34 @@ contract('Bridge', async function (accounts) {
                 assert.equal(fedAddress, federation);
             });
 
-        });
+            // it('change AllowTokens', async function () {
+            //     const allowTokens_BF= await this.bridge.methods.allowTokens();
+            //     const allowTokens_toSet = await AllowTokens.new(bridgeManager);
+            //     allowTokens_BF_address = allowTokens_BF.address;
+            //     allowTokens_toSet_address = allowTokens_toSet.address;
+
+            //     console.log("allowTokens_BF " + allowTokens_BF_address + ". allowTokens_toSet_address " + allowTokens_toSet_address);
+
+            //     await this.bridge.changeAllowTokens(allowTokens_toSet_address, { from: bridgeManager });
+                
+            //     const allowTokens_AF= await this.bridge.methods.allowTokens();
+            //     allowTokens_AF_address = allowTokens_AF.address;
+
+            //     assert.equal(allowTokens_AF_address, allowTokens_toSet_address);
+            // });
+
+            // it('change AllowTokens - cant be null', async function () {
+            //     const allowTokensAddressBF = await this.bridge.methods.allowTokens();
+            //     allowTokens_BF_address = allowTokens_BF.address;
+
+            //     await utils.expectThrow(this.bridge.changeAllowTokens(utils.NULL_ADDRESS, { from: bridgeManager }));
+            //     const allowTokensAddressAF = await this.bridge.methods.allowTokens();
+            //     allowTokens_AF_address = allowTokens_AF.address;
+
+            //     assert.equal(allowTokens_BF_address, allowTokens_AF_address);
+            // });
+
+});
 
         describe('receiveTokens', async function () {
             it('receiveTokens approve and transferFrom for ERC20', async function () {
@@ -523,10 +659,9 @@ contract('Bridge', async function (accounts) {
             it('tokensReceived for ERC777 with payment', async function () {
                 const amount = new BN(web3.utils.toWei('1000'));
                 const payment = new BN('185'); //1.85%
-                await this.bridge.setFeePercentage(payment, { from: bridgeManager});
-                const feePercentageDivider = await this.bridge.feePercentageDivider();
-                const fees = amount.mul(payment).div(feePercentageDivider);
                 const granularity = '100';
+                const fees = new BN(web3.utils.toWei('0.5'));
+
                 let erc777 = await SideToken.new("ERC777", "777", tokenOwner, granularity, { from: tokenOwner });
 
                 await this.allowTokens.addAllowedToken(erc777.address, { from: bridgeManager });
@@ -592,10 +727,24 @@ contract('Bridge', async function (accounts) {
                 assert.equal(bridgeBalance.toString(), amount.sub(fees).toString());
                 const ownerBalance = await erc777.balanceOf(bridgeManager);
                 assert.equal(ownerBalance.toString(), fees.toString());
-                assert.equal(fees.toString(), (amount*1.85/100).toString());
+               // assert.equal(fees.toString(), (amount*1.85/100).toString());
                 const isKnownToken = await this.bridge.knownTokens(erc777.address);
                 assert.equal(isKnownToken, true);
             });
+
+            it('tokensReceived should fail tokenToUse is WETHAddr', async function () {
+                const amount = web3.utils.toWei('1000');
+                const granularity = '100';
+                let erc777 = await SideToken.new("ERC777", "777", tokenOwner, granularity, { from: tokenOwner });
+
+                await this.allowTokens.addAllowedToken(erc777.address, { from: bridgeManager });
+                await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
+                const originalTokenBalance = await erc777.balanceOf(tokenOwner);
+                let userData = '0x1100';
+                const wethAddress = this.weth.address
+                await expectRevert(this.bridge.tokensReceived(tokenOwner,tokenOwner, this.bridge.address, amount, userData, '0x', { from: wethAddress }), "Bridge: Cannot transfer WETH");
+            });
+
 
             it('tokensReceived should fail if not a token contract', async function () {
                 const amount = web3.utils.toWei('1000');
@@ -627,14 +776,9 @@ contract('Bridge', async function (accounts) {
 
             it('receiveTokens with payment successful', async function () {
                 //const payment = new BN('33');
-                const amount = new BN(web3.utils.toWei('1000'));
-                //const feePercentageDivider = await this.bridge.feePercentageDivider();
-                //const fees = amount.mul(payment).div(feePercentageDivider);
-                
+                const amount = new BN(web3.utils.toWei('1000'));                
                 const fees = new BN(web3.utils.toWei('10'));
                 const originalTokenBalance = await this.token.balanceOf(tokenOwner);
-                //await this.bridge.setFeePercentage(payment, { from: bridgeManager});
-                //await this.allowTokens.setFeePerToken(this.token.address, fees);
                 await this.allowTokens.setFeeAndMinPerToken(this.token.address, fees, fees, { from: bridgeManager });
 
                 await this.token.approve(this.bridge.address, amount, { from: tokenOwner });
@@ -661,12 +805,9 @@ contract('Bridge', async function (accounts) {
 
                 await this.allowTokens.addAllowedToken(erc777.address, { from: bridgeManager });
                 await erc777.mint(tokenOwner, amount, "0x", "0x", {from: tokenOwner });
-                //const feePercentageDivider = await this.bridge.feePercentageDivider();
-                //const fees = amount.mul(payment).div(feePercentageDivider);
                 const fees = new BN(web3.utils.toWei('0.1'));
 
                 const originalTokenBalance = await erc777.balanceOf(tokenOwner);
-                //await this.bridge.setFeePercentage(payment, { from: bridgeManager});
                 await this.allowTokens.setFeeAndMinPerToken(erc777.address, fees, fees, {from: bridgeManager});
                 await erc777.approve(this.bridge.address, amount, { from: tokenOwner });
 
@@ -1082,9 +1223,10 @@ contract('Bridge', async function (accounts) {
             it('tokensReceived for ERC777 with payment', async function () {
                 const amount = new BN(web3.utils.toWei('1000'));
                 const payment = new BN('185'); //1.85%
-                await this.bridge.setFeePercentage(payment, { from: bridgeManager});
-                const feePercentageDivider = await this.bridge.feePercentageDivider();
-                const fees = amount.mul(payment).div(feePercentageDivider);
+                //await this.bridge.setFeePercentage(payment, { from: bridgeManager});
+                //const feePercentageDivider = await this.bridge.feePercentageDivider();
+                //const fees = amount.mul(payment).div(feePercentageDivider);
+                const fees = new BN(web3.utils.toWei('10'));
                 const granularity = '100';
                 let erc777 = await SideToken.new("ERC777", "777", tokenOwner, granularity, { from: tokenOwner });
 
@@ -1151,7 +1293,7 @@ contract('Bridge', async function (accounts) {
                 assert.equal(bridgeBalance.toString(), amount.sub(fees).toString());
                 const ownerBalance = await erc777.balanceOf(bridgeManager);
                 assert.equal(ownerBalance.toString(), fees.toString());
-                assert.equal(fees.toString(), (amount*1.85/100).toString());
+                //assert.equal(fees.toString(), (amount*1.85/100).toString());
                 const isKnownToken = await this.bridge.knownTokens(erc777.address);
                 assert.equal(isKnownToken, true);
             });
@@ -1443,12 +1585,13 @@ contract('Bridge', async function (accounts) {
             });
         });
 
-    });
+});
 
     describe('Mirror Side', async function () {
         beforeEach(async function () {
             this.mirrorAllowTokens = await AllowTokens.new(bridgeManager);
             this.mirrorSideTokenFactory = await SideTokenFactory.new();
+            this.mirrormockERC20Receiver= await mockERC20Receiver.new();
 
             const proxy = await this.project.createProxy(Bridge_v1, {
                     initMethod: 'initialize',
@@ -1459,6 +1602,18 @@ contract('Bridge', async function (accounts) {
             this.mirrorBridge = await BridgeArtifact.at(proxy.address);
 
             await this.mirrorSideTokenFactory.transferPrimary(this.mirrorBridge.address);
+
+            this.mirrorErc777Converter = await Erc777Converter.new({from: bridgeManager});
+            //console.log("this.mirrorErc777Converter.address: " +this.mirrorErc777Converter.address);
+            await this.mirrorErc777Converter.setBridgeContract(this.mirrorBridge.address, {from: bridgeManager});
+            await this.mirrorBridge.setErc777Converter(this.mirrorErc777Converter.address, {from: bridgeManager});
+            
+           let fedAddress1 = await this.mirrorBridge.getFederation();
+
+            const erc777fromGet1 = await this.mirrorBridge.getErc777Converter();
+            
+            //const erc777fromGet1  = await  this.mirrorBridge.methods.getErc777Converter().call();
+            //console.log("beforeEach erc777fromGet: "+ erc777fromGet1);
 
             this.amount = web3.utils.toWei('1000');
             this.decimals = (await this.token.decimals()).toString();
@@ -1783,70 +1938,77 @@ contract('Bridge', async function (accounts) {
                 this.txReceipt.receipt.blockHash, this.txReceipt.tx,
                 this.txReceipt.receipt.logs[0].logIndex, 0, this.granularity, Buffer.from(""), { from: federation }));
             });
+        // // //    Fee is mandatory starting from bridge_v3
+        //     it('crossback with amount lower than granularity', async function () {
+        //         const granularity = '10000000000000000';
+        //         const decimals = 18;
+        //         await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+        //             this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+        //             this.txReceipt.receipt.logs[0].logIndex, decimals, granularity, Buffer.from(""), { from: federation });
+        //         let amountToCrossBack = new BN(web3.utils.toWei('0.01'));
 
-            it('crossback with amount lower than granularity', async function () {
-                const granularity = '10000000000000000';
-                const decimals = 18;
-                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
-                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
-                    this.txReceipt.receipt.logs[0].logIndex, decimals, granularity, Buffer.from(""), { from: federation });
-                const amountToCrossBack = new BN(web3.utils.toWei('1'));
-                const payment = new BN('33');
+        //         const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
+        //         const sideToken = await SideToken.at(sideTokenAddress);
+        //         //const feePercentageDivider = await this.mirrorBridge.feePercentageDivider();
+        //         //const fees = amountToCrossBack.mul(payment).div(feePercentageDivider);
+        //         const fees = new BN(web3.utils.toWei('0.005'));
+        //         const modulo = amountToCrossBack.sub(fees).mod(new BN(granularity));
+                
+        //         //amountToCrossBack = amountToCrossBack.sub(fees);
+                
+        //         const originalTokenBalance = await sideToken.balanceOf(anAccount);
+        //         await this.allowTokens.setFeeAndMinPerToken(this.token.address, fees, fees, {from: bridgeManager});
 
-                const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
-                const sideToken = await SideToken.at(sideTokenAddress);
-                const feePercentageDivider = await this.mirrorBridge.feePercentageDivider();
-                const fees = amountToCrossBack.mul(payment).div(feePercentageDivider);
-                const modulo = amountToCrossBack.sub(fees).mod(new BN(granularity));
+        //         //await this.mirrorBridge.setFeePercentage(payment, { from: bridgeManager});
+        //         await sideToken.approve(this.mirrorBridge.address, amountToCrossBack, { from: anAccount });
 
-                const originalTokenBalance = await sideToken.balanceOf(anAccount);
-                await this.allowTokens.setFeeAndMinPerToken(this.token.address, payment, payment,);
+        //         let receipt = await this.mirrorBridge.receiveTokens(sideToken.address, amountToCrossBack, { from: anAccount });
+        //         utils.checkRcpt(receipt);
 
-                //await this.mirrorBridge.setFeePercentage(payment, { from: bridgeManager});
-                await sideToken.approve(this.mirrorBridge.address, amountToCrossBack, { from: anAccount });
+        //         const ownerBalance = await sideToken.balanceOf(bridgeManager);
+        //         assert.equal(ownerBalance.toString(), fees.add(modulo).toString());
+        //         //assert.equal(fees.toString(), (amountToCrossBack*0.33/100).toString());
+        //         const tokenBalance = await sideToken.balanceOf(anAccount);
+        //         assert.equal(tokenBalance.toString(), originalTokenBalance.sub(amountToCrossBack));
+        //         const bridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
+        //         assert.equal(bridgeBalance.toString(), '0');
+        //     });
 
-                let receipt = await this.mirrorBridge.receiveTokens(sideToken.address, amountToCrossBack, { from: anAccount });
-                utils.checkRcpt(receipt);
+        // //    Fee is mandatory starting from bridge_v3
+        //     it('crossback with amount lower than granularity and no fees', async function () {
+        //         const granularity = '10000000000000000';
+        //         const decimals = 18;
+        //         await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+        //             this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+        //             this.txReceipt.receipt.logs[0].logIndex, decimals, granularity, Buffer.from(""), { from: federation });
+        //         const amountToCrossBack = new BN(web3.utils.toWei('1'));
+        //         const payment = new BN(0);
 
-                const ownerBalance = await sideToken.balanceOf(bridgeManager);
-                assert.equal(ownerBalance.toString(), fees.add(modulo).toString());
-                assert.equal(fees.toString(), (amountToCrossBack*0.33/100).toString());
-                const tokenBalance = await sideToken.balanceOf(anAccount);
-                assert.equal(tokenBalance.toString(), originalTokenBalance.sub(amountToCrossBack));
-                const bridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
-                assert.equal(bridgeBalance.toString(), '0');
-            });
+        //         const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
+        //         const sideToken = await SideToken.at(sideTokenAddress);
+        //         //const feePercentageDivider = await this.mirrorBridge.feePercentageDivider();
+        //         //const fees = amountToCrossBack.mul(payment).div(feePercentageDivider);
+        //         const fees = new BN(web3.utils.toWei('0.002'));
+        //         const modulo = amountToCrossBack.sub(fees).mod(new BN(granularity));
+        //         const originalTokenBalance = await sideToken.balanceOf(anAccount);
+        //         await this.allowTokens.setFeeAndMinPerToken(this.token.address, fees, fees, {from: bridgeManager});
 
-            it('crossback with amount lower than granularity and no fees', async function () {
-                const granularity = '10000000000000000';
-                const decimals = 18;
-                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
-                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
-                    this.txReceipt.receipt.logs[0].logIndex, decimals, granularity, Buffer.from(""), { from: federation });
-                const amountToCrossBack = new BN(web3.utils.toWei('1'));
-                const payment = new BN(0);
+        //         //await this.mirrorBridge.setFeePercentage(payment, { from: bridgeManager});
+        //         await sideToken.approve(this.mirrorBridge.address, amountToCrossBack, { from: anAccount });
 
-                const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
-                const sideToken = await SideToken.at(sideTokenAddress);
-                const feePercentageDivider = await this.mirrorBridge.feePercentageDivider();
-                const fees = amountToCrossBack.mul(payment).div(feePercentageDivider);
-                const modulo = amountToCrossBack.sub(fees).mod(new BN(granularity));
-                const originalTokenBalance = await sideToken.balanceOf(anAccount);
-                await this.allowTokens.setFeeAndMinPerToken(this.token.address, payment, payment);
+        //         const fee = web3.utils.toWei('0.5');
+        //         await this.allowTokens.setFeeAndMinPerToken(sideToken.address, fee, fee, {from: bridgeManager});
+    
+        //         let receipt = await this.mirrorBridge.receiveTokens(sideToken.address, amountToCrossBack, { from: anAccount });
+        //         utils.checkRcpt(receipt);
 
-                //await this.mirrorBridge.setFeePercentage(payment, { from: bridgeManager});
-                await sideToken.approve(this.mirrorBridge.address, amountToCrossBack, { from: anAccount });
-
-                let receipt = await this.mirrorBridge.receiveTokens(sideToken.address, amountToCrossBack, { from: anAccount });
-                utils.checkRcpt(receipt);
-
-                const ownerBalance = await sideToken.balanceOf(bridgeManager);
-                assert.equal(ownerBalance.toString(), fees.add(modulo).toString());
-                const tokenBalance = await sideToken.balanceOf(anAccount);
-                assert.equal(tokenBalance.toString(), originalTokenBalance.sub(amountToCrossBack));
-                const bridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
-                assert.equal(bridgeBalance.toString(), '0');
-            });
+        //         const ownerBalance = await sideToken.balanceOf(bridgeManager);
+        //         assert.equal(ownerBalance.toString(), fees.toString());
+        //         const tokenBalance = await sideToken.balanceOf(anAccount);
+        //         assert.equal(tokenBalance.toString(), originalTokenBalance.sub(amountToCrossBack));
+        //         const bridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
+        //         assert.equal(bridgeBalance.toString(), '0');
+        //     });
             it('accept transfer whit extra data', async function () {
                 const extraData = 'Extra data';
 
@@ -1861,6 +2023,92 @@ contract('Bridge', async function (accounts) {
 
                 assert.equal(result, extraData);
             });
+            it('BRIDGE: revoke transaction processed from true to false', async function () {
+//// Try and fail to process same tx twice.
+                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+                let transactionId = await this.bridge.getTransactionId(
+                    this.txReceipt.receipt.blockHash,
+                    this.txReceipt.tx,
+                    anAccount,
+                    this.amount,
+                    this.txReceipt.receipt.logs[0].logIndex);
+                    
+                const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
+                const sideToken = await SideToken.at(sideTokenAddress);
+
+                let mirrorAnAccountBalance = await sideToken.balanceOf(anAccount);
+                assert.equal(mirrorAnAccountBalance, this.amount);
+
+                await utils.expectThrow(this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+                this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation }));
+
+                await this.mirrorBridge.setRevokeTransaction(transactionId, {from: bridgeManager});
+               
+                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+
+                mirrorAnAccountBalance = await sideToken.balanceOf(anAccount);
+                assert.equal(mirrorAnAccountBalance, 2*(this.amount));
+            })
+
+            it('should fail sending directly to ERC20 SC with useData !=0', async function () {
+                const extraData = 'Extra data';
+
+                await utils.expectThrow(this.mirrorBridge.acceptTransferAt(this.token.address, this.mirrormockERC20Receiver.address, this.amount, "MAIN",
+                this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(extraData), { from: federation }));
+            });
+
+            it('should send to ERC20 SC with useData==0', async function () {
+
+                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+                
+                const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
+                const tsideToken = await SideToken.at(sideTokenAddress);
+                
+                let receiverBalance = await  tsideToken.balanceOf(this.mirrormockERC20Receiver.address);
+                
+                await this.mirrorErc777Converter.setBridgeContract(this.mirrorBridge.address, {from: bridgeManager});
+                await this.mirrorBridge.setErc777Converter(this.mirrorErc777Converter.address, {from: bridgeManager})    
+                const erc777fromGet = await this.mirrorBridge.getErc777Converter();
+                let bufZero = web3.eth.abi.encodeParameter('bytes32', web3.utils.rightPad('0x00', 64))
+
+                let receipt  = await this.mirrorBridge.acceptTransferAt(this.token.address, this.mirrormockERC20Receiver.address, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, bufZero, { from: federation });
+                utils.checkRcpt(receipt);
+                
+                let receiverBalanceAF = await tsideToken.balanceOf(this.mirrormockERC20Receiver.address);
+                assert.equal((receiverBalanceAF-receiverBalance), this.amount);
+            });
+
+            it('should send directly to erc777converter', async function () {
+                await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+                
+                const sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
+                const tsideToken = await SideToken.at(sideTokenAddress);
+
+                BytesmirrormockERC20Receiver = web3.eth.abi.encodeParameter("address", this.mirrormockERC20Receiver.address);                
+                let receiverBalance = await  tsideToken.balanceOf(this.mirrormockERC20Receiver.address);
+               
+                let receipt  = await this.mirrorBridge.acceptTransferAt(this.token.address, this.mirrorErc777Converter.address, this.amount, "MAIN",
+                this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, BytesmirrormockERC20Receiver, { from: federation });
+
+                let receiverBalanceAF = await tsideToken.balanceOf(this.mirrormockERC20Receiver.address);
+                // console.log("erc20 sc balance: " + receiverBalance);
+                // console.log("this.amount: " + this.amount);
+                assert.equal((receiverBalanceAF-receiverBalance), this.amount);
+            });
+
         });
 
         describe('Cross back the tokens', async function () {
@@ -1868,6 +2116,7 @@ contract('Bridge', async function (accounts) {
                 await this.mirrorBridge.acceptTransferAt(this.token.address, anAccount, this.amount, "MAIN",
                     this.txReceipt.receipt.blockHash, this.txReceipt.tx,
                     this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+                    
                 this.amountToCrossBack = web3.utils.toWei('100');
                 this.decimals = (await this.token.decimals()).toString();
                 this.granularity = 1;
@@ -1939,8 +2188,8 @@ contract('Bridge', async function (accounts) {
             });
 
 
-            describe('After the mirror Bridge burned the tokens', function () {
-                beforeEach(async function () {
+        describe('After the mirror Bridge burned the tokens', function () {
+            beforeEach(async function () {
                     this.sideTokenAddress = await this.mirrorBridge.mappedTokens(this.token.address);
 
                     this.sideToken = await SideToken.at(this.sideTokenAddress);
@@ -1967,171 +2216,229 @@ contract('Bridge', async function (accounts) {
                     assert.equal(anAccountBalance.toString(), this.amountToCrossBack );
                 });
             });
-
         });
+            
+        describe('Cross back the WETH tokens', async function () {
+            beforeEach(async function () {
+                this.amount2 = web3.utils.toWei('2');
+                const nativeTokenSymbol = await this.weth.symbol()
+                await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager}); 
+                
+                await this.mirrorBridge.acceptTransferAt(this.weth.address, anAccount, this.amount2, "WETH",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+
+                this.amountToCrossBack = web3.utils.toWei('1');
+                this.decimals = (await this.token.decimals()).toString();
+                this.granularity = 1;
+                this.fee = web3.utils.toWei('0.5');
+            });
+            describe('After the mirror Bridge burned the WETH tokens', function () {
+                beforeEach(async function () {
+                    this.sideTokenAddress = await this.mirrorBridge.mappedTokens(this.weth.address);
+                    console.log("this.weth.address " + this.weth.address);
+                    console.log("this.sideTokenAddress " + this.sideTokenAddress);
+
+                    this.sideToken = await SideToken.at(this.sideTokenAddress);
+
+                    //Transfer ETH to the bridge, the bridge burns them and creates an event
+                    // const nativeTokenSymbol = await this.weth.symbol()
+                    // await this.bridge.setWETHAddress(this.token.address, {from: bridgeManager});
+                    // await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager}); 
+                    
+                    this.amountToCrossBack = web3.utils.toWei('1');
+                    const fee = web3.utils.toWei('0.5');
+                    this.fee = fee
+                    await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
+                    await this.bridge.receiveEthAt(tokenOwner, Buffer.from(""), {from: tokenOwner, value: this.amount2});
+                    
+                });    //POOH
+            it('main Bridge should release ETH', async function () {
+
+                let bridgeBalanceBF = await web3.eth.getBalance(this.bridge.address);
+                let anAccountBalanceBF = await web3.eth.getBalance(anAccount);
+
+                console.log("BridgeBF: " + bridgeBalanceBF + "  AccountBF: " + anAccountBalanceBF);
+
+                let tx = await this.bridge.acceptTransferAt(this.weth.address, anAccount, this.amountToCrossBack, "WETH",
+                    this.txReceipt.receipt.blockHash, this.txReceipt.tx,
+                    this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
+                utils.checkRcpt(tx);
+                
+                let bridgeBalanceAF = await web3.eth.getBalance(this.bridge.address);
+                let anAccountBalanceAF = await web3.eth.getBalance(anAccount);
+
+                console.log("BridgeAF: " + bridgeBalanceAF + "  AccountAF: " + anAccountBalanceAF);
+                 const temp = new BN(bridgeBalanceBF).sub(new BN(this.amountToCrossBack));
+                 assert.equal(bridgeBalanceAF.toString(), temp.toString() );
+                 
+                 const temp1 = new BN(anAccountBalanceBF).add(new BN(this.amountToCrossBack));
+                 assert.equal(anAccountBalanceAF.toString(), temp1.toString() );
+            });
+        });
+    });    
+
+
 
     });
 
-    describe('Calls from MultiSig', async function() {
-        const multiSigOnwerA = accounts[7];
-        const multiSigOnwerB = accounts[8];
+//     describe('Calls from MultiSig', async function() {
+//         const multiSigOnwerA = accounts[7];
+//         const multiSigOnwerB = accounts[8];
 
-        beforeEach(async function () {
-            this.granularity = 1;
-            this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
-            this.fedMultiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
-            this.allowTokens = await AllowTokens.new(this.multiSig.address);
-            this.mirrorSideTokenFactory = await SideTokenFactory.new();
-            // TODO: See if it is possible do it easily with proxy using Bridge's actual version
-            this.mirrorBridge = await Bridge_v1.new();
-            this.decimals = "18";
+//         beforeEach(async function () {
+//             this.granularity = 1;
+//             this.multiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
+//             this.fedMultiSig = await MultiSigWallet.new([multiSigOnwerA, multiSigOnwerB], 2);
+//             this.allowTokens = await AllowTokens.new(this.multiSig.address);
+//             this.mirrorSideTokenFactory = await SideTokenFactory.new();
+//             // TODO: See if it is possible do it easily with proxy using Bridge's actual version
+       
+//             this.mirrorAllowTokens = await AllowTokens.new(this.multiSig.address);
+//             this.mirrorFed = await AllowTokens.new(this.multiSig.address);
 
-            let data = this.mirrorBridge.methods['initialize(address,address,address,address,string)'](
-                this.multiSig.address,
-                this.fedMultiSig.address,
-                this.allowTokens.address,
-                this.mirrorSideTokenFactory.address,
-                'r'
-            ).encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
+//             this.mirrorSideTokenFactory = await SideTokenFactory.new();
 
-            let tx = await this.multiSig.transactions(0);
-            assert.equal(tx.executed, true);
+//             const proxy = await this.project.createProxy(Bridge_v1, {
+//                     initMethod: 'initialize',
+//                     initArgs: [this.multiSig.address, this.mirrorFed.address, this.mirrorAllowTokens.address, this.mirrorSideTokenFactory.address, 'r']
+//             });
+//             await this.project.upgradeProxy(proxy.address, Bridge);
 
-            await this.mirrorSideTokenFactory.transferPrimary(this.mirrorBridge.address);
+//             this.mirrorBridge = await BridgeArtifact.at(proxy.address);
 
-            data = this.allowTokens.contract.methods.addAllowedToken(this.token.address).encodeABI();
-            await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(1, { from: multiSigOnwerB });
+//             await this.mirrorSideTokenFactory.transferPrimary(this.mirrorBridge.address);
+       
+// //             this.mirrorBridge = await Bridge_v1.new();
+//              this.decimals = "18";
 
-            tx = await this.multiSig.transactions(1);
-            assert.equal(tx.executed, true);
+//             // let data = this.mirrorBridge.methods['initialize(address,address,address,address,string)'](
+//             //     this.multiSig.address,
+//             //     this.fedMultiSig.address,
+//             //     this.allowTokens.address,
+//             //     this.mirrorSideTokenFactory.address,
+//             //     'r'
+//             // ).encodeABI();
+//             // await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             // await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
 
-            this.amount = web3.utils.toWei('1000');
-            await this.token.approve(this.bridge.address, this.amount, { from: tokenOwner });
-            this.txReceipt = await this.bridge.receiveTokens(this.token.address, this.amount, { from: tokenOwner });
-        });
+//             // let tx = await this.multiSig.transactions(0);
+//             // assert.equal(tx.executed, true);
 
-        it('should not accept a transfer due to missing signatures', async function() {
-            let data = this.mirrorBridge.methods.acceptTransfer(
-                this.token.address,
-                anAccount,
-                this.amount,
-                'MAIN',
-                this.txReceipt.receipt.blockHash,
-                this.txReceipt.tx,
-                this.txReceipt.receipt.logs[0].logIndex,
-                this.decimals,
-                this.granularity
-            ).encodeABI();
-            await this.fedMultiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//            //  await this.mirrorSideTokenFactory.transferPrimary(this.mirrorBridge.address);
 
-            let tx = await this.fedMultiSig.transactions(0);
-            assert.equal(tx.executed, false);
-        });
+//             let data = this.allowTokens.contract.methods.addAllowedToken(this.token.address).encodeABI();
+//              await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
+//              await this.multiSig.confirmTransaction(0, { from: multiSigOnwerB });
 
-        it('should accept a transfer', async function() {
-            let data = this.mirrorBridge.methods.acceptTransfer(
-                this.token.address,
-                anAccount,
-                this.amount,
-                'MAIN',
-                this.txReceipt.receipt.blockHash,
-                this.txReceipt.tx,
-                this.txReceipt.receipt.logs[0].logIndex,
-                this.decimals,
-                this.granularity
-            ).encodeABI();
-            await this.fedMultiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.fedMultiSig.confirmTransaction(0, { from: multiSigOnwerB });
+//              tx = await this.multiSig.transactions(0);
+//              assert.equal(tx.executed, true);
+            
+//             const fee = web3.utils.toWei('0.5');
+//             data = this.allowTokens.contract.methods.setFeeAndMinPerToken(this.token.address, fee, fee).encodeABI();
+//             await this.multiSig.submitTransaction(this.allowTokens.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(1, { from: multiSigOnwerB });
 
-            let tx = await this.fedMultiSig.transactions(0);
-            assert.equal(tx.executed, true);
 
-            let sideTokenAddress = await this.mirrorBridge.methods.mappedTokens(this.token.address).call();
-            let sideToken = await SideToken.at(sideTokenAddress);
-            const mirrorBridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
-            assert.equal(mirrorBridgeBalance, 0);
-        });
+//             this.amount = web3.utils.toWei('10');
+//             await this.token.approve(this.bridge.address, this.amount, { from: tokenOwner });
+//             this.txReceipt = await this.bridge.receiveTokens(this.token.address, this.amount, { from: tokenOwner });
+//         });
 
-        it('should not allow to set a feePercentage due to missing signatures', async function() {
-            let feePercentage = await this.mirrorBridge.methods.getFeePercentage().call();
+//         it('should not accept a transfer due to missing signatures', async function() {
+//             let data = this.mirrorBridge.methods.acceptTransfer(
+//                 this.token.address,
+//                 anAccount,
+//                 this.amount,
+//                 'MAIN',
+//                 this.txReceipt.receipt.blockHash,
+//                 this.txReceipt.tx,
+//                 this.txReceipt.receipt.logs[0].logIndex,
+//                 this.decimals,
+//                 this.granularity
+//             ).encodeABI();
+//             await this.fedMultiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
 
-            let data = this.mirrorBridge.methods.setFeePercentage('200').encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             let tx = await this.fedMultiSig.transactions(0);
+//             assert.equal(tx.executed, false);
+//         });
 
-            let tx = await this.multiSig.transactions(2);
-            assert.equal(tx.executed, false);
+//         it('should accept a transfer', async function() {
+//             let data = this.mirrorBridge.methods.acceptTransfer(
+//                 this.token.address,
+//                 anAccount,
+//                 this.amount,
+//                 'MAIN',
+//                 this.txReceipt.receipt.blockHash,
+//                 this.txReceipt.tx,
+//                 this.txReceipt.receipt.logs[0].logIndex,
+//                 this.decimals,
+//                 this.granularity
+//             ).encodeABI();
+//             await this.fedMultiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.fedMultiSig.confirmTransaction(0, { from: multiSigOnwerB });
 
-            let feePercentageAfter = await this.mirrorBridge.methods.getFeePercentage().call();
-            assert.equal(feePercentage.toString(), feePercentageAfter.toString());
-        });
+//             let tx = await this.fedMultiSig.transactions(0);
+//             assert.equal(tx.executed, true);
 
-        it('should allow to set a feePercentage', async function() {
-            let newPayment = '200'; //2%
-            let data = this.mirrorBridge.methods.setFeePercentage(newPayment).encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
+//             let sideTokenAddress = await this.mirrorBridge.methods.mappedTokens(this.token.address).call();
+//             let sideToken = await SideToken.at(sideTokenAddress);
+//             const mirrorBridgeBalance = await sideToken.balanceOf(this.mirrorBridge.address);
+//             assert.equal(mirrorBridgeBalance, 0);
+//         });
 
-            let tx = await this.multiSig.transactions(2);
-            assert.equal(tx.executed, true);
+//         it('should allow to set a new federation', async function() {
+//             let data = this.mirrorBridge.methods.changeFederation(federation).encodeABI();
+//             await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
 
-            let feePercentageAfter = await this.mirrorBridge.methods.getFeePercentage().call();
-            assert.equal(feePercentageAfter.toString(), newPayment);
-        });
+//             let tx = await this.multiSig.transactions(2);
+//             assert.equal(tx.executed, true);
 
-        it('should allow to set a new federation', async function() {
-            let data = this.mirrorBridge.methods.changeFederation(federation).encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
+//             let federationAfter = await this.mirrorBridge.methods.getFederation().call();
+//             assert.equal(federationAfter, federation);
+//         });
 
-            let tx = await this.multiSig.transactions(2);
-            assert.equal(tx.executed, true);
+//         it('should pause the bridge contract', async function() {
+//             let isPaused = await this.mirrorBridge.methods.paused().call();
+//             assert.equal(isPaused, false);
 
-            let federationAfter = await this.mirrorBridge.methods.getFederation().call();
-            assert.equal(federationAfter, federation);
-        });
+//             let data = this.mirrorBridge.methods.pause().encodeABI();
+//             await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
 
-        it('should pause the bridge contract', async function() {
-            let isPaused = await this.mirrorBridge.methods.paused().call();
-            assert.equal(isPaused, false);
+//             isPaused = await this.mirrorBridge.methods.paused().call();
+//             assert.equal(isPaused, true);
+//         });
 
-            let data = this.mirrorBridge.methods.pause().encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
+//         it('should unpause the bridge contract', async function() {
+//             let data = this.mirrorBridge.methods.unpause().encodeABI();
+//             await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
 
-            isPaused = await this.mirrorBridge.methods.paused().call();
-            assert.equal(isPaused, true);
-        });
+//             let isPaused = await this.mirrorBridge.methods.paused().call();
+//             assert.equal(isPaused, false);
+//         });
 
-        it('should unpause the bridge contract', async function() {
-            let data = this.mirrorBridge.methods.unpause().encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
+//         it('should renounce ownership', async function() {
+//             let data = this.mirrorBridge.methods.renounceOwnership().encodeABI();
+//             await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
 
-            let isPaused = await this.mirrorBridge.methods.paused().call();
-            assert.equal(isPaused, false);
-        });
+//             let owner = await this.mirrorBridge.methods.owner().call();
+//             assert.equal(BigInt(owner), 0);
+//         });
 
-        it('should renounce ownership', async function() {
-            let data = this.mirrorBridge.methods.renounceOwnership().encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
+//         it('should transfer ownership', async function() {
+//             let data = this.mirrorBridge.methods.transferOwnership(bridgeManager).encodeABI();
+//             await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
+//             await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
 
-            let owner = await this.mirrorBridge.methods.owner().call();
-            assert.equal(BigInt(owner), 0);
-        });
-
-        it('should transfer ownership', async function() {
-            let data = this.mirrorBridge.methods.transferOwnership(bridgeManager).encodeABI();
-            await this.multiSig.submitTransaction(this.mirrorBridge.address, 0, data, { from: multiSigOnwerA });
-            await this.multiSig.confirmTransaction(2, { from: multiSigOnwerB });
-
-            let owner = await this.mirrorBridge.methods.owner().call();
-            assert.equal(owner, bridgeManager);
-        });
-    });
+//             let owner = await this.mirrorBridge.methods.owner().call();
+//             assert.equal(owner, bridgeManager);
+//         });
+//     });
 
     describe('Pausable methods', async function() {
         it('Should pause the bridge contract', async function() {
@@ -2297,4 +2604,5 @@ contract('Bridge', async function (accounts) {
             assert.equal(result.toLowerCase(), newAddress.toLowerCase());
         });
     });
+})
 });

@@ -1,4 +1,4 @@
-const Federation = artifacts.require("Federation");
+const Federation = artifacts.require("Federation_v2");
 const Bridge = artifacts.require("Bridge_v0");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 

@@ -52,13 +52,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     uint256 public ethFeeCollected;
     address private WETHAddr;
     string private nativeTokenSymbol;
-    //address public aggregatorAddr;
+    //Bridge_V4 variables
+    address public erc777ConverterAddr;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
     event Upgrading(bool isUpgrading);
-    //event AllowTokenChanged(address _newAllowToken);
-    //event PrefixUpdated(bool _isSuffix, string _prefix);
+    event AllowTokenChanged(address _newAllowToken);
+    event PrefixUpdated(bool _isSuffix, string _prefix);
+    event RevokeTx(bytes32 tx_revoked);
+    event erc777ConverterSet(address erc777ConverterAddress);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -168,17 +171,27 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         } else {
             require(calculatedGranularity == sideToken.granularity(), "Bridge: Granularity differ from side token");
         }
-        sideToken.mint(receiver, formattedAmount, userData, "");
+    // Enable Mint to SC without ERC777 interface with user data = 0x00, by using erc777Converter
+    // Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
+        //if(receiver.isContract() && bytesToBytes32(userData) == bytesToBytes32(abi.encodePacked(address(0)))) {
+        if(receiver.isContract() && _isZeroValue(userData) == true ) {
+            userData = abi.encode(receiver);
+            receiver = erc777ConverterAddr;
+        }
+    
+        sideToken.mint(receiver, formattedAmount, userData, "");    
 
         if (receiver.isContract()) {
-            (bool success, bytes memory errorData) = receiver.call(
-                abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
-            );
-            if (!success) {
-                emit ErrorTokenReceiver(errorData);
-            }
+       //(bool success, bytes memory errorData) = receiver.call(
+           (bool success,) = receiver.call(
+               abi.encodeWithSignature("onTokensMinted(uint256,address,bytes)", formattedAmount, sideToken, userData)
+           );
+        //    if (!success) {
+        //         emit ErrorTokenReceiver(errorData);
+        //     }
+    // Revert on error      
+          require(success == true, "Sending to Smart Contract with userData!=0 requires ERC777 interface on receiver");
         }
-
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
@@ -187,9 +200,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
         //// Bridge v3 upgrade functions
+        //if (tokenAddress == WETHAddr) {
+        //    address payable payableReceiver = address(uint160(receiver));
+        //    payableReceiver.transfer(amount);
+        // }
+        //// Bridge v4 upgrade functions
         if (tokenAddress == WETHAddr) {
             address payable payableReceiver = address(uint160(receiver));
-            payableReceiver.transfer(amount);
+            (bool success, ) =
+                payableReceiver.call.value(amount)("");
+            require(success, "Bridge: Failed to send ETH to receiver");
         }
         else {
             IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
@@ -357,12 +377,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         processed[compiledId] = true;
     }
 
+    // Starting from V3, fee is set per token in allowTokens.sol
+    // FeePercentage is not used
     // function setFeePercentage(uint amount) external onlyOwner whenNotPaused {
     //     require(amount < (feePercentageDivider/10), "Bridge: bigger than 10%");
     //     feePercentage = amount;
     //     emit FeePercentageChanged(feePercentage);
     // }
-
     // function getFeePercentage() external view returns(uint) {
     //     return feePercentage;
     // }
@@ -413,27 +434,16 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
 //// Bridge v3 upgrade functions
     function receiveEthAt(address _receiver, bytes calldata _extraData) whenNotUpgrading whenNotPaused nonReentrant external payable {
-        require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        //require(msg.value > 0  && !(Address.isContract(msg.sender)) && (WETHAddr != address(0)), "Set WETHAddr. Send not from SC");
+        require(msg.value > 0  && (WETHAddr != address(0)), "Set WETHAddr");
         if (!ethFirstTransfer) {
             ethFirstTransfer = true;
         }
         crossTokens(WETHAddr, _receiver, msg.value, _extraData);
     }
-    //     if(aggregatorAddr != address(0)){
-    //         crossTokens(WETHAddr, aggregatorAddr, msg.value, abi.encodePacked(msg.sender));
-    //     }
-    //     else {
-    //         bytes memory _userData = "";        
-    //         crossTokens(WETHAddr, msg.sender, msg.value, _userData);
-    //     }
-    // }
-    // function setAggregatorAddr(address _aggregatorAddr) external onlyOwner {
-    //     aggregatorAddr = _aggregatorAddr;
-    // }
 
     function setWETHAddress(address _WETHAddr) external onlyOwner {
         require(_WETHAddr != address(0) && !ethFirstTransfer , "No set WETHAddr AF 1st transfer");
-        //require(!ethFirstTransfer, "cannot change WETHAddr after first transfer");
         WETHAddr = _WETHAddr;
     }
 
@@ -445,19 +455,20 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function _changeAllowTokens(address newAllowTokens) internal {
         require(newAllowTokens != NULL_ADDRESS, "Bridge: newAllowTokens is empty");
         allowTokens = IAllowTokens(newAllowTokens);
-        //emit AllowTokenChanged(newAllowTokens);
+        emit AllowTokenChanged(newAllowTokens);
     }
     function initialSymbolPrefixSetup(bool _isSuffix, string calldata _prefix) external onlyOwner{
         require(!initialPrefixSetup, "Bridge: initialPrefixSetup Done");
         isSuffix = _isSuffix;
         symbolPrefix = _prefix;
-        //emit PrefixUpdated(isSuffix, _prefix);
+        emit PrefixUpdated(isSuffix, _prefix);
     }
 
     function withdrawAllEthFees(address payable _to) public payable onlyOwner {
         require(address(this).balance >= ethFeeCollected);
+        uint256 sendEthFeeCollected = ethFeeCollected;
         ethFeeCollected = 0;
-        _to.transfer(ethFeeCollected);
+        _to.transfer(sendEthFeeCollected);
     }
 
     function setNativeTokenSymbol(string calldata _nativeTokenSymbol) external onlyOwner {
@@ -467,6 +478,49 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function getNativeTokenSymbol() external view returns(string memory) {
         return nativeTokenSymbol;
     }
+
+//// Bridge v4 upgrade functions
+// Revoke transaction sent from the federation. MultiSig operation to release stucked transactions   
+    function setRevokeTransaction(bytes32 _revokeTransactionID) external onlyOwner {
+        require(_revokeTransactionID != NULL_HASH, "Bridge: _revokeTransactionID cannot be NULL");
+        require(processed[_revokeTransactionID] == true, "Bridge: cannot revoke unprocessed TX");   
+        processed[_revokeTransactionID] = false;
+        emit RevokeTx( _revokeTransactionID);
+    }
+
+// Enable the bridge to send to receiver SC without ERC777 interface, using a ERC77Converter  
+    function setErc777Converter(address _erc777ConverterAddr) external onlyOwner {
+        require(_erc777ConverterAddr!= NULL_ADDRESS , "erc777Converter cannot be Zero address");
+        erc777ConverterAddr = _erc777ConverterAddr;
+        emit erc777ConverterSet(erc777ConverterAddr);
+
+    }
+
+    function getErc777Converter() external view returns(address) {
+        return erc777ConverterAddr;
+    }
+
+// Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
+// // Convert bytes to bytes32
+//     function bytesToBytes32(bytes memory source) public pure returns (bytes32 _result) {
+//     if (source.length == 0) {
+//         return 0x0;
+//     }
+//     assembly {
+//         _result := mload(add(source, 32))
+//     }
+//   }
+
+function _isZeroValue(bytes memory _data) internal pure returns (bool) {
+        uint length = _data.length;
+        for(uint i = 0; i < length ; i++) {
+            if (uint8(_data[i]) != 0) {
+                     return false;
+            }
+        }
+        return true;
+    }
+
 
     // Commented because it is unused for us and need decrease contract size
     //This method is only to recreate the USDT and USDC tokens on rsk without granularity restrictions.

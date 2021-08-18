@@ -11,3 +11,6 @@ fs.writeFileSync('../abis/Federation.json', JSON.stringify(federationBuild.abi))
 
 const sideTokenBuild = require('./build/contracts/SideToken');
 fs.writeFileSync('../abis/SideToken.json', JSON.stringify(sideTokenBuild.abi));
+
+const erc777ConverterBuild = require('./build/contracts/Erc777Converter');
+fs.writeFileSync('../abis/Erc777Converter.json', JSON.stringify(erc777ConverterBuild.abi));

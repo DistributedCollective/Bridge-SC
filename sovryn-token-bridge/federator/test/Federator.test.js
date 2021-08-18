@@ -427,12 +427,12 @@ describe('Federator module tests', () => {
 
             expect(sendTransactionSpy).toHaveBeenCalledTimes(0); // sanity check
 
-            let result = await federator._voteTransaction(log, '0x0'); // should not throw
+            let result = await federator._voteTransaction(log, '0x0', null, null, null, null, null, null, null, null, 1, 2); // should not throw
             expect(result).toBeFalsy();
             expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
 
             // After another call, it should NOT try to send the transaction again
-            result = await federator._voteTransaction(log, '0x0');
+            result = await federator._voteTransaction(log, '0x0', null, null, null, null, null, null, null, null, 1, 2);
             expect(result).toBeFalsy();
             expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
         });

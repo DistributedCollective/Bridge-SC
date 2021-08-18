@@ -13,6 +13,7 @@
  */
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require('fs');
+const Web3 = require('web3');
 
 let MNEMONIC = fs.existsSync('../../../../bridgeKey/mnemonic.key') ? fs.readFileSync('../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }) : "";// Your metamask's recovery words
 const INFURA_API_KEY = fs.existsSync('../../../../bridgeKey/infura.key') ? fs.readFileSync('../../../../bridgeKey/infura.key',{ encoding: 'utf8' }) : "";// Your Infura API Key after its registration
@@ -59,7 +60,10 @@ module.exports = {
     rskmainnet: {
       provider: () =>
       //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
-      new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
+      //new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
+      //  new HDWalletProvider(secrets.seed, "https://mainnet.sovryn.app/rpc"),
+       new HDWalletProvider(secrets.seed, "https://mainnet2.sovryn.app/rpc"),
+      //new HDWalletProvider(secrets.seed, new Web3.providers.WebSocketProvider("wss://mainnet.sovryn.app/ws")),
       network_id: 30,
       gas: 6800000,
       gasPrice: 65000000, // 0.065 gwei
@@ -67,8 +71,8 @@ module.exports = {
     },
      //Ethereum
     ropsten: {
-      //provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
-      provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
+      provider: () => new HDWalletProvider(MNEMONIC, "https://ropsten.infura.io/v3/" + INFURA_API_KEY),
+      //provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
       network_id: 3,
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
@@ -98,7 +102,7 @@ module.exports = {
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
       gas: 6700000,
-      gasPrice: 101000000000,  //101 GWei
+      gasPrice: 50000000000,  //50 GWei
       skipDryRun: true
     },
     //Binance

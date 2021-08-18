@@ -12,6 +12,7 @@ const bridgeABI = require("../../abis/Bridge.json");
 const federationABI = require("../../abis/Federation.json");
 const multiSigABI = require("../../abis/MultiSigWallet.json");
 const allowTokensABI = require("../../abis/AllowTokens.json");
+const erc777ConverterABI = require("../../abis/Erc777Converter.json");
 const tokenABI = require("../build/contracts/AlternativeERC20Detailed.json").abi;
 
 const abisObject = {
@@ -19,6 +20,7 @@ const abisObject = {
   federationABI,
   multiSigABI,
   allowTokensABI,
+  erc777ConverterABI,
   tokenABI,
 };
 
@@ -28,24 +30,28 @@ const rskBSCConfig = {
   federation: rskBSCBridge.federation,
   multiSig: rskBSCBridge.multiSig,
   allowTokens: rskBSCBridge.allowTokens,
+  erc777Converter: rskBSCBridge.erc777Converter,
 };
 const bscBSCConfig = {
   bridge: bscBSCBridge.bridge,
   federation: bscBSCBridge.federation,
   multiSig: bscBSCBridge.multiSig,
   allowTokens: bscBSCBridge.allowTokens,
+  erc777Converter: bscBSCBridge.erc777Converter,
 };
 const rskETHConfig = {
   bridge: rskETHBridge.bridge,
   federation: rskETHBridge.federation,
   multiSig: rskETHBridge.multiSig,
   allowTokens: rskETHBridge.allowTokens,
+  erc777Converter: rskETHBridge.erc777Converter,
 };
 const ethETHConfig = {
   bridge: ethETHBridge.bridge,
   federation: ethETHBridge.federation,
   multiSig: ethETHBridge.multiSig,
   allowTokens: ethETHBridge.allowTokens,
+  erc777Converter: ethETHBridge.erc777Converter,
 };
 
 const DAI_Mainnet = {

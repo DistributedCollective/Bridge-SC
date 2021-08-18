@@ -1,8 +1,4 @@
 const fs = require('fs');
-// const bridgeAbi = require("../../abis/Bridge.json");
-// const federationAbi = require("../../abis/Federation.json");
-// const multisigAbi = require("../../abis/MultiSigWallet.json");
-// const AllowTokensAbi = require("../../abis/AllowTokens.json");
 const AbisObject = require("./BridgeAddresses").abisObject;
 const BscBSCConfig = require("./BridgeAddresses").bscBSCConfig;
 const RskBSCConfig = require("./BridgeAddresses").rskBSCConfig;
@@ -35,7 +31,7 @@ module.exports = async callback => {
         const input2 = process.argv[11];
 
         
-        if( bridgeType == "h") {
+        if( bridgeType == "h" || bridgeType == "help" ) {
             throw new Error('npx truffle exec ./scripts/BridgeControl.js --network <net> <bridgeType> <tokenType> <enableMethod> <input0> <input1> <input2>\n' + 
             'net: testnet, btestnet, rsktestnet, ropsten, btestnet, rsktestnet\n' +
             'bridgeType: bsc, eth\n'+
@@ -45,10 +41,10 @@ module.exports = async callback => {
             'input1: second input to function\n'+
             'input2: third input to function\n' +
             'enableMethod list:\n' +
-            'Bridge: pause changeAllowTokens setNativeTokenSymbol initialSymbolPrefixSetup setWETHAddress\n' +
+            'Bridge: pause changeAllowTokens setNativeTokenSymbol initialSymbolPrefixSetup setWETHAddress setRevokeTransaction\n' +
             'MultiSig: changeRequirement removeOwner addOwner\n' +
             'AllowTokens: addAllowedToken removeAllowedToken setFeeAndMinPerToken setMaxTokensAllowed changeDailyLimit\n' +
-            'Federation: removeMember addMember\n\n' +
+            'Federation: removeMember addMember setRevokeTransactionAndVote\n\n' +
             'Example: \n' + 
             'npx truffle exec ./scripts/BridgeControl.js --network rsktestnet bsc bnb "setFeeAndMinPerToken" "" 10000000000000000 100000000000000000\n' +
             'npx truffle exec ./scripts/BridgeControl.js --network rsktestnet bsc "" "removeOwner" "0xdc83580abf622ec75f69b56ddf945dd6cdbf53d2" "" ""');   
@@ -66,6 +62,8 @@ module.exports = async callback => {
         const federationAbi = AbisObject.federationABI;
         const multisigAbi = AbisObject.multiSigABI;
         const AllowTokensAbi = AbisObject.allowTokensABI;
+        const erc777ConverterAbi = AbisObject.erc777ConverterABI;
+
         
         let bridgeAddress;
         let federationAddress;
@@ -126,7 +124,7 @@ module.exports = async callback => {
             federationAddress = BscBSCConfig.federation;
             multiSigAddress= BscBSCConfig.multiSig;
             allowTokensAddress= BscBSCConfig.allowTokens;
-    
+            erc777ConverterAddress= BscBSCConfig.erc777Converter;
         }
         else if(netType == "mainnet") {
             if(tokenType == "stable") {
@@ -153,7 +151,8 @@ module.exports = async callback => {
             federationAddress = EthETHConfig.federation;
             multiSigAddress= EthETHConfig.multiSig;
             allowTokensAddress= EthETHConfig.allowTokens;
-    
+            erc777ConverterAddress= EthETHConfig.erc777Converter;
+
         }
         else if(netType == "rskmainnet"){
             if(tokenType == "sov") {
@@ -170,7 +169,8 @@ module.exports = async callback => {
                 federationAddress = RskBSCConfig.federation;
                 multiSigAddress= RskBSCConfig.multiSig;
                 allowTokensAddress= RskBSCConfig.allowTokens;
-    
+                erc777ConverterAddress= RskBSCConfig.erc777Converter;
+
                 if(tokenType == "stable") {
                     tokens = [
                         RskbscmainnetStableCoins.DAI_RskBSCMainnet[30].address.toLowerCase(),
@@ -209,6 +209,7 @@ module.exports = async callback => {
                 federationAddress = RskETHConfig.federation;
                 multiSigAddress= RskETHConfig.multiSig;
                 allowTokensAddress= RskETHConfig.allowTokens;
+                erc777ConverterAddress= RskETHConfig.erc777Converter;
 
                 if(tokenType == "stable") {
                     tokens = [
@@ -229,18 +230,19 @@ module.exports = async callback => {
         console.log("federationAddress: "+ federationAddress);
         console.log("multiSigAddress: "+ multiSigAddress);
         console.log("allowTokensAddress: "+ allowTokensAddress);
-        
+        console.log("erc777ConverterAddress: "+ erc777ConverterAddress);
         const multiSig = new web3.eth.Contract(multisigAbi, multiSigAddress, {from: deployer});
         const bridge =  new web3.eth.Contract(bridgeAbi, bridgeAddress, {from: deployer});
         const allowTokens =  new web3.eth.Contract(AllowTokensAbi, allowTokensAddress, {from: deployer});
         const federation =  new web3.eth.Contract(federationAbi, federationAddress, {from: deployer});
-        
+        const erc777Converter =  new web3.eth.Contract(erc777ConverterAbi, erc777ConverterAddress, {from: deployer});
+
         let functionData;
         let adjustedFee;
         let adjustedMin;
 
         let exeFunctionsPromises = tokens.map(async (token, index) => {
-         // Bridge control
+        // Bridge control
             if(enableMethod == "pause") {
                 smartContract = "bridge";
                 functionData = bridge.methods
@@ -269,6 +271,12 @@ module.exports = async callback => {
                 smartContract = "bridge";
                 functionData = bridge.methods
                 .setWETHAddress(input0)
+                .encodeABI();
+            }
+            else if(enableMethod == "setRevokeTransaction") {
+                smartContract = "bridge";
+                functionData = bridge.methods
+                .setRevokeTransaction(input0)
                 .encodeABI();
             }
         // MultiSig control
@@ -341,7 +349,25 @@ module.exports = async callback => {
                 .addMember(input0)
                 .encodeABI();
             }
-                  
+            else if(enableMethod == "setRevokeTransactionAndVote") {
+                smartContract = "federation";
+                functionData = federation.methods
+                .setRevokeTransactionAndVote(input0)
+                .encodeABI();
+            }
+        // erc777Converter control
+            // else if(enableMethod == "removeMember") {
+            //     smartContract = "federation";
+            //     functionData = federation.methods
+            //     .removeMember(input0)
+            //     .encodeABI();
+            // }
+            // else if(enableMethod == "addMember") {
+            //     smartContract = "federation";
+            //     functionData = federation.methods
+            //     .addMember(input0)
+            //     .encodeABI();
+            // }          
         console.log(`${functionData}`);
         let result;
         if(smartContract == "bridge") {
