@@ -205,21 +205,21 @@ async function upgradeBridge({
 // Change federation address on the Bridge
 // Set erc777Converter address on the Bridge
 
-// //4
-//     console.log('Calling upgrade with multisig')
-//     console.log(upgradeData);
-//     const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
-//     console.log('Result:', upgradeResult);
-// //5
-//     console.log('change Federation address on the bridge')
-//     console.log(changeFederationData);
-//     const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
-//     console.log('Result:', changeFedAddressResult);
-// //6
-//     console.log('set erc777Converter address on the bridge')
-//     console.log(setErc777ConverterData);
-//     const setErc777ConverterResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, setErc777ConverterData).send(txOpts);
-//     console.log('Result:', setErc777ConverterResult);
+//4
+    console.log('Calling upgrade with multisig')
+    console.log(upgradeData);
+    const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
+    console.log('Result:', upgradeResult);
+//5
+    console.log('change Federation address on the bridge')
+    console.log(changeFederationData);
+    const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
+    console.log('Result:', changeFedAddressResult);
+//6
+    console.log('set erc777Converter address on the bridge')
+    console.log(setErc777ConverterData);
+    const setErc777ConverterResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, setErc777ConverterData).send(txOpts);
+    console.log('Result:', setErc777ConverterResult);
 
 // Stage D  
 // Should be executed for both main-chain and side-chain    
