@@ -33,9 +33,9 @@ const Federation = artifacts.require("Federation");
 // /////////////////////
 
 // // ETH bridge mainnet
-const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
+// const multiSigAddress = "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e";
 // // ETH bridge rskmainnet
-// const multiSigAddress = "0xB64322e10b5aE1BE121B8Bb0dead560c53d9Dbc3";
+const multiSigAddress = "0xB64322e10b5aE1BE121B8Bb0dead560c53d9Dbc3";
 const feds = [
         "0xa420512B06B23d14Beb25Bae524a9B5F8789c45C",
         "0xcd1b561207e20a7ccbcf004bb0a4bc897ba8f2ee",
