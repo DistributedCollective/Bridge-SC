@@ -19,9 +19,8 @@ then
         exit
 fi
 
-
-./reset.sh
 ./stop.sh
+./reset.sh
 
 echo "Enter pm2-public-key:"
 read PM2_PUBLIC_KEY_VAL
