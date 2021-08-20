@@ -323,23 +323,18 @@ module.exports = class Federator {
     }
 
     _isEVMRevert(error) {
-        const revertMessage = 'Transaction has been reverted by the EVM';
-        if (error.message.indexOf(revertMessage) !== -1) {
-            return true;
+        const revertMessages = [
+            'Transaction has been reverted by the EVM',
+            'Returned error: execution reverted',
+        ];
+        for (let revertMessage of revertMessages) {
+            if (error.message.indexOf(revertMessage) !== -1) {
+                return true;
+            }
+            if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
+                return true;
+            }
         }
-        if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
-            return true;
-        }
-
-        const alreadyProcessedMessage = 'execution reverted: Bridge: Already processed';
-        if (
-            (error.message.indexOf(alreadyProcessedMessage) !== -1) ||
-            (error.stack && error.stack.toString().indexOf(alreadyProcessedMessage) !== -1)
-        ) {
-            console.warn('Got error indicating an already processed transaction:', error)
-            return true;
-        }
-
         return false;
     }
 
