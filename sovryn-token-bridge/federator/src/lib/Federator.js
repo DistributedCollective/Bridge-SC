@@ -330,6 +330,16 @@ module.exports = class Federator {
         if (error.stack && error.stack.toString().indexOf(revertMessage) !== -1) {
             return true;
         }
+
+        const alreadyProcessedMessage = 'execution reverted: Bridge: Already processed';
+        if (
+            (error.message.indexOf(alreadyProcessedMessage) !== -1) ||
+            (error.stack && error.stack.toString().indexOf(alreadyProcessedMessage) !== -1)
+        ) {
+            console.warn('Got error indicating an already processed transaction:', error)
+            return true;
+        }
+
         return false;
     }
 
