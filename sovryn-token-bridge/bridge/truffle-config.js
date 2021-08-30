@@ -60,9 +60,10 @@ module.exports = {
     rskmainnet: {
       provider: () =>
       //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
-      //new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
-      //  new HDWalletProvider(secrets.seed, "https://mainnet.sovryn.app/rpc"),
-       new HDWalletProvider(secrets.seed, "https://mainnet2.sovryn.app/rpc"),
+      // new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
+      new HDWalletProvider(secrets.seed, "http://mainnetint3.sovryn.app:4444/rpc"),
+      // new HDWalletProvider(secrets.seed, "https://mainnet.sovryn.app/rpc"),
+      //  new HDWalletProvider(secrets.seed, "https://mainnet2.sovryn.app/rpc"),
       //new HDWalletProvider(secrets.seed, new Web3.providers.WebSocketProvider("wss://mainnet.sovryn.app/ws")),
       network_id: 30,
       gas: 6800000,
@@ -117,6 +118,7 @@ module.exports = {
     },
     bmainnet: {
       //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.binance.org`),
+      //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.defibit.io/`),
       provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed.binance.org/`),
       network_id: 56,
       gas: 6300000,

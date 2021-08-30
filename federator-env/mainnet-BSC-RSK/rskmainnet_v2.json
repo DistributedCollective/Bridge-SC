@@ -1,0 +1,8 @@
+{
+    "bridge": "0x971b97c8cc82e7d27bc467c2dc3f219c6ee2e350",
+    "federation": "0xc4b5178cc086e764568adfb2daccbb0d973e8132",
+    "multiSig": "0xee9ea57555d9533d71f6f77e0e480961f068a6c5",
+    "allowTokens": "0xa2f50a2c699c1aa3b9089f6b565d4999d45d8983",
+    "host": "https://mainnet.sovryn.app/rpc",
+    "fromBlock": 3399221
+}

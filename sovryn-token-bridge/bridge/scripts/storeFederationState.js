@@ -14,10 +14,15 @@ const federationAbi_v2 = require("../../abis/Federation_v2.json");
 // const rskETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/rsktestnet_v2.json");
 // const rskETHBridge = require("../../../federator-env/testnet-ETH-RSK/rsktestnet.json");
 
-const ethETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/mainnet_v2.json");
-const ethETHBridge = require("../../../federator-env/mainnet-ETH-RSK/mainnet.json");
-const rskETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet_v2.json");
-const rskETHBridge = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet.json");
+// const ethETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/mainnet_v2.json");
+// const ethETHBridge = require("../../../federator-env/mainnet-ETH-RSK/mainnet.json");
+// const rskETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet_v2.json");
+// const rskETHBridge = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet.json");
+
+const bscBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/bmainnet_v2.json");
+const bscBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/bmainnet.json");
+const rskBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet_v2.json");
+const rskBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet.json");
 
 let fromPageBlock
 
@@ -30,13 +35,27 @@ const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 //ethETHBridge_v2.federation Creation Block
 // Mainnet bridge creation block
 // fromPageBlock = 12110034
-fromPageBlock = 13041698; //ETHmainnnetMY
+//fromPageBlock = 13041698; //ETHmainnnetMY
 //fromPageBlock = 13043151
 
 // Ropsten bridge creation block
 // fromPageBlock = 9998777;
-const federationAddress = ethETHBridge.federation;
-const federation_v2Address = ethETHBridge_v2.federation;
+// const federationAddress = ethETHBridge.federation;
+// const federation_v2Address = ethETHBridge_v2.federation;
+
+//BSC Bridge rskmainnet
+// Creation block
+// fromPageBlock = 3398643;
+// const federationAddress = rskBSCBridge.federation;
+// const federation_v2Address = rskBSCBridge_v2.federation;
+const federationAddress = rskBSCBridge.federation;
+const federation_v2Address = rskBSCBridge_v2.federation;
+
+//BSC Bridge bmainnet
+// Creation block
+// fromPageBlock = 7912333;
+// const federationAddress = bscBSCBridge.federation;
+// const federation_v2Address = bscBSCBridge_v2.federation;
 
 // fromPageBlock = rskETHBridge.fromBlock;
 // //ethETHBridge_v2.federation Creation Block
@@ -99,8 +118,11 @@ async function getState() {
 
 
     const fromBlock = fromPageBlock;
-    const toBlock = await web3.eth.getBlockNumber();  
-    //const toBlock = 13043151;  //ETHmainnnetMY
+     const toBlock = await web3.eth.getBlockNumber();  
+    
+    //const toBlock = 3636444; //  BSC RSKmainnet last block that it's tx was stored
+    //const toBlock = 10471035; // BSC bmainnet last block that it's tx was stored
+    
     const batchSize = 100;
     console.log("from Block TO Block: " + fromBlock + " TO " + toBlock);
 
