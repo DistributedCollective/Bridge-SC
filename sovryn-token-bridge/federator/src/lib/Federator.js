@@ -73,7 +73,7 @@ module.exports = class Federator {
     }
 
     async _processBlocks(ctr, fromBlock, toBlock) {
-        const blocksPerPage = 1000;
+        const blocksPerPage = 100;
         const numberOfPages = Math.ceil((toBlock - fromBlock) / blocksPerPage);
         this.logger.debug(`Total pages ${numberOfPages}, blocks per page ${blocksPerPage}`);
 
