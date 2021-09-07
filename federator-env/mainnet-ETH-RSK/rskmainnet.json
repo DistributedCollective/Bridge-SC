@@ -4,6 +4,6 @@
     "multiSig": "0xb64322e10b5ae1be121b8bb0dead560c53d9dbc3",
     "allowTokens": "0xd2090fe759613c3a3e2962c6bb2ad046f62d32ff",
     "erc777Converter": "0xb86623c103843ccf75c6f0073d84bcfc0e34536c",
-    "host": "http://mainnetint3.sovryn.app:4444/rpc",
+    "host": "http://18.118.108.40:4444",
     "fromBlock": 3258718
 }
