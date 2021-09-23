@@ -52,13 +52,17 @@ pipeline {
     stages {
         stage('check wallets') {
             steps {
-                script {
-                    sh "npm install"
-                    def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
-                    List lines = checkerstdout.split( '\n' ).findAll { !it.startsWith( 'ERROR' ) }
-                    println("lines: " + lines)
-                }   
+                dir("federator-wallets-checker") {
+                    script {
+                        sh "npm install"
+                        def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
+                        List lines = checkerstdout.split( '\n' ).findAll { !it.startsWith( 'ERROR' ) }
+                        println("lines: " + lines)
+                    }   
+                }
             }
         }
     }
 }
+
+
