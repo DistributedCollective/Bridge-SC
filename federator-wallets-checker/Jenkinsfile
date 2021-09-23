@@ -60,7 +60,7 @@ pipeline {
                         List lines = checkerstdout.split( '\n' ).findAll { it.contains( 'ERROR' ) }
                         needFundsWalletsOuput = lines.join("\n")
                         println("needFundsWalletsOuput: " + needFundsWalletsOuput)
-                        sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!",){
+                        sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!")
                     }   
                 }
             }
