@@ -1,5 +1,5 @@
 
-def sendEmail(parametersSummary, subject, message){
+def sendEmail(needFundsWalletsOuput, subject, message){
     println "sending email = emailPath"
     def emailBody = """<!DOCTYPE html>
                         <html>
@@ -22,19 +22,20 @@ def sendEmail(parametersSummary, subject, message){
                         </head>
                         <body>
                             <p>
-                                ${message}
+                                The following are out of funds: 
                                 <br>
+                                ${needFundsWalletsOuput}
+                                for troubleshoot follow this link (you need to connect to VPN to access it)
                                 jenkins build url: ${env.BUILD_URL}console
                                 <br>
                                 <br>
-                                ${parametersSummary}
                             </p>
 
                         </body>
                         </html>
 
                     """
-    emailext (from: "shlumperx@gmail.com", to: owner_email + " ,devops@deep-aitech.com", mimeType: 'text/html', subject: subject, body: emailBody)
+    emailext (from: "shlumperx@gmail.com", to:"shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
 }
 
 pipeline {
