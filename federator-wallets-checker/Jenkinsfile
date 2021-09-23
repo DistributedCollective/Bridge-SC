@@ -57,7 +57,8 @@ pipeline {
                         sh "npm install"
                         def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
                         List lines = checkerstdout.split( '\n' ).findAll { it.contains( 'ERROR' ) }
-                        println("lines: " + lines)
+                        needFundsWalletsOuput = lines.split("\n")
+                        println("needFundsWalletsOuput: " + needFundsWalletsOuput)
                     }   
                 }
             }
