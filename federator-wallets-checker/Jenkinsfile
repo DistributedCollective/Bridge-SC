@@ -46,6 +46,7 @@ def sendEmail(needFundsWalletsOuput, subject){
 
                     """
     // emailext (from: "notifications@sovryn.app", to:"ororosovryn@protonmail.com, shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
+    emailext (from: "notifications@sovryn.app", to:"shlumperx@gmail.com", mimeType: 'text/html', subject: subject, body: emailBody)
 
 }
 
@@ -74,7 +75,9 @@ pipeline {
                             println("needFundsWalletsOuput: " + needFundsWalletsOuput)
                             sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!")
                         }
-                        println("all good nothing to do")
+                        else {
+                            println("all good nothing to do")
+                        }
                     }   
                 }
             }
