@@ -1,0 +1,16 @@
+{
+  "name": "federator-wallets-checker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "checker.js",
+  "dependencies": {
+    "web3": "^1.5.3",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
