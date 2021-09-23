@@ -69,7 +69,7 @@ pipeline {
                         sh "npm install"
                         def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
                         List lines = checkerstdout.split( '\n' ).findAll { it.contains( 'ERROR' ) }
-                        if (lines.length() > 0) {
+                        if (lines.size() > 0) {
                             needFundsWalletsOuput = lines.join("<br>")
                             println("needFundsWalletsOuput: " + needFundsWalletsOuput)
                             sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!")
