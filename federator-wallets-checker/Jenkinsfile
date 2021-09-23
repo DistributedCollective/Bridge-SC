@@ -26,9 +26,13 @@ def sendEmail(needFundsWalletsOuput, subject){
                                 
                                 Message from Bridge wallets checker. The following wallets are out of funds: 
                                 <br>
+                                <br>
                                 ${needFundsWalletsOuput}
                                 <br>
+                                <br>
+                                <bold>
                                 WARNING: Please check wallets manually before putting any funds to those wallets.
+                                </bold>
                                 <br>
                                 for troubleshoot follow this link (you need to connect to VPN to access it)
                                 jenkins build url: ${env.BUILD_URL}console
