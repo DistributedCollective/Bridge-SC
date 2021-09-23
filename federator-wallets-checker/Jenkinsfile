@@ -1,0 +1,63 @@
+
+def sendEmail(parametersSummary, subject, message){
+    println "sending email = emailPath"
+    def emailBody = """<!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style type="text/css">
+                            body {
+                                font-family: 'Trebuchet MS', Arial, Helvetica, sans-serif;
+                            }
+
+                            h2 {
+                                margin-left: 10px;
+                                margin-top: 10px;
+                            }
+
+                            .SynthesisName {
+                                color: #5e76b5;
+                                font-weight: bold;
+                            }
+                            </style>
+                        </head>
+                        <body>
+                            <p>
+                                ${message}
+                                <br>
+                                jenkins build url: ${env.BUILD_URL}console
+                                <br>
+                                <br>
+                                ${parametersSummary}
+                            </p>
+
+                        </body>
+                        </html>
+
+                    """
+    emailext (from: "shlumperx@gmail.com", to: owner_email + " ,devops@deep-aitech.com", mimeType: 'text/html', subject: subject, body: emailBody)
+}
+
+pipeline {
+    agent any
+    triggers {
+        cron('H */4 * * 1-5')
+    }
+    options {
+        ansiColor('xterm')
+        buildDiscarder(
+                logRotator(numToKeepStr: '20')
+        )
+        timestamps()
+    }
+    stages {
+        stage('check wallets') {
+            steps {
+                script {
+                    sh "npm install"
+                    def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
+                    List lines = checkerstdout.split( '\n' ).findAll { !it.startsWith( 'ERROR' ) }
+                    println("lines: " + lines)
+                }   
+            }
+        }
+    }
