@@ -1,5 +1,5 @@
 
-def sendEmail(needFundsWalletsOuput, subject, message){
+def sendEmail(needFundsWalletsOuput, subject){
     println "sending email = emailPath"
     def emailBody = """<!DOCTYPE html>
                         <html>
@@ -35,7 +35,7 @@ def sendEmail(needFundsWalletsOuput, subject, message){
                         </html>
 
                     """
-    emailext (from: "shlumperx@gmail.com", to:"shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
+    emailext (from: "notifications@sovryn.app", to:"shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
 }
 
 pipeline {
@@ -60,6 +60,7 @@ pipeline {
                         List lines = checkerstdout.split( '\n' ).findAll { it.contains( 'ERROR' ) }
                         needFundsWalletsOuput = lines.join("\n")
                         println("needFundsWalletsOuput: " + needFundsWalletsOuput)
+                        sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!",){
                     }   
                 }
             }
