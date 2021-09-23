@@ -26,7 +26,7 @@ const checkWalletsBalance = (wallets, web3object, blockchainToken, tokenThreshol
 				const amount = web3object.utils.fromWei(result, 'ether')
 				checkerlogger.info('checking ' + blockchainToken + ' wallet: ' + wallet + ' funds left: ' + amount + ' threshold = ' + tokenThreshold)
 				if (Math.round(amount * 1000) < Math.round(tokenThreshold * 1000)) {
-					console.log('ERROR: wallet has ' + amount + ' ' + blockchainToken + ', ' + wallet + ' - lack of funds')
+					console.log('ERROR: wallet - ' + wallet + ' - has ' + amount + ' ' + blockchainToken)
 				}
 			}
 		})
