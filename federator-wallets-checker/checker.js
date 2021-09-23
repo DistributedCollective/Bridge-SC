@@ -13,8 +13,6 @@ const ethWeb3 = new Web3(new Web3.providers.HttpProvider('https://mainnet.infura
 const bscWeb3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed.binance.org/'))
 const rskWeb3 = new Web3(new Web3.providers.HttpProvider('https://mainnet.sovryn.app/'))
 
-FgRed = '\x1b[31m'
-FgWhite = '\x1b[37m'
 const checkerlogger = createLogger({
 	transports: [new transports.Console()],
 })
@@ -28,7 +26,7 @@ const checkWalletsBalance = (wallets, web3object, blockchainToken, tokenThreshol
 				const amount = web3object.utils.fromWei(result, 'ether')
 				checkerlogger.info('checking ' + blockchainToken + ' wallet: ' + wallet + ' funds left: ' + amount + ' threshold = ' + tokenThreshold)
 				if (Math.round(amount * 1000) < Math.round(tokenThreshold * 1000)) {
-					console.log(FgRed + 'ERROR: wallet has ' + amount + ' ' + blockchainToken + ', ' + wallet + ' - lack of funds' + FgWhite)
+					console.log('ERROR: wallet has ' + amount + ' ' + blockchainToken + ', ' + wallet + ' - lack of funds')
 				}
 			}
 		})

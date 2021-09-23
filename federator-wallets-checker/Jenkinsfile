@@ -22,9 +22,14 @@ def sendEmail(needFundsWalletsOuput, subject){
                         </head>
                         <body>
                             <p>
-                                The following are out of funds: 
+                                Hi,
+                                
+                                Message from Bridge wallets checker. The following wallets are out of funds: 
                                 <br>
                                 ${needFundsWalletsOuput}
+                                <br>
+                                WARNING: Please check wallets manually before putting any funds to those wallets.
+                                <br>
                                 for troubleshoot follow this link (you need to connect to VPN to access it)
                                 jenkins build url: ${env.BUILD_URL}console
                                 <br>
@@ -35,7 +40,9 @@ def sendEmail(needFundsWalletsOuput, subject){
                         </html>
 
                     """
-    emailext (from: "notifications@sovryn.app", to:"shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
+    // emailext (from: "notifications@sovryn.app", to:"shlumperx@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
+    emailext (from: "notifications@sovryn.app", to:"shlumperx@gmail.com", mimeType: 'text/html', subject: subject, body: emailBody)
+
 }
 
 pipeline {
@@ -58,7 +65,7 @@ pipeline {
                         sh "npm install"
                         def checkerstdout = sh(returnStdout: true, script: "node checker.js").trim()
                         List lines = checkerstdout.split( '\n' ).findAll { it.contains( 'ERROR' ) }
-                        needFundsWalletsOuput = lines.join("\n")
+                        needFundsWalletsOuput = lines.join("<br>")
                         println("needFundsWalletsOuput: " + needFundsWalletsOuput)
                         sendEmail(needFundsWalletsOuput, "☠️ Bridge warning!")
                     }   
