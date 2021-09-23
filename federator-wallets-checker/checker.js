@@ -2,7 +2,7 @@ const { createLogger, format, transports, config } = require('winston')
 const Web3 = require('web3')
 
 const ethThreshold = 0.8
-const bnbThreshold = 20
+const bnbThreshold = 0.1
 const rbtcThreshold = 0.001
 
 var ethWallets = ['0xa420512B06B23d14Beb25Bae524a9B5F8789c45C', '0xcd1b561207e20a7ccbcf004bb0a4bc897ba8f2ee', '0x778898877A3277F7306b19879F426A86d078E115', '0x66d0a5238340bD1589eF56b1e39F73Df32815285', '0x5E7847e22DFb937672815Cdfe28724bbdf5773fd']
