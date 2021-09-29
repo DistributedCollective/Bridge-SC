@@ -3,6 +3,6 @@
     "federation": "0x99896b7e917ff9c130bb86cde0d778be37e3464c",
     "multiSig": "0xb64322e10b5ae1be121b8bb0dead560c53d9dbc3",
     "allowTokens": "0xd2090fe759613c3a3e2962c6bb2ad046f62d32ff",
-    "host": "http://18.118.108.40:4444",
+    "host": "http://18.221.155.102:4444/",
     "fromBlock": 3423902
 }
