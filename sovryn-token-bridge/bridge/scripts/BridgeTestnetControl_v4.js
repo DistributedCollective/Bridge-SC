@@ -12,6 +12,7 @@ const RsktestnetTokens = require("./BridgeTestnetAddresses_v4").rsktestnetTokens
 const BtestnetETHToken = require("./BridgeTestnetAddresses_v4").btestnetETHToken;
 const RskbsctestnetETHToken = require("./BridgeTestnetAddresses_v4").rskbsctestnetETHToken;
 const BtestnetBNB = require("./BridgeTestnetAddresses_v4").btestnetBNB;
+const RsktestnetRBTC = require("./BridgeTestnetAddresses_v4").rsktestnetRBTC;
 const RskbsctestnetBNB = require("./BridgeTestnetAddresses_v4").rskbsctestnetBNB;
 const TestnetSOV = require("./BridgeTestnetAddresses_v4").testnetSOV;
 const BtestnetSOV = require("./BridgeTestnetAddresses_v4").btestnetSOV;
@@ -35,7 +36,7 @@ module.exports = async callback => {
             throw new Error('npx truffle exec ./scripts/BridgeControl.js --network <net> <bridgeType> <tokenType> <enableMethod> <input0> <input1> <input2>\n' + 
             'net: testnet, btestnet, rsktestnet, ropsten, btestnet, rsktestnet\n' +
             'bridgeType: bsc, eth\n'+
-            'tokenType: "", sov, stable, eth, bnb\n'+
+            'tokenType: "", sov, stable, eth, bnb, rbtc\n'+
             'enableMethod: name of the function to call\n'+
             'input0: first input to function\n'+
             'input1: second input to function\n'+
@@ -162,6 +163,14 @@ module.exports = async callback => {
                     RsktestnetTokens.SOV_RskTestnet[31].decimals
                 ];
 
+            };
+            if(tokenType == "rbtc") {
+                tokens = [
+                    RsktestnetRBTC.RBTC_RskTestnet[31].address.toLowerCase()
+                ];
+                decimals = [
+                    RsktestnetRBTC.RBTC_RskTestnet[31].decimals
+                ];
             };
             if(bridgeType == "bsc"){
                 bridgeAddress = RskBSCConfig.bridge;

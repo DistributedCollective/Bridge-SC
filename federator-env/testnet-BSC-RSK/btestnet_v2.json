@@ -1,9 +1,8 @@
 {
     "bridge": "0x862e8aff917319594cc7faaae5350d21196c086f",
-    "federation": "0x6E28bB6dbBAc8bBC11F5780E39f9Aca9F9737182",
+    "federation": "0xb2ff07697cfb56b8cdf17383e98c8583e487a7f3",
     "multiSig": "0x1d8cb60d35fcd42a8bd18d027386be9c0f9c509b",
     "allowTokens": "0xeb23e848ceca88b7d0c019c7186bb86cefadd0bd",
-    "erc777Converter": "0x573CAF2cA648e22fE9721EDB5DdfBdF5645ffd18",
     "host": "https://data-seed-prebsc-2-s3.binance.org:8545/",
-    "fromBlock": 13602306
+    "fromBlock": 9290364
 }

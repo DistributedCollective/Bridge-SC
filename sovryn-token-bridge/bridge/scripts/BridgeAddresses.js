@@ -176,6 +176,17 @@ const SOV_RskMainnet = {
   },
 };
 
+// rskETHmainnet eth token
+const ETH_RskMainnet = {
+  token: "ETH",
+  name: "ETHes",
+  30: {
+    symbol: "ETHes",
+    address: "0xfe878227c8f334038dab20a99fc3b373ffe0a755",
+    decimals: 18,
+  },
+};
+
 // rskBSCbmainnet stable coins
 const DAI_RskBSCMainnet = {
   token: "DAIbs",
@@ -295,6 +306,11 @@ const rskmainnetTokens = {
   SOV_RskMainnet
 };
 
+// rskmainnet ETHes
+const rskmainnetTokensETH = {
+  ETH_RskMainnet
+};
+
 // mainnet sov
 const mainnetSOV = {
   SOV_Mainnet
@@ -338,6 +354,7 @@ module.exports = {
   mainnetStableCoins,
   bmainnetStableCoins,
   rskmainnetTokens,
+  rskmainnetTokensETH,
   rskbscmainnetStableCoins,
   rskethmainnetStableCoins,
   bmainnetETHToken,

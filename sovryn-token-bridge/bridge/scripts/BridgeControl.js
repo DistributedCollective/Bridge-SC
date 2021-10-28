@@ -9,6 +9,7 @@ const MainnetStableCoins = require("./BridgeAddresses").mainnetStableCoins;
 const RskbscmainnetStableCoins = require("./BridgeAddresses").rskbscmainnetStableCoins;
 const RskethmainnetStableCoins = require("./BridgeAddresses").rskethmainnetStableCoins;
 const RskmainnetTokens = require("./BridgeAddresses").rskmainnetTokens;
+const RskmainnetTokensETH = require("./BridgeAddresses").rskmainnetTokensETH;
 const BmainnetETHToken = require("./BridgeAddresses").bmainnetETHToken;
 const RskbscmainnetETHToken = require("./BridgeAddresses").rskbscmainnetETHToken;
 const BmainnetBNB = require("./BridgeAddresses").bmainnetBNB;
@@ -222,6 +223,15 @@ module.exports = async callback => {
                         RskethmainnetStableCoins.USDT_RskETHMainnet[30].decimals,
                         RskethmainnetStableCoins.USDC_RskETHMainnet[30].decimals
                     ];
+                }
+                else if(tokenType == "eth") {
+                    tokens = [
+                        RskmainnetTokensETH.ETH_RskMainnet[30].address.toLowerCase()
+                    ];
+                    decimals = [
+                        RskmainnetTokensETH.ETH_RskMainnet[30].decimals
+                    ];
+    
                 };
             };
         };

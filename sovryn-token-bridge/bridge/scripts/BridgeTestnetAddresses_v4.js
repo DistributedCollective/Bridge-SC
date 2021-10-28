@@ -176,6 +176,16 @@ const SOV_RskTestnet = {
   },
 };
 
+const RBTC_RskTestnet = {
+  token: "WRBTC",
+  name: "RBTC",
+  31: {
+    symbol: "RBTC",
+    address: "0xf629e5C7527aC7Bc9ce26Bdd6D66F0eb955ef3B2",
+    decimals: 18,
+  },
+};
+
 // rskBSCbtestnet stable coins
 const DAI_RskBSCTestnet = {
   token: "bsDAI",
@@ -294,6 +304,11 @@ const btestnetBNB = {
 const rsktestnetTokens = {
   SOV_RskTestnet
 };
+
+const rsktestnetRBTC = {
+  RBTC_RskTestnet
+};
+
 // ropsten sov
 const testnetSOV = {
   SOV_Testnet
@@ -342,6 +357,7 @@ module.exports = {
   btestnetETHToken,
   rskbsctestnetETHToken,
   btestnetBNB,
+  rsktestnetRBTC,
   rskbsctestnetBNB,
   testnetSOV,
   btestnetSOV

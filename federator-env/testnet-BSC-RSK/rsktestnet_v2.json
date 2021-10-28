@@ -1,9 +1,8 @@
 {
     "bridge": "0x2b2bcad081fa773dc655361d1bb30577caa556f8",
-    "federation": "0x07081144a97b58f08AB8bAaf8b05D87f5d31e5dF",
+    "federation": "0x92f791b72842f479888aefba975eff2ed74700b7",
     "multiSig": "0x7db96fcc37b652ceefa2523c3d25f55d9b9e9973",
     "allowTokens": "0xa9f2ccb27fe01479a1f21f3a236989c614f801bc",
-    "erc777Converter": "0x15694581d442cfE30A48cacc3D347A4af4932830",
     "host": "https://testnet.sovryn.app/rpc",
-    "fromBlock": 2291220
+    "fromBlock": 1884421
 }   

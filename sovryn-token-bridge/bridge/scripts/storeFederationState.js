@@ -6,8 +6,10 @@ const fs = require('fs');
 const federationAbi = require("../../abis/Federation.json");
 const federationAbi_v2 = require("../../abis/Federation_v2.json");
 
-// const bscBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/btestnet_v2.json");
-// const rskBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/rsktestnet_v2.json");
+ const bscBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/btestnet_v2.json");
+ const rskBSCBridge_v2 = require("../../../federator-env/testnet-BSC-RSK/rsktestnet_v2.json");
+ const bscBSCBridge = require("../../../federator-env/testnet-BSC-RSK/btestnet.json");
+ const rskBSCBridge = require("../../../federator-env/testnet-BSC-RSK/rsktestnet.json");
 
 // const ethETHBridge_v2 = require("../../../federator-env/testnet-ETH-RSK/ropsten_v2.json");
 // const ethETHBridge = require("../../../federator-env/testnet-ETH-RSK/ropsten.json");
@@ -19,17 +21,17 @@ const federationAbi_v2 = require("../../abis/Federation_v2.json");
 // const rskETHBridge_v2 = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet_v2.json");
 // const rskETHBridge = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet.json");
 
-const bscBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/bmainnet_v2.json");
-const bscBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/bmainnet.json");
-const rskBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet_v2.json");
-const rskBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet.json");
+// const bscBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/bmainnet_v2.json");
+// const bscBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/bmainnet.json");
+// const rskBSCBridge_v2 = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet_v2.json");
+// const rskBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet.json");
 
 let fromPageBlock
 
 ////Testnet:
-// const deployer = "0x12D90403733b6DD1f88240C773a6613331e60bCF";
+ const deployer = "0x12D90403733b6DD1f88240C773a6613331e60bCF";
 ////Mainnet:
-const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
+//const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 
 //fromPageBlock = ethETHBridge.fromBlock;
 //ethETHBridge_v2.federation Creation Block
@@ -43,13 +45,24 @@ const deployer = "0xdc83580AbF622Ec75f69B56DDF945Dd6CDBF53D2";
 // const federationAddress = ethETHBridge.federation;
 // const federation_v2Address = ethETHBridge_v2.federation;
 
+//BSC Bridge rsktestnet
+// Creation block
+// fromPageBlock = 1884421;
+// const federationAddress = rskBSCBridge.federation;
+// const federation_v2Address = rskBSCBridge_v2.federation;
+// Creation block
+fromPageBlock = 			12945603								;
+toPageBlock = 				12945813				   		;
+const federationAddress = bscBSCBridge.federation;
+const federation_v2Address = bscBSCBridge_v2.federation;
+
 //BSC Bridge rskmainnet
 // Creation block
 // fromPageBlock = 3398643;
 // const federationAddress = rskBSCBridge.federation;
 // const federation_v2Address = rskBSCBridge_v2.federation;
-const federationAddress = rskBSCBridge.federation;
-const federation_v2Address = rskBSCBridge_v2.federation;
+// const federationAddress = rskBSCBridge.federation;
+// const federation_v2Address = rskBSCBridge_v2.federation;
 
 //BSC Bridge bmainnet
 // Creation block
@@ -118,8 +131,9 @@ async function getState() {
 
 
     const fromBlock = fromPageBlock;
-     const toBlock = await web3.eth.getBlockNumber();  
+    //  const toBlock = await web3.eth.getBlockNumber();  
     
+     const toBlock = toPageBlock;
     //const toBlock = 3636444; //  BSC RSKmainnet last block that it's tx was stored
     //const toBlock = 10471035; // BSC bmainnet last block that it's tx was stored
     

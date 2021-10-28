@@ -114,58 +114,58 @@ async function upgradeBridge({
 // Stage 0
 // Should be executed only after former federation state was copied with storeFederationState.js
 
-//Set bridge address on federation
-//0.1
-    console.log('set Bridge address on Federation')
-    const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', setBridgeFederationResult);
-// Finish initStage on federation
-// 0.2
-    console.log('Finish initStage on federation')
-    const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', finishInitStageFederationResult);
-//Transfer federation ownership to multisig
-//0.3
-    console.log('Transfer federation ownership to multisig')
-    const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', transferFederationToMultiSigResult);
+// //Set bridge address on federation
+// //0.1
+//     console.log('set Bridge address on Federation')
+//     const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', setBridgeFederationResult);
+// // Finish initStage on federation
+// // 0.2
+//     console.log('Finish initStage on federation')
+//     const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', finishInitStageFederationResult);
+// //Transfer federation ownership to multisig
+// //0.3
+//     console.log('Transfer federation ownership to multisig')
+//     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', transferFederationToMultiSigResult);
 
-//Set bridge address on erc777Converter
-//0.4
-    console.log('set Bridge address on erc777Converter')
-    const setBridgeErc777ConverterResult = await erc777Converter.methods.setBridgeContract(bridgeProxyAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', setBridgeErc777ConverterResult);
+// //Set bridge address on erc777Converter
+// //0.4
+//     console.log('set Bridge address on erc777Converter')
+//     const setBridgeErc777ConverterResult = await erc777Converter.methods.setBridgeContract(bridgeProxyAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', setBridgeErc777ConverterResult);
 
-//Transfer erc777Converter ownership to multisig
-//0.5
-    console.log('Transfer erc777Converter ownership to multisig')
-    const transferERC777ConverterToMultiSigResult = await erc777Converter.methods.transferOwnership(multiSigAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', transferERC777ConverterToMultiSigResult);
+// //Transfer erc777Converter ownership to multisig
+// //0.5
+//     console.log('Transfer erc777Converter ownership to multisig')
+//     const transferERC777ConverterToMultiSigResult = await erc777Converter.methods.transferOwnership(multiSigAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', transferERC777ConverterToMultiSigResult);
 
 // MultiSig calls
 /////////////////////
@@ -176,10 +176,10 @@ async function upgradeBridge({
 // set AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need pauseAllowTokensData step)
 
 // //1
-//     console.log('Calling startUpgrade with multisig')
-//     console.log(startUpgradeData)
-//     const startUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, startUpgradeData).send(txOpts);
-//     console.log('Result:', startUpgradeResult);
+    // console.log('Calling startUpgrade with multisig')
+    // console.log(startUpgradeData)
+    // const startUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, startUpgradeData).send(txOpts);
+    // console.log('Result:', startUpgradeResult);
 //  //2
 //    if( netType== "mainnet" ||  netType== "ropsten" ) {
 //         console.log('Pause the bridge Calling changeAllowTokens with multisig')
@@ -205,21 +205,21 @@ async function upgradeBridge({
 // Change federation address on the Bridge
 // Set erc777Converter address on the Bridge
 
-// //4
-//     console.log('Calling upgrade with multisig')
-//     console.log(upgradeData);
-//     const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
-//     console.log('Result:', upgradeResult);
-// //5
-//     console.log('change Federation address on the bridge')
-//     console.log(changeFederationData);
-//     const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
-//     console.log('Result:', changeFedAddressResult);
-// //6
-//     console.log('set erc777Converter address on the bridge')
-//     console.log(setErc777ConverterData);
-//     const setErc777ConverterResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, setErc777ConverterData).send(txOpts);
-//     console.log('Result:', setErc777ConverterResult);
+//4
+    console.log('Calling upgrade with multisig')
+    console.log(upgradeData);
+    const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
+    console.log('Result:', upgradeResult);
+//5
+    console.log('change Federation address on the bridge')
+    console.log(changeFederationData);
+    const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
+    console.log('Result:', changeFedAddressResult);
+//6
+    console.log('set erc777Converter address on the bridge')
+    console.log(setErc777ConverterData);
+    const setErc777ConverterResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, setErc777ConverterData).send(txOpts);
+    console.log('Result:', setErc777ConverterResult);
 
 // Stage D  
 // Should be executed for both main-chain and side-chain    
@@ -227,11 +227,11 @@ async function upgradeBridge({
 // Set original AllowTokens (only for upgrading v3 to v4, starting from v4 we don't need this set AlloTokens)
 // UnPause
 
-// //7
-//     console.log('Calling endUpgrade with multisig')
-//     console.log(endUpgradeData);
-//     const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
-//     console.log('Result:', endUpgradeResult);
+//7
+    console.log('Calling endUpgrade with multisig')
+    console.log(endUpgradeData);
+    const endUpgradeResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, endUpgradeData).send(txOpts);
+    console.log('Result:', endUpgradeResult);
 // //8
 //     if( netType== "mainnet" ||  netType== "ropsten" ) {
 //          console.log('UnPause the bridge Calling changeAllowTokens with multisig')
@@ -239,11 +239,11 @@ async function upgradeBridge({
 //          const unpauseAllowtokensResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unpauseAllowTokensData).send(txOpts);
 //          console.log('Result:', unpauseAllowtokensResult);
 //     }
-// //9    
-//     console.log('Calling unpause with multisig')
-//     console.log(unPauseData);
-//     const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
-//     console.log('Result:', unPauseResult);
+//9    
+    console.log('Calling unpause with multisig')
+    console.log(unPauseData);
+    const unPauseResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, unPauseData).send(txOpts);
+    console.log('Result:', unPauseResult);
 
-//     console.log('All done.')
+    console.log('All done.')
 }
