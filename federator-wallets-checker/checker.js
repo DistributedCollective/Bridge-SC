@@ -1,7 +1,7 @@
 const { createLogger, format, transports, config } = require('winston')
 const Web3 = require('web3')
 
-const ethThreshold = 0.8
+const ethThreshold = 0.3
 const bnbThreshold = 0.1
 const rbtcThreshold = 0.001
 
