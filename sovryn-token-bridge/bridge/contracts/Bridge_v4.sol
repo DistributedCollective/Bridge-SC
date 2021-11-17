@@ -82,7 +82,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //    }
 
     function version() external pure returns (string memory) {
-        return "v5";
+        return "v3";
     }
 
     modifier onlyFederation() {
@@ -148,7 +148,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         _processTransaction(blockHash, transactionHash, receiver, amount, logIndex);
 
         if (knownTokens[tokenAddress]) {
-            _acceptCrossBackToToken(receiver, tokenAddress, decimals, granularity, amount,  userData);
+            _acceptCrossBackToToken(receiver, tokenAddress, decimals, granularity, amount);
         } else {
             _acceptCrossToSideToken(receiver, tokenAddress, decimals, granularity, amount, symbol, userData);
         }
@@ -195,8 +195,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
-    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount, bytes memory userData
-) private {
+    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) private {
         require(decimals == 18, "Bridge: Invalid decimals cross back");
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
@@ -215,7 +214,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         else {
             IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
         }
-        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, userData);
+        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, "");
     }
 
     /**
