@@ -176,6 +176,16 @@ const SOV_RskMainnet = {
   },
 };
 
+const RBTC_RskMainnet = {
+  token: "WRBTC",
+  name: "RBTC",
+  30: {
+    symbol: "WRBTC",
+    address: "0xa233108b33dc77f1eee9d183ee1dc9725e76d475",
+    decimals: 18,
+  },
+};
+
 // rskETHmainnet eth token
 const ETH_RskMainnet = {
   token: "ETH",
@@ -247,6 +257,16 @@ const BNB_RskBSCMainnet = {
   },
 };
 
+// bscBSCbmainnet bRBTC token
+const RBTC_BscBSCMainnet = {
+  token: "bRBTC",
+  name: "bRBTC",
+  56: {
+    symbol: "bRBTC",
+    address: "",
+    decimals: 18,
+  },
+};
 // rskETHbmainnet stable coins
 const DAI_RskETHMainnet = {
   token: "DAIes",
@@ -306,6 +326,10 @@ const rskmainnetTokens = {
   SOV_RskMainnet
 };
 
+const rskmainnetRBTC = {
+  RBTC_RskMainnet
+};
+
 // rskmainnet ETHes
 const rskmainnetTokensETH = {
   ETH_RskMainnet
@@ -338,6 +362,11 @@ const rskbscmainnetBNB = {
   BNB_RskBSCMainnet
 };
 
+// bscBSCbmainnet brbtc token
+const bscbscbmainnetRBTC = {
+  RBTC_BscBSCMainnet
+};
+
 // rskETHmainnet stable coins
 const rskethmainnetStableCoins = {
   DAI_RskETHMainnet,
@@ -354,13 +383,15 @@ module.exports = {
   mainnetStableCoins,
   bmainnetStableCoins,
   rskmainnetTokens,
-  rskmainnetTokensETH,
   rskbscmainnetStableCoins,
   rskethmainnetStableCoins,
+  rskmainnetTokensETH,
   bmainnetETHToken,
   rskbscmainnetETHToken,
   bmainnetBNB,
+  rskmainnetRBTC,
   rskbscmainnetBNB,
+  bscbscbmainnetRBTC,
   mainnetSOV,
   bmainnetSOV
 };

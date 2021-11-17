@@ -61,7 +61,7 @@ module.exports = {
       provider: () =>
       //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
       // new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
-      new HDWalletProvider(secrets.seed, "http://mainnetint3.sovryn.app:4444/rpc"),
+      new HDWalletProvider(secrets.seed, "http://18.221.155.102:4444/"),
       // new HDWalletProvider(secrets.seed, "https://mainnet.sovryn.app/rpc"),
       //  new HDWalletProvider(secrets.seed, "https://mainnet2.sovryn.app/rpc"),
       //new HDWalletProvider(secrets.seed, new Web3.providers.WebSocketProvider("wss://mainnet.sovryn.app/ws")),

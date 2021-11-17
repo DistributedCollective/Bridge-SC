@@ -14,6 +14,7 @@ const RskbsctestnetETHToken = require("./BridgeTestnetAddresses_v4").rskbsctestn
 const BtestnetBNB = require("./BridgeTestnetAddresses_v4").btestnetBNB;
 const RsktestnetRBTC = require("./BridgeTestnetAddresses_v4").rsktestnetRBTC;
 const RskbsctestnetBNB = require("./BridgeTestnetAddresses_v4").rskbsctestnetBNB;
+const BscbscbtestnetRBTC = require("./BridgeTestnetAddresses_v4").bscbscbtestnetRBTC;
 const TestnetSOV = require("./BridgeTestnetAddresses_v4").testnetSOV;
 const BtestnetSOV = require("./BridgeTestnetAddresses_v4").btestnetSOV;
 
@@ -109,6 +110,14 @@ module.exports = async callback => {
                 ];
                 decimals = [
                     BtestnetBNB.BNB_BTestnet[97].decimals
+                ];
+            }
+            else if(tokenType == "rbtc") {
+                tokens = [
+                    BscbscbtestnetRBTC.RBTC_BscBSCTestnet[97].address
+                ];
+                decimals = [
+                    BscbscbtestnetRBTC.RBTC_BscBSCTestnet[97].decimals
                 ];
             }
             else if(tokenType == "sov") {
