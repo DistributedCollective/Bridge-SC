@@ -1,11 +1,11 @@
 {
   "contracts": {
     "Bridge": {
-      "address": "0x2D951311d070763efAE586FaFA551162Bcd08407",
-      "constructorCode": "60806040526148cb806100136000396000f3fe",
-      "bodyBytecodeHash": "1ad6530e0b0462330535589d296848df71025c48930913f87925b43499f0bc74",
-      "localBytecodeHash": "d13c6effa5700885e6cfc5fda6736c9642ac7fdc20f6b655d31e6b55428e42d0",
-      "deployedBytecodeHash": "a1b583a000d6d9dfaf4b2a3c965f64f1a90e243a34cbc8031811da5f2424e214",
+      "address": "0xaa09dae096eA21b09684AE5b6Bd48911447f910c",
+      "constructorCode": "6080604052614b2e806100136000396000f3fe",
+      "bodyBytecodeHash": "19f339b27577150ff5f003fb484eb1121309368d76cc660cf6637f3a562513bb",
+      "localBytecodeHash": "d16eb678c9d2568844d1dc7bc07613ee02fe1963be9e0a61b2c8170a32515092",
+      "deployedBytecodeHash": "ef7c604533e2659b9d65f0e03710b3ddc52aab2fc0ca22eafe40e7f062e7e2f6",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -31,9 +31,9 @@
           "members": [
             {
               "label": "bearer",
-              "astId": 13157,
+              "astId": 15168,
               "type": "t_mapping<t_bool>",
-              "src": "150:32:38"
+              "src": "150:32:42"
             }
           ]
         },
@@ -65,57 +65,57 @@
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "initialized",
-          "astId": 16578,
+          "astId": 18589,
           "type": "t_bool",
-          "src": "757:24:57"
+          "src": "757:24:61"
         },
         {
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "initializing",
-          "astId": 16580,
+          "astId": 18591,
           "type": "t_bool",
-          "src": "876:25:57"
+          "src": "876:25:61"
         },
         {
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "______gap",
-          "astId": 16636,
+          "astId": 18647,
           "type": "t_array:50<t_uint256>",
-          "src": "1945:29:57"
+          "src": "1945:29:61"
         },
         {
           "contract": "UpgradablePauserRole",
           "path": "contracts/zeppelin/upgradable/access/roles/UpgradablePauserRole.sol",
           "label": "_pausers",
-          "astId": 16659,
+          "astId": 18670,
           "type": "t_struct<Roles.Role>",
-          "src": "326:27:58"
+          "src": "326:27:62"
         },
         {
           "contract": "UpgradablePausable",
           "path": "contracts/zeppelin/upgradable/lifecycle/UpgradablePausable.sol",
           "label": "_paused",
-          "astId": 16777,
+          "astId": 18788,
           "type": "t_bool",
-          "src": "912:20:59"
+          "src": "912:20:63"
         },
         {
           "contract": "UpgradableOwnable",
           "path": "contracts/zeppelin/upgradable/ownership/UpgradableOwnable.sol",
           "label": "_owner",
-          "astId": 16867,
+          "astId": 18878,
           "type": "t_address",
-          "src": "509:22:60"
+          "src": "509:22:64"
         },
         {
           "contract": "ReentrancyGuard",
           "path": "contracts/zeppelin/upgradable/utils/ReentrancyGuard.sol",
           "label": "_guardCounter",
-          "astId": 16984,
+          "astId": 18995,
           "type": "t_uint256",
-          "src": "400:29:61"
+          "src": "400:29:65"
         },
         {
           "contract": "Bridge",
@@ -287,7 +287,7 @@
       }
     },
     "Bridge_v0": {
-      "address": "0x86B25c3Bf482F9034D29276A34bf6Ac7FDcD65e1",
+      "address": "0x14B24dF5eB138953Ba64E065aFD1c48858235415",
       "constructorCode": "60806040526134fc806100136000396000f3fe",
       "bodyBytecodeHash": "e59c8aebf19a090251c3edf9c7a046a973603db40d15bcefa75f7d4182303171",
       "localBytecodeHash": "c3b1253a7386a4bbcf6b1c7259f99be9ed5d134c13dca552cbe0e4f0f0df11c7",
@@ -317,9 +317,9 @@
           "members": [
             {
               "label": "bearer",
-              "astId": 13157,
+              "astId": 15168,
               "type": "t_mapping<t_bool>",
-              "src": "150:32:38"
+              "src": "150:32:42"
             }
           ]
         },
@@ -351,63 +351,63 @@
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "initialized",
-          "astId": 16578,
+          "astId": 18589,
           "type": "t_bool",
-          "src": "757:24:57"
+          "src": "757:24:61"
         },
         {
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "initializing",
-          "astId": 16580,
+          "astId": 18591,
           "type": "t_bool",
-          "src": "876:25:57"
+          "src": "876:25:61"
         },
         {
           "contract": "Initializable",
           "path": "contracts/zeppelin/upgradable/Initializable.sol",
           "label": "______gap",
-          "astId": 16636,
+          "astId": 18647,
           "type": "t_array:50<t_uint256>",
-          "src": "1945:29:57"
+          "src": "1945:29:61"
         },
         {
           "contract": "UpgradablePauserRole",
           "path": "contracts/zeppelin/upgradable/access/roles/UpgradablePauserRole.sol",
           "label": "_pausers",
-          "astId": 16659,
+          "astId": 18670,
           "type": "t_struct<Roles.Role>",
-          "src": "326:27:58"
+          "src": "326:27:62"
         },
         {
           "contract": "UpgradablePausable",
           "path": "contracts/zeppelin/upgradable/lifecycle/UpgradablePausable.sol",
           "label": "_paused",
-          "astId": 16777,
+          "astId": 18788,
           "type": "t_bool",
-          "src": "912:20:59"
+          "src": "912:20:63"
         },
         {
           "contract": "UpgradableOwnable",
           "path": "contracts/zeppelin/upgradable/ownership/UpgradableOwnable.sol",
           "label": "_owner",
-          "astId": 16867,
+          "astId": 18878,
           "type": "t_address",
-          "src": "509:22:60"
+          "src": "509:22:64"
         },
         {
           "contract": "ReentrancyGuard",
           "path": "contracts/zeppelin/upgradable/utils/ReentrancyGuard.sol",
           "label": "_guardCounter",
-          "astId": 16984,
+          "astId": 18995,
           "type": "t_uint256",
-          "src": "400:29:61"
+          "src": "400:29:65"
         },
         {
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "federation",
-          "astId": 2352,
+          "astId": 2438,
           "type": "t_address",
           "src": "1169:26:3"
         },
@@ -415,7 +415,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "crossingPayment",
-          "astId": 2354,
+          "astId": 2440,
           "type": "t_uint256",
           "src": "1201:31:3"
         },
@@ -423,7 +423,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "symbolPrefix",
-          "astId": 2356,
+          "astId": 2442,
           "type": "t_string",
           "src": "1238:26:3"
         },
@@ -431,7 +431,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "lastDay",
-          "astId": 2358,
+          "astId": 2444,
           "type": "t_uint256",
           "src": "1270:22:3"
         },
@@ -439,7 +439,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "spentToday",
-          "astId": 2360,
+          "astId": 2446,
           "type": "t_uint256",
           "src": "1298:25:3"
         },
@@ -447,7 +447,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "mappedTokens",
-          "astId": 2364,
+          "astId": 2450,
           "type": "t_mapping<t_address>",
           "src": "1330:53:3"
         },
@@ -455,7 +455,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "originalTokens",
-          "astId": 2368,
+          "astId": 2454,
           "type": "t_mapping<t_address>",
           "src": "1419:50:3"
         },
@@ -463,7 +463,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "knownTokens",
-          "astId": 2372,
+          "astId": 2458,
           "type": "t_mapping<t_bool>",
           "src": "1505:44:3"
         },
@@ -471,7 +471,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "processed",
-          "astId": 2376,
+          "astId": 2462,
           "type": "t_mapping<t_bool>",
           "src": "1580:34:3"
         },
@@ -479,7 +479,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "allowTokens",
-          "astId": 2378,
+          "astId": 2464,
           "type": "t_address",
           "src": "1645:33:3"
         },
@@ -487,7 +487,7 @@
           "contract": "Bridge_v0",
           "path": "contracts/Bridge_v0.sol",
           "label": "sideTokenFactory",
-          "astId": 2380,
+          "astId": 2466,
           "type": "t_address",
           "src": "1684:43:3"
         }
@@ -503,7 +503,7 @@
   },
   "solidityLibs": {
     "Utils": {
-      "address": "0xDB4847a1352D9a04FDc11309708B51f3afdE6e98",
+      "address": "0xcff9826B1D94069D5fBAB59e12dED2ED1e89215F",
       "constructorCode": "610eaf610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe",
       "bodyBytecodeHash": "7b92c727771bd2be69e9ad2c2f1fe8eaae2fb49b79dc8791cdac574a46bd4e7d",
       "localBytecodeHash": "881acbaf40d56245f74ff09fb9da845e7dfc0f3a921b497072202c66312781f8",
@@ -513,10 +513,10 @@
   "proxies": {
     "bridge/Bridge_v0": [
       {
-        "address": "0x09EFaa60DEb60206ecfa11452CA818baCFd1A58f",
+        "address": "0x08BC3354a441A498134c1E7e5BA8348Ab1d79609",
         "version": "1.0.0",
-        "implementation": "0x86B25c3Bf482F9034D29276A34bf6Ac7FDcD65e1",
-        "admin": "0x9bDA2db2462a0Ce596aF398b68da267bCB4f22D2",
+        "implementation": "0x14B24dF5eB138953Ba64E065aFD1c48858235415",
+        "admin": "0x3712776637EAa5763bd06E113d9935F0D283236C",
         "kind": "Upgradeable"
       }
     ]
@@ -524,6 +524,6 @@
   "manifestVersion": "2.2",
   "version": "1.0.0",
   "proxyAdmin": {
-    "address": "0x9bDA2db2462a0Ce596aF398b68da267bCB4f22D2"
+    "address": "0x3712776637EAa5763bd06E113d9935F0D283236C"
   }
 }
