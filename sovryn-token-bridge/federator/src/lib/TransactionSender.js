@@ -36,7 +36,8 @@ module.exports = class TransactionSender {
     }
 
     async getGasLimit(rawTx) {
-        let estimatedGas = await this.client.eth.estimateGas({ gasPrice: rawTx.gasPrice, value: rawTx.value, to: rawTx.to, data: rawTx.data, from: rawTx.from});
+        //let estimatedGas = await this.client.eth.estimateGas({ gasPrice: rawTx.gasPrice, value: rawTx.value, to: rawTx.to, data: rawTx.data, from: rawTx.from});
+        let estimatedGas = await this.client.eth.estimateGas({ value: rawTx.value, to: rawTx.to, data: rawTx.data, from: rawTx.from});
 
         // Vote: ~70k
         // Vote+execute: A little over 250k
@@ -50,9 +51,49 @@ module.exports = class TransactionSender {
     async createRawTransaction(from, to, data, value) {
         const nonce = await this.getNonce(from);
         const chainId =  this.chainId || await this.client.eth.net.getId();
-        const gasPrice = await this.getGasPrice(chainId);
-        let rawTx = {
-            gasPrice: this.numberToHexString(gasPrice),
+        console.log("chainId: " +chainId);
+
+        if (chainId == 1 ) {
+            const rawTxETH = await createETHRawTransaction(from, to, data, value);
+            console.log("rawTxETH: " + rawTxETH);
+            return rawTxETH;
+        }
+        else {
+            const gasPrice = await this.getGasPrice(chainId);
+            let rawTx = {
+                gasPrice: this.numberToHexString(gasPrice),
+                value: this.numberToHexString(value),
+                to: to,
+                data: data,
+                from: from,
+                nonce: this.numberToHexString(nonce),
+                r: 0,
+                s: 0
+            }
+            rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
+            return rawTx;
+        }
+    }
+    
+    async createETHRawTransaction(from, to, data, value) {
+        const nonce = await this.getNonce(from);
+        const sleepOnGas = 10 * 1000 ; // 10 Seconds
+        const maxSleepOnGas = 12;
+        let sleepOnGasCounter = 0;
+        let rawTx;
+        console.log("raw tx is:" + rawTx);
+        while (currentEthGasBasePrice > currentEthGasPriceAvg) {
+            await utils.sleep(sleepOnGas, { logger: this.logger });
+            sleepOnGasCounter++;
+            if (sleepOnGasCounter > maxSleepOnGas) {
+                rawTx == "costlyGas";
+                console.log("raw tx is:" + rawTx);
+                return rawTx;
+            }    
+        }        
+            
+            rawTx = {
+            //gasPrice: this.numberToHexString(gasPrice),
             value: this.numberToHexString(value),
             to: to,
             data: data,
@@ -93,38 +134,43 @@ module.exports = class TransactionSender {
         let txHash;
         let error = '';
         let errorInfo = '';
-        try {
-            let receipt;
-            if (privateKey && privateKey.length) {
-                let signedTx = this.signRawTransaction(rawTx, privateKey);
-                const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
-                receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
-            } else {
-                //If no private key provided we use personal (personal is only for testing)
-                delete rawTx.r;
-                delete rawTx.s;
-                delete rawTx.v;
-                receipt = await this.client.eth.sendTransaction(rawTx).once('transactionHash', hash => txHash = hash);
-            }
-            if(receipt.status == 1) {
-                this.logger.info(`Transaction Successful txHash:${receipt.transactionHash} blockNumber:${receipt.blockNumber}`);
-                return receipt;
-            }
-            error = 'Transaction Receipt Status Failed';
-            errorInfo = receipt;
-        } catch(err) {
-            if (err.message.indexOf('it might still be mined') > 0) {
-                this.logger.warn(`Transaction was not mined within 750 seconds, please make sure your transaction was properly sent. Be aware that
-                it might still be mined. transactionHash:${txHash}`);
-                fs.appendFileSync(this.manuallyCheck, `transactionHash:${txHash} to:${to} data:${data}\n`);
-                return { transactionHash: txHash };
-            }
-            error = `Send Signed Transaction Failed TxHash:${txHash}`;
-            errorInfo = err;
+        if (rawTx == "costlyGas") {
+            throw new CustomError(`High Base Gas: Transaction wasn't sent`, errorInfo);
         }
-        this.logger.error(error, errorInfo);
-        this.logger.error('RawTx that failed', rawTx);
-        throw new CustomError(`Transaction Failed: ${error} ${stack}`, errorInfo);
+        else {
+            try {
+                let receipt;
+                if (privateKey && privateKey.length) {
+                    let signedTx = this.signRawTransaction(rawTx, privateKey);
+                    const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
+                    receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
+                } else {
+                    //If no private key provided we use personal (personal is only for testing)
+                    delete rawTx.r;
+                    delete rawTx.s;
+                    delete rawTx.v;
+                    receipt = await this.client.eth.sendTransaction(rawTx).once('transactionHash', hash => txHash = hash);
+                }
+                if(receipt.status == 1) {
+                    this.logger.info(`Transaction Successful txHash:${receipt.transactionHash} blockNumber:${receipt.blockNumber}`);
+                    return receipt;
+                }
+                error = 'Transaction Receipt Status Failed';
+                errorInfo = receipt;
+            } catch(err) {
+                if (err.message.indexOf('it might still be mined') > 0) {
+                    this.logger.warn(`Transaction was not mined within 750 seconds, please make sure your transaction was properly sent. Be aware that
+                    it might still be mined. transactionHash:${txHash}`);
+                    fs.appendFileSync(this.manuallyCheck, `transactionHash:${txHash} to:${to} data:${data}\n`);
+                    return { transactionHash: txHash };
+                }
+                error = `Send Signed Transaction Failed TxHash:${txHash}`;
+                errorInfo = err;
+            }
+            this.logger.error(error, errorInfo);
+            this.logger.error('RawTx that failed', rawTx);
+            throw new CustomError(`Transaction Failed: ${error} ${stack}`, errorInfo);
+        }
     }
 
 }

@@ -11,6 +11,8 @@ module.exports = class GasPriceEstimator {
         cacheTimeMs = undefined,
         etherscanApiBaseUrl = 'https://api.etherscan.io/api',
         etherscanChainId = 1,
+        priceBlockAvgInterval = 720, 
+    //    etherscanRinkebyChainId = 4,
     }) {
         if (!web3) {
             throw new CustomError('web3 is required');
@@ -20,6 +22,8 @@ module.exports = class GasPriceEstimator {
         this.logger = logger;
         this.etherscanApiBaseUrl = etherscanApiBaseUrl;
         this.etherscanChainId = etherscanChainId;
+        this.priceBlockAvgInterval = priceBlockAvgInterval;
+      //  this.etherscanRinkebyChainId = etherscanRinkebyChainId;
 
         // Etherscan free plan allows 5 calls per second
         // However if no api key is given, the max allowed rate is 1 call / 5s
@@ -44,6 +48,7 @@ module.exports = class GasPriceEstimator {
         const web3GasPrice = parseInt(await this.web3.eth.getGasPrice());
         const fallbackGasPrice = web3GasPrice <= 1 ? 1: Math.round(web3GasPrice * 1.5);
         if (chainId !== this.etherscanChainId) {
+        //if (chainId !== this.etherscanChainId || chainId !== this.etherscanRinkebyChainId) {
             return fallbackGasPrice;
         }
         try {
@@ -73,13 +78,20 @@ module.exports = class GasPriceEstimator {
 
         this.logger.debug('Fetching gas prices from Etherscan');
         const gasPrices = await this.getEtherscanGasPricesWithoutCaching();
+        console.log("gasPrices "+ gasPrices.safeGasPrice);
+        console.log("lastblock "+ gasPrices.lastblock);
         this.cachedEtherscanGasPrices = gasPrices;
         this.cachedEtherscanGasPriceTimestamp = Date.now();
         return gasPrices;
     }
-
+    
+    async _getCurrentBlockNumber() {
+        return this.mainWeb3.eth.getBlockNumber();
+    }
+    
     async getEtherscanGasPricesWithoutCaching() {
         let url = `${this.etherscanApiBaseUrl}?module=gastracker&action=gasoracle`;
+        console.log(url);
         if (this.etherscanApiKey) {
             url += `&apikey=${this.etherscanApiKey}`;
         }
@@ -96,6 +108,7 @@ module.exports = class GasPriceEstimator {
         const result = response.result || {};
         const gwei = 1000000000;
         return {
+            lastblock: parseInt(result.LastBlock) * gwei,
             safeGasPrice: parseInt(result.SafeGasPrice) * gwei,
             proposeGasPrice: parseInt(result.ProposeGasPrice) * gwei,
             fastGasPrice: parseInt(result.FastGasPrice) * gwei,
