@@ -69,7 +69,7 @@ contract('Bridge', async function (accounts) {
 
         it('should retrieve the version', async function () {
             const result = await this.bridge.version();
-            assert.equal(result, "v3");
+            assert.equal(result, "v5");
         });
 
         ///data = this.allowTokens.contract.methods.addAllowedToken(this.token.address).encodeABI();
@@ -1627,7 +1627,7 @@ contract('Bridge', async function (accounts) {
 
         it('should retrieve the version', async function () {
             const result = await this.mirrorBridge.version();
-            assert.equal(result, "v3");
+            assert.equal(result, "v5");
         });
 
         describe('Cross the tokens', async function () {
