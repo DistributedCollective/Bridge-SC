@@ -24,6 +24,7 @@ const TokenReceiver = artifacts.require('./TokenReceiverImpl');
 const { expectRevert } = require('@openzeppelin/test-helpers');
 const mockERC20Receiver = artifacts.require('./mockERC20Receiver');
 const Erc777Converter = artifacts.require('./Erc777Converter');
+const MockBridgeReceiver = artifacts.require('./MockBridgeReceiver');
 
 const utils = require('./utils');
 const BN = web3.utils.BN;
@@ -2217,14 +2218,14 @@ contract('Bridge', async function (accounts) {
                 });
             });
         });
-            
+
         describe('Cross back the WETH tokens', async function () {
             beforeEach(async function () {
                 this.amount2 = web3.utils.toWei('2');
                 const nativeTokenSymbol = await this.weth.symbol()
                 await this.bridge.setWETHAddress(this.weth.address, {from: bridgeManager});
-                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager}); 
-                
+                await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+
                 await this.mirrorBridge.acceptTransferAt(this.weth.address, anAccount, this.amount2, "WETH",
                     this.txReceipt.receipt.blockHash, this.txReceipt.tx,
                     this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
@@ -2246,13 +2247,13 @@ contract('Bridge', async function (accounts) {
                     // const nativeTokenSymbol = await this.weth.symbol()
                     // await this.bridge.setWETHAddress(this.token.address, {from: bridgeManager});
                     // await this.bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager}); 
-                    
+
                     this.amountToCrossBack = web3.utils.toWei('1');
                     const fee = web3.utils.toWei('0.5');
                     this.fee = fee
                     await this.allowTokens.setFeeAndMinPerToken(this.weth.address, fee, fee, {from: bridgeManager});
                     await this.bridge.receiveEthAt(tokenOwner, Buffer.from(""), {from: tokenOwner, value: this.amount2});
-                    
+
                 });    //POOH
             it('main Bridge should release ETH', async function () {
 
@@ -2265,22 +2266,187 @@ contract('Bridge', async function (accounts) {
                     this.txReceipt.receipt.blockHash, this.txReceipt.tx,
                     this.txReceipt.receipt.logs[0].logIndex, this.decimals, this.granularity, Buffer.from(""), { from: federation });
                 utils.checkRcpt(tx);
-                
+
                 let bridgeBalanceAF = await web3.eth.getBalance(this.bridge.address);
                 let anAccountBalanceAF = await web3.eth.getBalance(anAccount);
 
                 console.log("BridgeAF: " + bridgeBalanceAF + "  AccountAF: " + anAccountBalanceAF);
                  const temp = new BN(bridgeBalanceBF).sub(new BN(this.amountToCrossBack));
                  assert.equal(bridgeBalanceAF.toString(), temp.toString() );
-                 
+
                  const temp1 = new BN(anAccountBalanceBF).add(new BN(this.amountToCrossBack));
                  assert.equal(anAccountBalanceAF.toString(), temp1.toString() );
             });
         });
-    });    
+    });
 
+        describe('Bridge receiver hooks', function () {
+            const amount2 = web3.utils.toWei('2');
+            const fee = web3.utils.toWei('0.5')
+            const granularity = 1;
+            let decimals;
 
+            // store these here instead of using this because this is suspicious with mocha tests
+            // and prevents using them when using arrow functions
+            let txReceipt;
+            let bridge;
+            let mirrorBridge;
+            let weth;
+            let allowTokens;
+            let mockBridgeReceiver;
 
+            beforeEach(async function () {
+                // these are set from beforeEach hooks way above
+                txReceipt = this.txReceipt;
+                bridge = this.bridge;
+                mirrorBridge = this.mirrorBridge;
+                allowTokens = this.allowTokens;
+                weth = this.weth;
+
+                decimals = (await this.token.decimals()).toString();
+
+                const nativeTokenSymbol = await weth.symbol()
+                await bridge.setWETHAddress(weth.address, {from: bridgeManager});
+                await bridge.setNativeTokenSymbol(nativeTokenSymbol, {from: bridgeManager});
+
+                mockBridgeReceiver = await MockBridgeReceiver.new();
+            });
+
+            describe('management methods', () => {
+                it('owner should be able to setBridgeReceiverStatus', async () => {
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
+                    await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, true, { from: bridgeManager });
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), true);
+                    await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, false, { from: bridgeManager });
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
+                })
+
+                it('non-owner should not be able to setBridgeReceiverStatus', async () => {
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
+                    await expectRevert(
+                        bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, true, { from: anAccount }),
+                        "Ownable: caller is not the owner."
+                    );
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
+                })
+
+                it('owner should be able to setBridgeReceiverStatus for zero address', async () => {
+                    assert.equal(await bridge.isBridgeReceiver(ZERO_ADDRESS), false);
+                    await expectRevert(
+                        bridge.setBridgeReceiverStatus(ZERO_ADDRESS, true, { from: bridgeManager }),
+                        "Cannot set zero address as bridge receiver"
+                    );
+                    assert.equal(await bridge.isBridgeReceiver(ZERO_ADDRESS), false);
+                })
+            });
+
+            describe('when crossing back WETH', () => {
+                const amountToCrossBack = web3.utils.toWei('1');
+                let sideToken;
+
+                beforeEach(async () => {
+                    await mirrorBridge.acceptTransferAt(
+                        weth.address,
+                        anAccount,
+                        amount2,
+                        "WETH",
+                        txReceipt.receipt.blockHash,
+                        txReceipt.tx,
+                        txReceipt.receipt.logs[0].logIndex,
+                        decimals,
+                        granularity,
+                        Buffer.from(""),
+                        { from: federation }
+                    );
+
+                    // We don't have the side token until after first transfer
+                    const sideTokenAddress = await mirrorBridge.mappedTokens(weth.address);
+                    await allowTokens.setFeeAndMinPerToken(weth.address, fee, fee, {from: bridgeManager});
+                    sideToken = await SideToken.at(sideTokenAddress);
+                })
+
+                const sendCrossTransfer = async () => {
+                    await bridge.receiveEthAt(
+                        tokenOwner,
+                        Buffer.from("0x1337"),
+                        {from: tokenOwner, value: amount2}
+                    );
+                    let tx = await bridge.acceptTransferAt(
+                        weth.address,
+                        mockBridgeReceiver.address,
+                        amountToCrossBack,
+                        "WETH",
+                        txReceipt.receipt.blockHash,
+                        txReceipt.tx,
+                        txReceipt.receipt.logs[0].logIndex,
+                        decimals,
+                        granularity,
+                        //Buffer.from("123"),
+                        '0x1337',
+                        { from: federation }
+                    );
+                    utils.checkRcpt(tx);
+                    return tx;
+                }
+
+                it('bridge should call receiveEthFromBridge when transfering to bridge receiver', async () => {
+                    await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, true, { from: bridgeManager });
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), true)
+
+                    const receiverBalanceBefore = await web3.eth.getBalance(mockBridgeReceiver.address);
+
+                    const tx = await sendCrossTransfer();
+
+                    const receiverBalanceAfter = await web3.eth.getBalance(mockBridgeReceiver.address);
+                    assert.equal(
+                        new BN(receiverBalanceAfter).sub(new BN(receiverBalanceBefore)).toString(),
+                        amountToCrossBack.toString()
+                    );
+
+                    const receiverEvents = await mockBridgeReceiver.getPastEvents(
+                        'allEvents',
+                        {
+                            fromBlock: tx.receipt.blockNumber,
+                            toBlock: tx.receipt.blockNumber,
+                        }
+                    );
+                    assert.equal(receiverEvents.length, 1);
+                    const event = receiverEvents[0];
+                    assert.equal(event.event, 'ReceivedEthFromBridge');
+                    assert.equal(event.args.sender, bridge.address);
+                    assert.equal(event.args.value.toString(), amountToCrossBack.toString());
+                    assert.equal(event.args.userData, '0x1337');
+                });
+
+                it('bridge should not call receiveEthFromBridge when transfering to a contract w/o bridge receiver status', async () => {
+                    assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false)
+
+                    const receiverBalanceBefore = await web3.eth.getBalance(mockBridgeReceiver.address);
+
+                    const tx = await sendCrossTransfer();
+
+                    const receiverBalanceAfter = await web3.eth.getBalance(mockBridgeReceiver.address);
+                    assert.equal(
+                        new BN(receiverBalanceAfter).sub(new BN(receiverBalanceBefore)).toString(),
+                        amountToCrossBack.toString()
+                    );
+
+                    const receiverEvents = await mockBridgeReceiver.getPastEvents(
+                        'allEvents',
+                        {
+                            fromBlock: tx.receipt.blockNumber,
+                            toBlock: tx.receipt.blockNumber,
+                        }
+                    );
+                    assert.equal(receiverEvents.length, 1);
+                    const event = receiverEvents[0];
+                    assert.equal(event.event, 'Fallback');
+                    assert.equal(event.args.sender, bridge.address);
+                    assert.equal(event.args.value.toString(), amountToCrossBack.toString());
+                });
+            });
+
+        });
     });
 
 //     describe('Calls from MultiSig', async function() {

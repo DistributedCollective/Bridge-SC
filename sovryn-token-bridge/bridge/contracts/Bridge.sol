@@ -18,6 +18,7 @@ import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./IAllowTokens.sol";
+import "./IBridgeReceiver.sol";
 import "./Utils.sol";
 
 contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
@@ -54,6 +55,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     string private nativeTokenSymbol;
     //Bridge_V4 variables
     address public erc777ConverterAddr;
+    //Bridge_v5 variables
+    mapping(address => bool) public isBridgeReceiver;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -208,9 +211,13 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         //// Bridge v4 upgrade functions
         if (tokenAddress == WETHAddr) {
             address payable payableReceiver = address(uint160(receiver));
-            (bool success, ) =
-                payableReceiver.call.value(amount)("");
-            require(success, "Bridge: Failed to send ETH to receiver");
+            if (isBridgeReceiver[receiver]) {
+                IBridgeReceiver(payableReceiver).receiveEthFromBridge.value(amount)(userData);
+            } else {
+                (bool success, ) =
+                    payableReceiver.call.value(amount)("");
+                require(success, "Bridge: Failed to send ETH to receiver");
+            }
         }
         else {
             IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
@@ -499,6 +506,14 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
     function getErc777Converter() external view returns(address) {
         return erc777ConverterAddr;
+    }
+
+    function setBridgeReceiverStatus(
+        address receiverAddress,
+        bool status
+    ) external onlyOwner {
+        require(receiverAddress != address(0), "Cannot set zero address as bridge receiver");
+        isBridgeReceiver[receiverAddress] = status;
     }
 
 // Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
