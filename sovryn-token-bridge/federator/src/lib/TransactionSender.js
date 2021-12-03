@@ -1,4 +1,6 @@
 
+import { ETHERSCAN_CHAIN_ID } from './ClientId';
+
 const Tx = require('ethereumjs-tx');
 const ethUtils = require('ethereumjs-util');
 const utils = require('./utils');
@@ -51,9 +53,10 @@ module.exports = class TransactionSender {
     async createRawTransaction(from, to, data, value) {
         const nonce = await this.getNonce(from);
         const chainId =  this.chainId || await this.client.eth.net.getId();
+
         console.log("chainId: " +chainId);
 
-        if (chainId == 1 ) {
+        if (chainId === ETHERSCAN_CHAIN_ID ) {
             const rawTxETH = await createETHRawTransaction(from, to, data, value);
             console.log("rawTxETH: " + rawTxETH);
             return rawTxETH;
@@ -77,6 +80,8 @@ module.exports = class TransactionSender {
     
     async createETHRawTransaction(from, to, data, value) {
         const nonce = await this.getNonce(from);
+        const gwei = 1000000000;
+        const priorityFee = 1 ;
         const sleepOnGas = 10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = 12;
         let sleepOnGasCounter = 0;
@@ -86,14 +91,14 @@ module.exports = class TransactionSender {
             await utils.sleep(sleepOnGas, { logger: this.logger });
             sleepOnGasCounter++;
             if (sleepOnGasCounter > maxSleepOnGas) {
-                rawTx == "costlyGas";
-                console.log("raw tx is:" + rawTx);
-                return rawTx;
+                throw new CustomError(`High Base Gas: Transaction wasn't sent`);
             }    
         }        
             
             rawTx = {
             //gasPrice: this.numberToHexString(gasPrice),
+            maxFeePerGas: this.numberToHexString((currentEthGasBasePrice + priorityFee) * gwei),
+            maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
             value: this.numberToHexString(value),
             to: to,
             data: data,
@@ -134,43 +139,39 @@ module.exports = class TransactionSender {
         let txHash;
         let error = '';
         let errorInfo = '';
-        if (rawTx == "costlyGas") {
-            throw new CustomError(`High Base Gas: Transaction wasn't sent`, errorInfo);
-        }
-        else {
-            try {
-                let receipt;
-                if (privateKey && privateKey.length) {
-                    let signedTx = this.signRawTransaction(rawTx, privateKey);
-                    const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
-                    receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
-                } else {
-                    //If no private key provided we use personal (personal is only for testing)
-                    delete rawTx.r;
-                    delete rawTx.s;
-                    delete rawTx.v;
-                    receipt = await this.client.eth.sendTransaction(rawTx).once('transactionHash', hash => txHash = hash);
-                }
-                if(receipt.status == 1) {
-                    this.logger.info(`Transaction Successful txHash:${receipt.transactionHash} blockNumber:${receipt.blockNumber}`);
-                    return receipt;
-                }
+    
+        try {
+            let receipt;
+            if (privateKey && privateKey.length) {
+                let signedTx = this.signRawTransaction(rawTx, privateKey);
+                const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
+                receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
+            } else {
+                //If no private key provided we use personal (personal is only for testing)
+                delete rawTx.r;
+                delete rawTx.s;
+                delete rawTx.v;
+                receipt = await this.client.eth.sendTransaction(rawTx).once('transactionHash', hash => txHash = hash);
+            }
+            if(receipt.status == 1) {
+                this.logger.info(`Transaction Successful txHash:${receipt.transactionHash} blockNumber:${receipt.blockNumber}`);
+                return receipt;
+            }
                 error = 'Transaction Receipt Status Failed';
                 errorInfo = receipt;
-            } catch(err) {
-                if (err.message.indexOf('it might still be mined') > 0) {
-                    this.logger.warn(`Transaction was not mined within 750 seconds, please make sure your transaction was properly sent. Be aware that
+        } catch(err) {
+            if (err.message.indexOf('it might still be mined') > 0) {
+                this.logger.warn(`Transaction was not mined within 750 seconds, please make sure your transaction was properly sent. Be aware that
                     it might still be mined. transactionHash:${txHash}`);
-                    fs.appendFileSync(this.manuallyCheck, `transactionHash:${txHash} to:${to} data:${data}\n`);
-                    return { transactionHash: txHash };
-                }
+                fs.appendFileSync(this.manuallyCheck, `transactionHash:${txHash} to:${to} data:${data}\n`);
+                return { transactionHash: txHash };
+            }
                 error = `Send Signed Transaction Failed TxHash:${txHash}`;
                 errorInfo = err;
-            }
-            this.logger.error(error, errorInfo);
-            this.logger.error('RawTx that failed', rawTx);
-            throw new CustomError(`Transaction Failed: ${error} ${stack}`, errorInfo);
         }
+        this.logger.error(error, errorInfo);
+        this.logger.error('RawTx that failed', rawTx);
+        throw new CustomError(`Transaction Failed: ${error} ${stack}`, errorInfo);
     }
 
 }

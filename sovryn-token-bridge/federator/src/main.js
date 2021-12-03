@@ -14,12 +14,13 @@ const Scheduler = require('./services/Scheduler.js');
 const Federator = require('./lib/Federator.js');
 const {TelegramBot, NullBot} = require('./lib/chatBots.js');
 const ClientId = require('./lib/ClientId.js');
-const GasPriceFetcher = require('./lib/GasPriceFetcher.js');
-const GasPriceAvg = require('./lib/GasPriceAvg.js');
+// const GasPriceFetcher = require('./lib/GasPriceFetcher.js');
+// const GasPriceAvg = require('./lib/GasPriceAvg.js');
+const GasServices = require('./lib/GasServices.js');
 
 // Global GasPrice Variables
-let currentEthGasBasePrice;
-let currentEthGasPriceAvg;
+// let currentEthGasBasePrice;
+// let currentEthGasPriceAvg;
 
 const logger = log4js.getLogger('Federators');
 logger.info('RSK Host', config.mainchain.host);
@@ -50,13 +51,19 @@ const clientId = new ClientId(
     web3,
 );
 
-const gasPriceFetcher = new GasPriceFetcher(
-    log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
+const gasServices = new GasServices(
+    log4js.getLogger('ETH-GasServices'),
+    config,
+    web3,
 );
 
-const gasPriceAvg = new GasPriceAvg(
-    log4js.getLogger('ETH-MAINNET-GasPriceFetAvg'),
-);
+// const gasPriceFetcher = new GasPriceFetcher(
+//     log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
+// );
+
+// const gasPriceAvg = new GasPriceAvg(
+//     log4js.getLogger('ETH-MAINNET-GasPriceFetAvg'),
+// );
 
 const mainFederator = new Federator(
     config,
@@ -78,14 +85,14 @@ const sideFederator = new Federator(
 );
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes
-let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
-let avgGasPollingInterval = config.avgGasRunEvery * 1000 ; // Seconds
-let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60 ; // Minutes
-let avgGasCount;
+// let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
+// let avgGasPollingInterval = config.avgGasRunEvery * 1000 ; // Seconds
+// let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60 ; // Minutes
+// let avgGasCount;
 
 let scheduler = new Scheduler(pollingInterval, logger, { run: () => run() });
 
-startServices();
+startServices().catch(err => { console.error('Error starting services:', err) });
 
 async function startServices() {
     try {
@@ -93,53 +100,22 @@ async function startServices() {
     } catch(err) {
         logger.error('Unhandled Error on _getChainId()', err);
         process.exit();
-    }
-    if (isEth){
-        let etherScanGasPriceService = new Scheduler(gasApiPollingInterval, logger, { run: () => runGasPriceService() });
-        let gasPriceAvgService = new Scheduler(avgGasPollingInterval, logger, { run: () => runGasPriceAvg() });
-        
-        if(avgGasPollingInterval > 0) {
-            avgGasCount = avgGasPeriodInterval/avgGasPollingInterval;
-        }
-        else {
-            logger.error('config.avgGasPollingInterval cannot be 0', err);
-            process.exit();
-        };
-
-        etherScanGasPriceService.start().catch((err) => {
-            logger.error('Unhandled Error on etherScanGasPriceService start()', err);
-        });
-        
-        gasPriceAvgService.start().catch((err) => {
-            logger.error('Unhandled Error on gasPriceAvg start()', err);
-        });  
-
-        this.logger.debug(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
-        await utils.sleep(avgGasPeriodInterval, { logger: this.logger });
     }   
+
+    if (isEth){
+        try {
+            await gasServices.startGasServices();
+        } catch(err) {
+            logger.error('Cannnot start ETH gas services()', err);
+            process.exit();
+        }
+    };
+
     scheduler.start().catch((err) => {
         logger.error('Unhandled Error on start()', err);
     });
 }
-
-async function runGasPriceService() {
-    try {
-        currentEthGasBasePrice = await gasPriceFetcher.getEtherscanBaseGasPrice();
-    } catch(err) {
-        logger.error('Unhandled Error on runGasPriceService()', err);
-        process.exit();
-    }
-}
-
-async function runGasPriceAvg() {
-    try {
-        currentEthGasPriceAvg = await gasPriceAvg.calcAvg(avgGasCount, currentEthGasBasePrice);
-    } catch(err) {
-        logger.error('Unhandled Error on runGasWatcher()', err);
-        process.exit();
-    }
-}
-
+    
 async function run() {
     try {
         await mainFederator.run();

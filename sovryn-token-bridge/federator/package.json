@@ -24,11 +24,11 @@
     "ethereumjs-util": "^6.1.0",
     "log4js": "^5.0.0",
     "telegraf": "^4.3.0",
-    "web3": "^1.2.11"
+    "web3": "^1.6.1"
   },
   "devDependencies": {
     "jest": "^26.4.2",
-    "web3-core-promievent": "^1.2.11",
-    "node-notifier": "^8.0.1"
+    "node-notifier": "^8.0.1",
+    "web3-core-promievent": "^1.2.11"
   }
 }
