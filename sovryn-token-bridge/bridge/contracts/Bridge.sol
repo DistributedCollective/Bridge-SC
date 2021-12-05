@@ -65,6 +65,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     event PrefixUpdated(bool _isSuffix, string _prefix);
     event RevokeTx(bytes32 tx_revoked);
     event erc777ConverterSet(address erc777ConverterAddress);
+    event BridgeReceiverStatusChanged(address bridgeReceiver, bool newStatus);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -514,6 +515,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     ) external onlyOwner {
         require(receiverAddress != address(0), "Cannot set zero address as bridge receiver");
         isBridgeReceiver[receiverAddress] = status;
+        emit BridgeReceiverStatusChanged(receiverAddress, status);
     }
 
 // Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero

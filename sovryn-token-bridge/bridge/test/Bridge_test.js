@@ -2319,7 +2319,7 @@ contract('Bridge', async function (accounts) {
                     assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), true);
                     await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, false, { from: bridgeManager });
                     assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
-                })
+                });
 
                 it('non-owner should not be able to setBridgeReceiverStatus', async () => {
                     assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
@@ -2328,7 +2328,7 @@ contract('Bridge', async function (accounts) {
                         "Ownable: caller is not the owner."
                     );
                     assert.equal(await bridge.isBridgeReceiver(mockBridgeReceiver.address), false);
-                })
+                });
 
                 it('owner should be able to setBridgeReceiverStatus for zero address', async () => {
                     assert.equal(await bridge.isBridgeReceiver(ZERO_ADDRESS), false);
@@ -2337,7 +2337,21 @@ contract('Bridge', async function (accounts) {
                         "Cannot set zero address as bridge receiver"
                     );
                     assert.equal(await bridge.isBridgeReceiver(ZERO_ADDRESS), false);
-                })
+                });
+
+                it('setBridgeReceiverStatus emits the correct event', async () => {
+                    let tx = await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, true, { from: bridgeManager });
+                    assert.equal(tx.logs.length, 1);
+                    assert.equal(tx.logs[0].event, 'BridgeReceiverStatusChanged');
+                    assert.equal(tx.logs[0].args.bridgeReceiver, mockBridgeReceiver.address);
+                    assert.equal(tx.logs[0].args.newStatus, true);
+
+                    tx = await bridge.setBridgeReceiverStatus(mockBridgeReceiver.address, false, { from: bridgeManager });
+                    assert.equal(tx.logs.length, 1);
+                    assert.equal(tx.logs[0].event, 'BridgeReceiverStatusChanged');
+                    assert.equal(tx.logs[0].args.bridgeReceiver, mockBridgeReceiver.address);
+                    assert.equal(tx.logs[0].args.newStatus, false);
+                });
             });
 
             describe('when crossing back WETH', () => {
