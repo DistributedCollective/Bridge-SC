@@ -2,21 +2,30 @@ const http = require('http');
 const https = require('https');
 
 module.exports = class GasPriceFetcher {
-    constructor(logger)
+    constructor(logger, etherscanApiKey)
         {
             this.logger = logger;
-            etherscanApiKey = undefined;
-            etherscanApiBaseUrl = 'https://api.etherscan.io/api';
             this.etherscanApiKey = etherscanApiKey;
+            const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
+            // this.etherscanApiKey = etherscanApiKey;
             this.etherscanApiBaseUrl = etherscanApiBaseUrl;
         }        
+        // module.exports = class GasPriceEstimator {
+        //     constructor({
+        //         web3,
+        //         etherscanApiKey = undefined,
+        //         logger = console,
+        //         cacheTimeMs = undefined,
+        //         etherscanApiBaseUrl = 'https://api.etherscan.io/api',
+        //         etherscanChainId = 1,
+        //     })
 
     async getEtherscanBaseGasPrice() {
         let url = `${this.etherscanApiBaseUrl}?module=gastracker&action=gasoracle`;
         console.log(url);
-        if (this.etherscanApiKey) {
-            url += `&apikey=${this.etherscanApiKey}`;
-        }
+        // if (this.etherscanApiKey) {
+        //     url += `&apikey=${this.etherscanApiKey}`;
+        // }
         let response;
         try {
             response = await this._makeRequest(url);

@@ -1,5 +1,7 @@
 
-import { ETHERSCAN_CHAIN_ID } from './ClientId';
+var constants = require('./constants');
+
+console.log(constants.ETHERSCAN_CHAIN_ID); 
 
 const Tx = require('ethereumjs-tx');
 const ethUtils = require('ethereumjs-util');
@@ -7,9 +9,10 @@ const utils = require('./utils');
 const CustomError = require('./CustomError');
 const GasPriceEstimator = require('./GasPriceEstimator');
 const fs = require('fs');
-
 module.exports = class TransactionSender {
+
     constructor(client, logger, config) {
+
         this.client = client;
         this.logger = logger;
         this.chainId = null;
@@ -56,7 +59,7 @@ module.exports = class TransactionSender {
 
         console.log("chainId: " +chainId);
 
-        if (chainId === ETHERSCAN_CHAIN_ID ) {
+        if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
             const rawTxETH = await createETHRawTransaction(from, to, data, value);
             console.log("rawTxETH: " + rawTxETH);
             return rawTxETH;

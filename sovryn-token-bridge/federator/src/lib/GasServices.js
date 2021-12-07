@@ -1,10 +1,10 @@
 const web3 = require('web3');
-const config = require('../config/config.js');
+const config = require('../../config/config.js');
 // Services
-const Scheduler = require('./services/Scheduler.js');
+const Scheduler = require('../services/Scheduler.js');
 const log4js = require('log4js');
-const GasPriceFetcher = require('./lib/GasPriceFetcher.js');
-const GasPriceAvg = require('./lib/GasPriceAvg.js');
+const GasPriceFetcher = require('../lib/GasPriceFetcher.js');
+const GasPriceAvg = require('../lib/GasPriceAvg.js');
 
 let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
 let avgGasPollingInterval = config.avgGasRunEvery * 1000 ; // Seconds
@@ -21,8 +21,16 @@ module.exports = class GasServices {
         this.logger = logger;
         this.config = config;
         
+        // this.gasPriceEstimator = new GasPriceEstimator({
+        //     web3: this.client,
+        //     logger: this.logger,
+        //     etherscanApiKey: config.etherscanApiKey,
+        // });
+
+
         this.gasPriceFetcher = new GasPriceFetcher(
             log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
+            config.etherscanApiKey
         );
         
         this.gasPriceAvg = new GasPriceAvg(

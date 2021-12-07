@@ -99,7 +99,7 @@ async function startServices() {
     try {
         isEth = await clientId.isEthereumChain();
     } catch(err) {
-        logger.error('Unhandled Error on _getChainId()', err);
+        logger.error('Unhandled Error on isEthereumChain()', err);
         process.exit();
     }   
 

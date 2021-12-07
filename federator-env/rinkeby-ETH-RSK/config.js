@@ -10,6 +10,9 @@ module.exports = {
     mainchain: require('./rsktestnet.json'), //the json containing the smart contract addresses in rsk
     sidechain: require('./rinkeby.json'), //the json containing the smart contract addresses in eth
     runEvery: 2, // In minutes,
+    gasApiRunEvery: 5, // In Seconds,
+    avgGasRunEvery: 10, // In Seconds,
+    periodAvgGas: 240, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
