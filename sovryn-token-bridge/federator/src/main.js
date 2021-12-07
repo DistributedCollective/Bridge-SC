@@ -1,6 +1,6 @@
 const log4js = require('log4js');
 const web3 = require('web3');
-const utils = require('./utils');
+const utils = require('./lib/utils');
 
 // Configurations
 const config = require('../config/config.js');
