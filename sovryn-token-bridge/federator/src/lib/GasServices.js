@@ -31,8 +31,8 @@ module.exports = class GasServices {
     }
     
     async startGasServices() {
-        let etherScanGasPriceService = new Scheduler(gasApiPollingInterval, logger, { run: () => runGasPriceService() });
-        let gasPriceAvgService = new Scheduler(avgGasPollingInterval, logger, { run: () => runGasPriceAvg() });
+        let etherScanGasPriceService = new Scheduler(gasApiPollingInterval, logger, { run: () => this.runGasPriceService() });
+        let gasPriceAvgService = new Scheduler(avgGasPollingInterval, logger, { run: () => this.runGasPriceAvg() });
         
         if(avgGasPollingInterval > 0) {
             avgGasCount = avgGasPeriodInterval/avgGasPollingInterval;

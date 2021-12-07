@@ -95,8 +95,9 @@ let scheduler = new Scheduler(pollingInterval, logger, { run: () => run() });
 startServices().catch(err => { console.error('Error starting services:', err) });
 
 async function startServices() {
+    let isEth;
     try {
-        isEth = await clientId._getChainId();
+        isEth = await clientId.isEthereumChain();
     } catch(err) {
         logger.error('Unhandled Error on _getChainId()', err);
         process.exit();

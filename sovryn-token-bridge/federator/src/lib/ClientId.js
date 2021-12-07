@@ -5,7 +5,6 @@ module.exports = class ClientId {
     constructor(logger, config, Web3 = web3) {
         this.config = config;
         this.logger = logger;
-        EtherScanChainId = ETHERSCAN_CHAIN_ID;
 
         this.mainWeb3 = new Web3(this.config.mainchain.host);
         this.sideWeb3 = new Web3(this.config.sidechain.host);
@@ -15,6 +14,6 @@ module.exports = class ClientId {
         const chainIdSide = await this.sideWeb3.eth.net.getId();
         const chainIdMain = await this.mainWeb3.eth.net.getId();
         
-        return (chainIdSide === EtherScanChainId || chainIdMain === EtherScanChainId);
+        return (chainIdSide === ETHERSCAN_CHAIN_ID || chainIdMain === ETHERSCAN_CHAIN_ID);
     }
 }
