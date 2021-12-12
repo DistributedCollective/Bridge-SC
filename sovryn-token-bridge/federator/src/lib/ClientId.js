@@ -1,5 +1,5 @@
-var constants = require('./constants');
-console.log(constants.ETHERSCAN_CHAIN_ID); 
+var constants = require('./Constants');
+//console.log(constants.ETHERSCAN_CHAIN_ID); 
 
 const web3 = require('web3');
 module.exports = class ClientId {

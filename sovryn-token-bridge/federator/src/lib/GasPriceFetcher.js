@@ -1,28 +1,22 @@
 const http = require('http');
 const https = require('https');
+const CustomError = require('./CustomError');
 
 module.exports = class GasPriceFetcher {
     constructor(logger, etherscanApiKey)
         {
             this.logger = logger;
             this.etherscanApiKey = etherscanApiKey;
-            const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
+            // const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
+            const etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
+            //wss://rinkeby.infura.io/ws/v3/
             // this.etherscanApiKey = etherscanApiKey;
             this.etherscanApiBaseUrl = etherscanApiBaseUrl;
         }        
-        // module.exports = class GasPriceEstimator {
-        //     constructor({
-        //         web3,
-        //         etherscanApiKey = undefined,
-        //         logger = console,
-        //         cacheTimeMs = undefined,
-        //         etherscanApiBaseUrl = 'https://api.etherscan.io/api',
-        //         etherscanChainId = 1,
-        //     })
 
     async getEtherscanBaseGasPrice() {
         let url = `${this.etherscanApiBaseUrl}?module=gastracker&action=gasoracle`;
-        console.log(url);
+        //console.log(url);
         // if (this.etherscanApiKey) {
         //     url += `&apikey=${this.etherscanApiKey}`;
         // }
@@ -37,13 +31,17 @@ module.exports = class GasPriceFetcher {
             throw new CustomError('Invalid status for response:' + JSON.stringify(response));
         }
         const result = response.result || {};
+        this.logger.debug("result.SafeGasPrice: " ,result.SafeGasPrice);
+
+        //console.log("result.SafeGasPrice: " + result.SafeGasPrice);
         const gwei = 1000000000;
-        return {
-            //lastblock: parseInt(result.LastBlock),
-            safeGasPrice: parseInt(result.SafeGasPrice) * gwei,
-            // proposeGasPrice: parseInt(result.ProposeGasPrice) * gwei,
-            // fastGasPrice: parseInt(result.FastGasPrice) * gwei,
-        }
+        return result.SafeGasPrice;
+        // return {
+        //     //lastblock: parseInt(result.LastBlock),
+        //     // safeGasPrice: parseInt(result.SafeGasPrice) * gwei,
+        //     // proposeGasPrice: parseInt(result.ProposeGasPrice) * gwei,
+        //     // fastGasPrice: parseInt(result.FastGasPrice) * gwei,
+        // }
     }
 
     async _makeRequest(url) {

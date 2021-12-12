@@ -1,5 +1,6 @@
 
-var constants = require('./constants');
+var globals = require('./Globals');
+var constants = require('./Constants');
 
 console.log(constants.ETHERSCAN_CHAIN_ID); 
 
@@ -9,6 +10,9 @@ const utils = require('./utils');
 const CustomError = require('./CustomError');
 const GasPriceEstimator = require('./GasPriceEstimator');
 const fs = require('fs');
+const { FeeMarketEIP1559Transaction } = require( '@ethereumjs/tx' );
+const Common = require( '@ethereumjs/common' ).default;
+
 module.exports = class TransactionSender {
 
     constructor(client, logger, config) {
@@ -55,13 +59,34 @@ module.exports = class TransactionSender {
 
     async createRawTransaction(from, to, data, value) {
         const nonce = await this.getNonce(from);
+        console.log("----------nonce:   " + nonce);
         const chainId =  this.chainId || await this.client.eth.net.getId();
 
         console.log("chainId: " +chainId);
 
+        // if(chainId === constants.ETHERSCAN_CHAIN_ID && nonce === 4) {
+        //     const gasPriceDEBUG = 600 * 1000000000;
+        //     let rawTx = {
+        //         gasPrice: gasPriceDEBUG,
+        //         value: this.numberToHexString(value),
+        //         to: to,
+        //         data: data,
+        //         from: from,
+        //         nonce: this.numberToHexString(nonce),
+        //         r: 0,
+        //         s: 0
+        //     }
+        //     rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
+        //     return rawTx;
+        // }
+        // else
         if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
-            const rawTxETH = await createETHRawTransaction(from, to, data, value);
-            console.log("rawTxETH: " + rawTxETH);
+            const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
+            let chain = new Common( { chain : 'rinkeby', hardfork : 'london' } );
+            const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
+            this.logger.info('rawTxETH with feeMarket:', { tx} );
+            console.log("rawTxETH: " +  { rawTxETH } );
+            // return tx;
             return rawTxETH;
         }
         else {
@@ -81,36 +106,54 @@ module.exports = class TransactionSender {
         }
     }
     
-    async createETHRawTransaction(from, to, data, value) {
-        const nonce = await this.getNonce(from);
+    async createETHRawTransaction(from, to, data, value, chain) {
+        let nonce = await this.getNonce(from);
+        console.log("XXXXXXXXXXXXXXXXXXgetTransactionCount: " + await this.client.eth.getTransactionCount(from));
         const gwei = 1000000000;
         const priorityFee = 1 ;
         const sleepOnGas = 10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = 12;
         let sleepOnGasCounter = 0;
         let rawTx;
-        console.log("raw tx is:" + rawTx);
-        while (currentEthGasBasePrice > currentEthGasPriceAvg) {
+        let temp_maxFeePerGas;
+
+            while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
             await utils.sleep(sleepOnGas, { logger: this.logger });
             sleepOnGasCounter++;
             if (sleepOnGasCounter > maxSleepOnGas) {
                 throw new CustomError(`High Base Gas: Transaction wasn't sent`);
             }    
         }        
-            
+
+        //////////   Debug Only -->
+        // if(nonce === 3) { 
+        //     temp_maxFeePerGas = 600 }
+        // else {
+        //     temp_maxFeePerGas = globals.currentEthGasBasePrice + priorityFee;
+        // }
+        //////////   Debug Only <--
+
             rawTx = {
             //gasPrice: this.numberToHexString(gasPrice),
-            maxFeePerGas: this.numberToHexString((currentEthGasBasePrice + priorityFee) * gwei),
+        // Debug Only
+            maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * gwei),
+            // maxFeePerGas: this.numberToHexString((temp_maxFeePerGas) * gwei),
             maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
             value: this.numberToHexString(value),
             to: to,
             data: data,
             from: from,
             nonce: this.numberToHexString(nonce),
-            r: 0,
-            s: 0
+            chainId:  this.numberToHexString(chain),
+            accessList: [],
+            type: "0x02",
+            // r: 0,
+            // s: 0
         }
-        rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
+        rawTx.gasLimit = this.numberToHexString(await this.getGasLimit(rawTx));
+        this.logger.info('raw tx is:', { rawTx} );
+        console.log("ETH raw tx is:" + rawTx);
+
         return rawTx;
     }
 

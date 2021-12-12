@@ -26,6 +26,8 @@ const logger = log4js.getLogger('Federators');
 logger.info('RSK Host', config.mainchain.host);
 logger.info('ETH Host', config.sidechain.host);
 
+this.logger = logger;
+
 if(!config.mainchain || !config.sidechain) {
     logger.error('Mainchain and Sidechain configuration are required');
     process.exit();
@@ -98,6 +100,7 @@ async function startServices() {
     let isEth;
     try {
         isEth = await clientId.isEthereumChain();
+        console.log("isEth: " + isEth);
     } catch(err) {
         logger.error('Unhandled Error on isEthereumChain()', err);
         process.exit();
@@ -119,7 +122,9 @@ async function startServices() {
     
 async function run() {
     try {
+        console.log("before mainfed");
         await mainFederator.run();
+        console.log("before sidefed");
         await sideFederator.run();
     } catch(err) {
         logger.error('Unhandled Error on run()', err);

@@ -5,5 +5,5 @@
     "allowTokens": "0x2AD3fEE78944b21822F13f0C701f7Fa8F902E75a",
     "erc777Converter": "0x5789Ddf066A18c6E3C1095329BEc8912F922a5CC",
     "host": "https://rinkeby.infura.io/v3/4fe5ff5edc5c49478fb19383cff276dd",
-    "fromBlock": 9622455
+    "fromBlock": 9780500
 }

@@ -1,3 +1,3 @@
 module.exports = Object.freeze({
-    ETHERSCAN_CHAIN_ID: 1,
+    ETHERSCAN_CHAIN_ID: 4,
 });

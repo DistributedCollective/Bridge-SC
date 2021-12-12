@@ -1,5 +1,8 @@
 const web3 = require('web3');
 const config = require('../../config/config.js');
+const utils = require('./utils');
+var globals = require('./Globals');
+
 // Services
 const Scheduler = require('../services/Scheduler.js');
 const log4js = require('log4js');
@@ -11,8 +14,8 @@ let avgGasPollingInterval = config.avgGasRunEvery * 1000 ; // Seconds
 let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60 ; // Minutes
 let avgGasCount;
 
-let currentEthGasBasePrice;
-let currentEthGasPriceAvg;
+// let currentEthGasBasePrice = globals.currentEthGasBasePrice;
+// let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
 
 
@@ -39,35 +42,42 @@ module.exports = class GasServices {
     }
     
     async startGasServices() {
-        let etherScanGasPriceService = new Scheduler(gasApiPollingInterval, logger, { run: () => this.runGasPriceService() });
-        let gasPriceAvgService = new Scheduler(avgGasPollingInterval, logger, { run: () => this.runGasPriceAvg() });
+        let etherScanGasPriceService = new Scheduler(gasApiPollingInterval, this.logger, { run: () => this.runGasPriceService() });
+        let gasPriceAvgService = new Scheduler(avgGasPollingInterval, this.logger, { run: () => this.runGasPriceAvg() });
         
         if(avgGasPollingInterval > 0) {
             avgGasCount = avgGasPeriodInterval/avgGasPollingInterval;
         }
         else {
-            logger.error('config.avgGasPollingInterval cannot be 0', err);
+            this.logger.error('config.avgGasPollingInterval cannot be 0', err);
             process.exit();
         };
 
         etherScanGasPriceService.start().catch((err) => {
-            logger.error('Unhandled Error on etherScanGasPriceService start()', err);
+            this.logger.error('Unhandled Error on etherScanGasPriceService start()', err);
         });
-        
+
+        await utils.sleep(2 * gasApiPollingInterval, { logger: this.logger });
+
         gasPriceAvgService.start().catch((err) => {
-            logger.error('Unhandled Error on gasPriceAvg start()', err);
+            this.logger.error('Unhandled Error on gasPriceAvg start()', err);
         });  
 
-        this.logger.debug(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
+        this.logger.info(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
+        //log4js.getLogger('GAS-SERVICE-WAKEUP');
+        //console.log(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
+        this.logger.debug('Process is waiting to calculate average gas of ' ,avgGasPeriodInterval);
         await utils.sleep(avgGasPeriodInterval, { logger: this.logger });
     }
 
     async runGasPriceService() {
         
         try {
-            currentEthGasBasePrice = await this.gasPriceFetcher.getEtherscanBaseGasPrice();
+            globals.currentEthGasBasePrice = await this.gasPriceFetcher.getEtherscanBaseGasPrice();
+            this.logger.debug('currentEthGasBasePrice: ' ,globals.currentEthGasBasePrice);
+            console.log("currentEthGasBasePrice: " + globals.currentEthGasBasePrice);
         } catch(err) {
-            logger.error('Unhandled Error on runGasPriceService()', err);
+            this.logger.error('Unhandled Error on runGasPriceService()', err);
             process.exit();
         }
     }
@@ -75,7 +85,9 @@ module.exports = class GasServices {
     async runGasPriceAvg() {
         
         try {
-            currentEthGasPriceAvg = await this.gasPriceAvg.calcAvg(avgGasCount, currentEthGasBasePrice);
+            globals.currentEthGasPriceAvg = await this.gasPriceAvg.calcAvg(avgGasCount, globals.currentEthGasBasePrice);
+            this.logger.debug('currentEthGasPriceAvg: ' ,globals.currentEthGasPriceAvg);
+            console.log("currentEthGasPriceAvg: " + globals.currentEthGasPriceAvg);
         } catch(err) {
             logger.error('Unhandled Error on runGasWatcher()', err);
             process.exit();

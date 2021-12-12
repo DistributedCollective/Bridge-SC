@@ -39,7 +39,10 @@ module.exports = class Federator {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
+                console.log(currentBlock + "  " + chainId + "  " )
+
                 const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
+                console.log(currentBlock + "  " + chainId + "  " )
 
                 const toBlock = currentBlock - ctr.getMinConfirmation();
                 this.logger.info('Running to Block', toBlock);
