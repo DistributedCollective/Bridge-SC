@@ -110,7 +110,7 @@ module.exports = class TransactionSender {
         let nonce = await this.getNonce(from);
         console.log("XXXXXXXXXXXXXXXXXXgetTransactionCount: " + await this.client.eth.getTransactionCount(from));
         const gwei = 1000000000;
-        const priorityFee = 1 ;
+        const priorityFee = 2 ;
         const sleepOnGas = 10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = 12;
         let sleepOnGasCounter = 0;
