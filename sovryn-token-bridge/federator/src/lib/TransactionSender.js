@@ -97,8 +97,8 @@ module.exports = class TransactionSender {
                   //         const common = new Common({ chain: Chain.Mainnet })
 // const tx = Transaction.fromTxData(txParams, { common })
 
-            let chain = new Common( { chain : 'rinkeby', hardfork : 'london' } );
-            const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { chain } )
+            let common = new Common( { chain : 'rinkeby', hardfork : 'london' } );
+            const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { common } )
 
             //const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
             this.logger.info('rawTxETH with feeMarket:', { tx} );
@@ -202,7 +202,8 @@ module.exports = class TransactionSender {
         //let tx = new Tx(rawTx);
         //rawTx.sign(utils.hexStringToBuffer(privateKey));
         //const signedTx = this.client.eth.accounts.signTransaction(rawTx, utils.hexStringToBuffer(privateKey))
-        const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey2);
+        //const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey2);
+        const signedTx = rawTx.sign(utils.hexStringToBuffer(privateKey1));
         this.logger.info('signedTx is:', { signedTx } );
 
         return signedTx;
