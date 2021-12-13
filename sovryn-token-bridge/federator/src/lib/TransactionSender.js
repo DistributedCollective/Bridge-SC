@@ -65,7 +65,7 @@ module.exports = class TransactionSender {
         return chainId;
     }
 
-    async createRawTransaction(from, to, data, value) {
+    async createRawTransaction(from, to, data, value, privateKey) {
         const nonce = await this.getNonce(from);
         console.log("----------nonce:   " + nonce);
         //const chainId =  this.chainId || await this.client.eth.net.getId();
@@ -92,7 +92,7 @@ module.exports = class TransactionSender {
         
 
         if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
-            const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
+            const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId, privateKey);
           
                   //         const common = new Common({ chain: Chain.Mainnet })
 // const tx = Transaction.fromTxData(txParams, { common })
@@ -103,7 +103,9 @@ module.exports = class TransactionSender {
             //const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
             this.logger.info('rawTxETH with feeMarket:', { tx} );
             console.log("rawTxETH: " +  { rawTxETH } );
-            return tx;
+            const signedTx = this.signETHRawTransaction(tx, privateKey)
+            return signedTx.toJSON();
+            //return tx.toJSON();
             // return rawTxETH;
         }
         else {
@@ -202,7 +204,7 @@ module.exports = class TransactionSender {
         //let tx = new Tx(rawTx);
         //rawTx.sign(utils.hexStringToBuffer(privateKey));
         //const signedTx = this.client.eth.accounts.signTransaction(rawTx, utils.hexStringToBuffer(privateKey))
-        //const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey2);
+         //const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey1);
         const signedTx = rawTx.sign(utils.hexStringToBuffer(privateKey1));
         this.logger.info('signedTx is:', { signedTx } );
 
@@ -231,7 +233,7 @@ module.exports = class TransactionSender {
         if (!from) {
             throw new CustomError(`No from address given. Is there an issue with the private key? ${stack}`);
         }
-        let rawTx = await this.createRawTransaction(from, to, data, value);
+        let rawTx = await this.createRawTransaction(from, to, data, value, privateKey);
         let txHash;
         let error = '';
         let errorInfo = '';
@@ -243,7 +245,8 @@ module.exports = class TransactionSender {
             let serializedTx;
             if (privateKey && privateKey.length) {
                 if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
-                    signedTx = this.signETHRawTransaction(rawTx, privateKey);
+                    //signedTx = this.signETHRawTransaction(rawTx, privateKey);
+                    signedTx = rawTx;
                     serializedTx = signedTx;
                     console.log("signedTx: " + { signedTx }); 
                 }
