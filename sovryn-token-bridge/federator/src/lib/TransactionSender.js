@@ -92,7 +92,7 @@ module.exports = class TransactionSender {
         
 
         if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
-            const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId, privateKey);
+            const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
           
                   //         const common = new Common({ chain: Chain.Mainnet })
 // const tx = Transaction.fromTxData(txParams, { common })
