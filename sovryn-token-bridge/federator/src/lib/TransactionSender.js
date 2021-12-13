@@ -4,13 +4,16 @@ var constants = require('./Constants');
 
 console.log(constants.ETHERSCAN_CHAIN_ID); 
 
-const Tx = require('ethereumjs-tx');
+//const Tx = require('ethereumjs-tx');
+const Tx = require('@ethereumjs/tx');
+
 const ethUtils = require('ethereumjs-util');
 const utils = require('./utils');
 const CustomError = require('./CustomError');
 const GasPriceEstimator = require('./GasPriceEstimator');
 const fs = require('fs');
 const { FeeMarketEIP1559Transaction } = require( '@ethereumjs/tx' );
+const ethereumJsTx = require('@ethereumjs/tx') 
 const Common = require( '@ethereumjs/common' ).default;
 
 module.exports = class TransactionSender {
@@ -57,10 +60,16 @@ module.exports = class TransactionSender {
         return estimatedGas;
     }
 
+    async getChainId() {
+        const chainId =  this.chainId || await this.client.eth.net.getId();
+        return chainId;
+    }
+
     async createRawTransaction(from, to, data, value) {
         const nonce = await this.getNonce(from);
         console.log("----------nonce:   " + nonce);
-        const chainId =  this.chainId || await this.client.eth.net.getId();
+        //const chainId =  this.chainId || await this.client.eth.net.getId();
+        const chainId = await this.getChainId();
 
         console.log("chainId: " +chainId);
 
@@ -80,14 +89,22 @@ module.exports = class TransactionSender {
         //     return rawTx;
         // }
         // else
+        
+
         if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
+          
+                  //         const common = new Common({ chain: Chain.Mainnet })
+// const tx = Transaction.fromTxData(txParams, { common })
+
             let chain = new Common( { chain : 'rinkeby', hardfork : 'london' } );
-            const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
+            const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { chain } )
+
+            //const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
             this.logger.info('rawTxETH with feeMarket:', { tx} );
             console.log("rawTxETH: " +  { rawTxETH } );
-            // return tx;
-            return rawTxETH;
+            return tx;
+            // return rawTxETH;
         }
         else {
             const gasPrice = await this.getGasPrice(chainId);
@@ -115,7 +132,7 @@ module.exports = class TransactionSender {
         const maxSleepOnGas = 12;
         let sleepOnGasCounter = 0;
         let rawTx;
-        let temp_maxFeePerGas;
+        // let temp_maxFeePerGas;
 
             while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
             await utils.sleep(sleepOnGas, { logger: this.logger });
@@ -147,8 +164,8 @@ module.exports = class TransactionSender {
             chainId:  this.numberToHexString(chain),
             accessList: [],
             type: "0x02",
-            // r: 0,
-            // s: 0
+            r: 0,
+            s: 0
         }
         rawTx.gasLimit = this.numberToHexString(await this.getGasLimit(rawTx));
         this.logger.info('raw tx is:', { rawTx} );
@@ -161,6 +178,34 @@ module.exports = class TransactionSender {
         let tx = new Tx(rawTx);
         tx.sign(utils.hexStringToBuffer(privateKey));
         return tx;
+    }
+
+    signETHRawTransaction(rawTx, privateKey) {
+        //         const common = new Common({ chain: Chain.Mainnet })
+// const tx = Transaction.fromTxData(txParams, { common })
+
+// const privateKey = Buffer.from(
+//   'e331b6d69882b4cb4ea581d88e0b604039a3de5967688d3dcffdd2270c0fd109',
+//   'hex',
+// )
+
+// const signedTx = tx.sign(privateKey)
+
+// const serializedTx = signedTx.serialize()
+
+        console.log("privateKey 0: " + privateKey);
+        const privateKey1 = utils.hexStringToBuffer(privateKey);
+        console.log("privateKey 1: " + privateKey1);
+        const privateKey2 = Buffer.from(privateKey, 'hex' );
+        console.log("privateKey 2: " + privateKey2);
+
+        //let tx = new Tx(rawTx);
+        //rawTx.sign(utils.hexStringToBuffer(privateKey));
+        //const signedTx = this.client.eth.accounts.signTransaction(rawTx, utils.hexStringToBuffer(privateKey))
+        const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey2);
+        this.logger.info('signedTx is:', { signedTx } );
+
+        return signedTx;
     }
 
     async getAddress(privateKey) {
@@ -177,6 +222,10 @@ module.exports = class TransactionSender {
 
     async sendTransaction(to, data, value, privateKey) {
         const stack = new Error().stack;
+        
+        const chainId = await this.getChainId();
+        console.log("chainId: " +chainId);
+
         var from = await this.getAddress(privateKey);
         if (!from) {
             throw new CustomError(`No from address given. Is there an issue with the private key? ${stack}`);
@@ -186,11 +235,22 @@ module.exports = class TransactionSender {
         let error = '';
         let errorInfo = '';
     
+
         try {
             let receipt;
+            let signedTx;
+            let serializedTx;
             if (privateKey && privateKey.length) {
-                let signedTx = this.signRawTransaction(rawTx, privateKey);
-                const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
+                if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
+                    signedTx = this.signETHRawTransaction(rawTx, privateKey);
+                    serializedTx = signedTx;
+                    console.log("signedTx: " + { signedTx }); 
+                }
+                else {
+                    signedTx = this.signRawTransaction(rawTx, privateKey);
+                    serializedTx = ethUtils.bufferToHex(signedTx.serialize());
+                }
+                //const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
                 receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
             } else {
                 //If no private key provided we use personal (personal is only for testing)
