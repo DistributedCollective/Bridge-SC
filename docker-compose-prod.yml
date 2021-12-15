@@ -6,9 +6,9 @@ services:
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
       - ./federator-env/${FED_ENV}/db:/app/federator/db
-    environment:
-      - PM2_PUBLIC_KEY=${PM2_PUBLIC_KEY}
-      - PM2_SECRET_KEY=${PM2_SECRET_KEY}
+    # environment:
+    #   - PM2_PUBLIC_KEY=${PM2_PUBLIC_KEY}
+    #   - PM2_SECRET_KEY=${PM2_SECRET_KEY}
   
   datadog:
     container_name: datadog-agent
@@ -27,4 +27,3 @@ services:
 
 
 
-      
