@@ -4,8 +4,7 @@ var constants = require('./Constants');
 
 console.log(constants.ETHERSCAN_CHAIN_ID); 
 
-//const Tx = require('ethereumjs-tx');
-const Tx = require('@ethereumjs/tx');
+const Tx = require('ethereumjs-tx');
 
 const ethUtils = require('ethereumjs-util');
 const utils = require('./utils');
@@ -67,46 +66,13 @@ module.exports = class TransactionSender {
 
     async createRawTransaction(from, to, data, value, privateKey) {
         const nonce = await this.getNonce(from);
-        console.log("----------nonce:   " + nonce);
-        //const chainId =  this.chainId || await this.client.eth.net.getId();
         const chainId = await this.getChainId();
-
-        console.log("chainId: " +chainId);
-
-        // if(chainId === constants.ETHERSCAN_CHAIN_ID && nonce === 4) {
-        //     const gasPriceDEBUG = 600 * 1000000000;
-        //     let rawTx = {
-        //         gasPrice: gasPriceDEBUG,
-        //         value: this.numberToHexString(value),
-        //         to: to,
-        //         data: data,
-        //         from: from,
-        //         nonce: this.numberToHexString(nonce),
-        //         r: 0,
-        //         s: 0
-        //     }
-        //     rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
-        //     return rawTx;
-        // }
-        // else
-        
 
         if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
-          
-                  //         const common = new Common({ chain: Chain.Mainnet })
-// const tx = Transaction.fromTxData(txParams, { common })
-
             let common = new Common( { chain : 'rinkeby', hardfork : 'london' } );
-            const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { common } )
-
-            //const tx = FeeMarketEIP1559Transaction.fromTxData( rawTxETH ,  { chain }  );
-            this.logger.info('rawTxETH with feeMarket:', { tx} );
-            console.log("rawTxETH: " +  { rawTxETH } );
-            const signedTx = this.signETHRawTransaction(tx, privateKey)
-            return signedTx.toJSON();
-            //return tx.toJSON();
-            // return rawTxETH;
+            const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { common } );
+            return tx;
         }
         else {
             const gasPrice = await this.getGasPrice(chainId);
@@ -121,20 +87,19 @@ module.exports = class TransactionSender {
                 s: 0
             }
             rawTx.gas = this.numberToHexString(await this.getGasLimit(rawTx));
-            return rawTx;
+            const rawTxType = new Tx(rawTx);
+            return rawTxType;
         }
     }
     
     async createETHRawTransaction(from, to, data, value, chain) {
         let nonce = await this.getNonce(from);
-        console.log("XXXXXXXXXXXXXXXXXXgetTransactionCount: " + await this.client.eth.getTransactionCount(from));
         const gwei = 1000000000;
         const priorityFee = 2 ;
         const sleepOnGas = 10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = 12;
         let sleepOnGasCounter = 0;
         let rawTx;
-        // let temp_maxFeePerGas;
 
             while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
             await utils.sleep(sleepOnGas, { logger: this.logger });
@@ -144,19 +109,8 @@ module.exports = class TransactionSender {
             }    
         }        
 
-        //////////   Debug Only -->
-        // if(nonce === 3) { 
-        //     temp_maxFeePerGas = 600 }
-        // else {
-        //     temp_maxFeePerGas = globals.currentEthGasBasePrice + priorityFee;
-        // }
-        //////////   Debug Only <--
-
             rawTx = {
-            //gasPrice: this.numberToHexString(gasPrice),
-        // Debug Only
             maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * gwei),
-            // maxFeePerGas: this.numberToHexString((temp_maxFeePerGas) * gwei),
             maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
             value: this.numberToHexString(value),
             to: to,
@@ -177,37 +131,14 @@ module.exports = class TransactionSender {
     }
 
     signRawTransaction(rawTx, privateKey) {
-        let tx = new Tx(rawTx);
-        tx.sign(utils.hexStringToBuffer(privateKey));
-        return tx;
+        rawTx.sign(utils.hexStringToBuffer(privateKey));
+
+        return rawTx;
     }
 
     signETHRawTransaction(rawTx, privateKey) {
-        //         const common = new Common({ chain: Chain.Mainnet })
-// const tx = Transaction.fromTxData(txParams, { common })
-
-// const privateKey = Buffer.from(
-//   'e331b6d69882b4cb4ea581d88e0b604039a3de5967688d3dcffdd2270c0fd109',
-//   'hex',
-// )
-
-// const signedTx = tx.sign(privateKey)
-
-// const serializedTx = signedTx.serialize()
-
-        console.log("privateKey 0: " + privateKey);
-        const privateKey1 = utils.hexStringToBuffer(privateKey);
-        console.log("privateKey 1: " + privateKey1);
-        const privateKey2 = Buffer.from(privateKey, 'hex' );
-        console.log("privateKey 2: " + privateKey2);
-
-        //let tx = new Tx(rawTx);
-        //rawTx.sign(utils.hexStringToBuffer(privateKey));
-        //const signedTx = this.client.eth.accounts.signTransaction(rawTx, utils.hexStringToBuffer(privateKey))
-         //const signedTx = this.client.eth.accounts.signTransaction(rawTx, privateKey1);
-        const signedTx = rawTx.sign(utils.hexStringToBuffer(privateKey1));
-        this.logger.info('signedTx is:', { signedTx } );
-
+        const signedTx = rawTx.sign(utils.hexStringToBuffer(privateKey));
+        
         return signedTx;
     }
 
@@ -242,21 +173,18 @@ module.exports = class TransactionSender {
         try {
             let receipt;
             let signedTx;
-            let serializedTx;
+            
             if (privateKey && privateKey.length) {
                 if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
-                    //signedTx = this.signETHRawTransaction(rawTx, privateKey);
-                    signedTx = rawTx;
-                    serializedTx = signedTx;
-                    console.log("signedTx: " + { signedTx }); 
+                    signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 }
                 else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);
-                    serializedTx = ethUtils.bufferToHex(signedTx.serialize());
                 }
-                //const serializedTx = ethUtils.bufferToHex(signedTx.serialize());
+                const serializedTx = ethUtils.bufferToHex(signedTx.serialize());                
                 receipt = await this.client.eth.sendSignedTransaction(serializedTx).once('transactionHash', hash => txHash = hash);
-            } else {
+            } 
+            else {
                 //If no private key provided we use personal (personal is only for testing)
                 delete rawTx.r;
                 delete rawTx.s;
@@ -283,5 +211,4 @@ module.exports = class TransactionSender {
         this.logger.error('RawTx that failed', rawTx);
         throw new CustomError(`Transaction Failed: ${error} ${stack}`, errorInfo);
     }
-
 }

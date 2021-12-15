@@ -26,7 +26,7 @@ module.exports = class GasPriceFetcher {
         } catch (e) {
             throw new CustomError(`Error getting gas prices from ethesrcan: ${e.toString()}`, e);
         }
-        this.logger.debug('gas price response from etherscan:', response);
+        // this.logger.debug('gas price response from etherscan:', response);
         if (response.status !== '1') {
             throw new CustomError('Invalid status for response:' + JSON.stringify(response));
         }
