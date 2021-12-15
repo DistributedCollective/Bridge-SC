@@ -1,6 +1,6 @@
 export FED_ENV=$1
 export FED_ID=$2
-
+export DATADOG_API_KEY=$3
 
 
 # Error out early if there's any error in the script.
@@ -16,6 +16,12 @@ fi
 if [ -z "$FED_ID" ]
 then
         echo "ERROR: please provide uniqe id for this federator as second cmd arg."
+        exit
+fi
+
+if [ -z "$DATADOG_API_KEY" ]
+then
+        echo "ERROR: please provide datadog api key."
         exit
 fi
 
