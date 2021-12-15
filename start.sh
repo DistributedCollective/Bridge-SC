@@ -1,6 +1,6 @@
 export FED_ENV=$1
 export FED_ID=$2
-export DATADOG_API_KEY=$3
+# export DATADOG_API_KEY=$3
 
 
 # Error out early if there's any error in the script.
@@ -19,20 +19,20 @@ then
         exit
 fi
 
-if [ -z "$DATADOG_API_KEY" ]
-then
-        echo "ERROR: please provide datadog api key."
-        exit
-fi
+# if [ -z "$DATADOG_API_KEY" ]
+# then
+#         echo "ERROR: please provide datadog api key."
+#         exit
+# fi
 
 ./stop.sh
 ./reset.sh
 
-# echo "Enter pm2-public-key:"
-# read PM2_PUBLIC_KEY_VAL
+echo "Enter datadog-api-key:"
+read DATADOG_API_KEY
 # echo "Enter pm2-secret-key:"
 # read PM2_SECRET_KEY_VAL
-# export PM2_PUBLIC_KEY=$PM2_PUBLIC_KEY_VAL
+export DATADOG_API_KEY=$DATADOG_API_KEY
 # export PM2_SECRET_KEY=$PM2_SECRET_KEY_VAL
 rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.key
 
