@@ -1,0 +1,37 @@
+{"level":"info","message":"start scheduler service polling every 120000(ms)"}
+{"level":"info","message":"scheduler triggered poll"}
+{"color":"blue","level":"info","message":"Bridge-ETH ETH 2358 ETHes 2358 Delta: 0"}
+{"level":"info","message":"Bridge-BSC ETH 1412 ETHbs 1410 Delta: 2"}
+{"level":"info","message":"Bridge-BSC BNB 12434 BNBbs 12381 Delta: 53"}
+{"level":"info","message":"Bridge-ETH DAI 629328 DAIes 625708 Delta: 3620"}
+{"level":"info","message":"Bridge-ETH USDC 3396153 USDCes 3368340 Delta: 27813"}
+{"level":"info","message":"Bridge-ETH USDT 2438771 USDTes 2419571 Delta: 19200"}
+{"level":"info","message":"Bridge-BSC DAI 235 DAIbs 15 Delta: 220"}
+{"level":"info","message":"Bridge-BSC USDC 4987 USDCbs 3299 Delta: 1688"}
+{"level":"info","message":"Bridge-BSC USDT 4733 USDTbs 22 Delta: 4711"}
+{"level":"info","message":"Bridge-BSC BUSD 7176 BUSDbs 485 Delta: 6691"}
+{"level":"info","message":"scheduler poll run succesful, trigger next poll in "}
+{"level":"info","message":"scheduler triggered poll"}
+{"color":"blue","level":"info","message":"Bridge-ETH ETH 2358 ETHes 2358 Delta: 0"}
+{"level":"info","message":"Bridge-BSC ETH 1412 ETHbs 1410 Delta: 2"}
+{"level":"info","message":"Bridge-BSC BNB 12434 BNBbs 12381 Delta: 53"}
+{"level":"info","message":"Bridge-ETH DAI 629328 DAIes 625708 Delta: 3620"}
+{"level":"info","message":"Bridge-ETH USDC 3396153 USDCes 3368340 Delta: 27813"}
+{"level":"info","message":"Bridge-ETH USDT 2438771 USDTes 2419571 Delta: 19200"}
+{"level":"info","message":"Bridge-BSC DAI 235 DAIbs 15 Delta: 220"}
+{"level":"info","message":"Bridge-BSC USDC 4987 USDCbs 3299 Delta: 1688"}
+{"level":"info","message":"Bridge-BSC USDT 4733 USDTbs 22 Delta: 4711"}
+{"level":"info","message":"Bridge-BSC BUSD 7176 BUSDbs 485 Delta: 6691"}
+{"level":"info","message":"scheduler poll run succesful, trigger next poll in "}
+{"level":"info","message":"scheduler triggered poll"}
+{"color":"blue","level":"info","message":"Bridge-ETH ETH 2358 ETHes 2358 Delta: 0"}
+{"level":"info","message":"Bridge-BSC ETH 1412 ETHbs 1410 Delta: 2"}
+{"level":"info","message":"Bridge-BSC BNB 12434 BNBbs 12381 Delta: 53"}
+{"level":"info","message":"Bridge-ETH DAI 629328 DAIes 625708 Delta: 3620"}
+{"level":"info","message":"Bridge-ETH USDC 3396153 USDCes 3368340 Delta: 27813"}
+{"level":"info","message":"Bridge-ETH USDT 2438771 USDTes 2419571 Delta: 19200"}
+{"level":"info","message":"Bridge-BSC DAI 235 DAIbs 15 Delta: 220"}
+{"level":"info","message":"Bridge-BSC USDC 4987 USDCbs 3299 Delta: 1688"}
+{"level":"info","message":"Bridge-BSC USDT 4733 USDTbs 22 Delta: 4711"}
+{"level":"info","message":"Bridge-BSC BUSD 7176 BUSDbs 485 Delta: 6691"}
+{"level":"info","message":"scheduler poll run succesful, trigger next poll in "}

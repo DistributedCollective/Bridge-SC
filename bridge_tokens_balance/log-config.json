@@ -1,0 +1,24 @@
+{
+    "appenders": {
+        "file": {
+            "type": "file",
+            "filename": "federator.log",
+            "maxLogSize": 10485760,
+            "backups": 3,
+            "compress": true
+        },
+        "console": {
+            "type": "console"
+        }
+    },
+    "categories": {
+        "default": {
+            "appenders": [
+                "console"
+            ],
+            "level": "info"
+        }
+    },
+    "pm2": true,
+    "pm2InstanceVar": "Federator"
+}
