@@ -6,16 +6,16 @@ var metrics = require('datadog-metrics');
 metrics.init({ host: 'bridge-balance-checker', prefix: 'balances.' });
 
 
-const logger = createLogger({
-    level: 'info',
-    exitOnError: false,
-    format: format.json(),
-    transports: [
-      new transports.File({ filename: `./balances.log` }),
-    ],
-  });
+// const logger = createLogger({
+//     level: 'info',
+//     exitOnError: false,
+//     format: format.json(),
+//     transports: [
+//       new transports.File({ filename: `./balances.log` }),
+//     ],
+//   });
 
-  module.exports = logger;
+  //module.exports = logger;
 
 const Web3 = require('web3');
 const log4js = require('log4js');
@@ -43,7 +43,7 @@ const web3RSK = new Web3(rskHost);
 const web3ETH = new Web3(ethHost);
 const web3BSC = new Web3(bscHost);
 
-//const logger = log4js.getLogger('Check Balances');
+const logger = log4js.getLogger('Check Balances');
 
 let scheduler = new Scheduler(pollingInterval, logger, { run: () => run() });
 
@@ -339,16 +339,17 @@ async function run() {
         logger.error('Unhandled Error on run()', err);
         process.exit();
     }
+
+ 
+    // function collectMemoryStats() {
+    //     var memUsage = process.memoryUsage();
+    //     console.log(myNativeTokens[0].amount);
+    //   console.log(  myNativeTokens[1].amount);
+    //   console.log(typeof myNativeTokens[1].amount);
+    //     metrics.gauge('ethBridge.ETH', myNativeTokens[0].amount);
+    //     metrics.gauge('bscBridge.BNB', myNativeTokens[1].amount);
+    // };
     
-    function collectMemoryStats() {
-        var memUsage = process.memoryUsage();
-        console.log(myNativeTokens[0].amount);
-      console.log(  myNativeTokens[1].amount);
-      console.log(typeof myNativeTokens[1].amount);
-        metrics.gauge('ethBridge.ETH', myNativeTokens[0].amount);
-        metrics.gauge('bscBridge.BNB', myNativeTokens[1].amount);
-    };
-    
-    setInterval(collectMemoryStats, 5000);
+    // setInterval(collectMemoryStats, 5000);
     
 };
