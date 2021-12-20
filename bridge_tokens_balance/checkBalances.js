@@ -2,6 +2,10 @@ var StatsD = require('hot-shots');
 var dogstatsd = new StatsD();
 const { createLogger, format, transports } = require('winston');
 
+var metrics = require('datadog-metrics');
+metrics.init({ host: 'bridge-balance-checker', prefix: 'balances.' });
+
+
 const logger = createLogger({
     level: 'info',
     exitOnError: false,
@@ -335,5 +339,16 @@ async function run() {
         logger.error('Unhandled Error on run()', err);
         process.exit();
     }
+    
+    function collectMemoryStats() {
+        var memUsage = process.memoryUsage();
+        console.log(myNativeTokens[0].amount);
+      console.log(  myNativeTokens[1].amount);
+      console.log(typeof myNativeTokens[1].amount);
+        metrics.gauge('ethBridge.ETH', myNativeTokens[0].amount);
+        metrics.gauge('bscBridge.BNB', myNativeTokens[1].amount);
+    };
+    
+    setInterval(collectMemoryStats, 5000);
     
 };
