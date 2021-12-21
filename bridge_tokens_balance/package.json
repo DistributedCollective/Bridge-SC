@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bignumber.js": "^9.0.2",
+    "bn.js": "^5.2.0",
     "datadog-metrics": "^0.9.3",
     "hot-shots": "^9.0.0",
     "log4js": "^6.3.0",
