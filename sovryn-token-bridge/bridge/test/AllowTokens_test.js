@@ -9,6 +9,8 @@ const BN = web3.utils.BN;
 contract('AllowTokens', async function (accounts) {
     const tokenDeployer= accounts[0];
     const manager = accounts[1];
+    const oracle = accounts[4];
+    const oracle2 = accounts[5];
 
     beforeEach(async function () {
         this.token = await MainToken.new("MAIN", "MAIN", 18, 10000, { from: tokenDeployer });
@@ -178,7 +180,7 @@ contract('AllowTokens', async function (accounts) {
 
     describe('Fee And Min Per token', async function() {
 
-        it ('sets a new amount of fee and min per token', async function() {
+        it ('Owner sets a new amount of fee and min per token', async function() {
             let newFee = web3.utils.toWei('1');
             let newMin = web3.utils.toWei('2');
             await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
@@ -186,6 +188,50 @@ contract('AllowTokens', async function (accounts) {
             let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
             let minToken = await this.allowTokens.getMinPerToken(this.token.address);
 
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
+
+        it ('Oracle sets a new amount of fee and min per token', async function() {
+            await this.allowTokens.setGasPriceOracle(oracle, { from: manager });
+            let newFee = web3.utils.toWei('3');
+            let newMin = web3.utils.toWei('4');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: oracle });
+
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
+        
+        it ('Oracle that was removed cannot sets a new amount of fee and min per token', async function() {
+            await this.allowTokens.setGasPriceOracle(oracle, { from: manager });
+            let newFee = web3.utils.toWei('3');
+            let newMin = web3.utils.toWei('4');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: oracle });
+
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+
+            await this.allowTokens.setGasPriceOracle(oracle2, { from: manager });
+            newFee = web3.utils.toWei('1');
+            newMin = web3.utils.toWei('2');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: oracle2 });
+
+            feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+
+            let newFee1 = web3.utils.toWei('4');
+            let newMin1 = web3.utils.toWei('5');
+
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee1, newMin1, { from: oracle }));
             assert.equal(newFee.toString(), feeToken.toString());
             assert.equal(newMin.toString(), minToken.toString());
         });

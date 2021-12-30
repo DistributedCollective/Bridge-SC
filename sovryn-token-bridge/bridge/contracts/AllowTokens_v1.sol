@@ -4,7 +4,7 @@ import "./zeppelin/math/SafeMath.sol";
 import "./zeppelin/ownership/Ownable.sol";
 import "./IAllowTokens.sol";
 
-contract AllowTokens is IAllowTokens, Ownable {
+contract AllowTokens_v1 is IAllowTokens, Ownable {
     using SafeMath for uint256;
 
     address constant private NULL_ADDRESS = address(0);
@@ -21,10 +21,6 @@ contract AllowTokens is IAllowTokens, Ownable {
 // constant fee per token
     mapping (address => uint) public feeConstToken;
 
-// Bridge v6 upgrade variables
-// gasPriceOracle
-    address public gasPriceOracle;
-
     event AllowedTokenAdded(address indexed _tokenAddress);
     event AllowedTokenRemoved(address indexed _tokenAddress);
     event AllowedTokenValidation(bool _enabled);
@@ -34,9 +30,6 @@ contract AllowTokens is IAllowTokens, Ownable {
 
 // Bridge v3 upgrade events
     event FeeAndMinPerTokenChanged(address _token, uint256 _feeConst, uint256 _minAmount);
-
-// Bridge v6 upgrade events
-    event gasPriceOracleChanged(address oracleAddress);
 
     modifier notNull(address _address) {
         require(_address != NULL_ADDRESS, "AllowTokens: Address cannot be empty");
@@ -162,21 +155,13 @@ contract AllowTokens is IAllowTokens, Ownable {
     //    emit FeePerTokenChanged(token, feeConst);
     //}
 
-// Bridge v6 upgrade functions
-    //function setFeeAndMinPerToken(address token, uint256 _feeConst, uint256 _minAmount) external onlyOwner {
-    function setFeeAndMinPerToken(address token, uint256 _feeConst, uint256 _minAmount) external notNull(token) {
-        require(msg.sender == owner() || msg.sender == gasPriceOracle, "AllowTokens: Only owner or gasPriceOracle can set fee and min");
+    function setFeeAndMinPerToken(address token, uint256 _feeConst, uint256 _minAmount) external onlyOwner {
         require(_minAmount <= maxTokensAllowed, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
         require(_minAmount >= _feeConst, "AllowTokens: Min Tokens should be equal bigger than fee");
         require(_feeConst > 0, "AllowTokens: Fee Should be> 0");
         feeConstToken[token] = _feeConst;
         minAllowedToken[token] = _minAmount;
         emit FeeAndMinPerTokenChanged(token, _feeConst, _minAmount);
-    }
-
-    function setGasPriceOracle(address oracleAddress) external notNull(oracleAddress) onlyOwner {
-    gasPriceOracle  = oracleAddress;
-    emit gasPriceOracleChanged(oracleAddress);
     }
 
 }
