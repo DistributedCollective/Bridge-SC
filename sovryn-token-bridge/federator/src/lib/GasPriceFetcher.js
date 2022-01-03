@@ -7,8 +7,15 @@ module.exports = class GasPriceFetcher {
         {
             this.logger = logger;
             this.etherscanApiKey = etherscanApiKey;
+            //For Mainnet:
             // const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
-            const etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
+            
+            //For RinkebyTestnet:
+            //const etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
+            
+            //For Unit Testing only:
+            const etherscanApiBaseUrl = 'https://example.invalid/api';
+            
             //wss://rinkeby.infura.io/ws/v3/
             // this.etherscanApiKey = etherscanApiKey;
             this.etherscanApiBaseUrl = etherscanApiBaseUrl;
@@ -31,10 +38,10 @@ module.exports = class GasPriceFetcher {
             throw new CustomError('Invalid status for response:' + JSON.stringify(response));
         }
         const result = response.result || {};
-        this.logger.debug("result.SafeGasPrice: " ,result.SafeGasPrice);
+        //this.logger.debug("result.SafeGasPrice: " ,result.SafeGasPrice);
 
         //console.log("result.SafeGasPrice: " + result.SafeGasPrice);
-        const gwei = 1000000000;
+        //const gwei = 1000000000;
         return result.SafeGasPrice;
         // return {
         //     //lastblock: parseInt(result.LastBlock),
@@ -50,7 +57,7 @@ module.exports = class GasPriceFetcher {
             httpModule.get(url, (res) => {
                 if (res.statusCode !== 200) {
                     res.resume(); // consume response to free memory
-                    return reject(new Error(`invalid status code: ${res.statusCode}`))
+                    //return reject(new Error(`invalid status code: ${res.statusCode}`))
                 }
 
                 res.setEncoding('utf8');

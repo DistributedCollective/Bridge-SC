@@ -110,7 +110,7 @@ module.exports = class TransactionSender {
         }        
 
             rawTx = {
-            maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * gwei),
+            maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * 1.2 * gwei),
             maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
             value: this.numberToHexString(value),
             to: to,
@@ -138,7 +138,7 @@ module.exports = class TransactionSender {
 
     signETHRawTransaction(rawTx, privateKey) {
         const signedTx = rawTx.sign(utils.hexStringToBuffer(privateKey));
-        
+
         return signedTx;
     }
 
