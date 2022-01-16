@@ -17,6 +17,19 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
+let etherscanApiBaseUrl;
+if(config.sidechain === './rinkeby.json') {
+    etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
+}
+else if (config.sidechain === './mainnet.json') {
+    etherscanApiBaseUrl = 'https://api.etherscan.io/api';
+}
+
+//For Mainnet:
+// const etherScanApiBaseUrl = 'https://api.etherscan.io/api';            
+//For RinkebyTestnet:
+//const etherScanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
+
 
 
 module.exports = class GasServices {
@@ -33,7 +46,8 @@ module.exports = class GasServices {
 
         this.gasPriceFetcher = new GasPriceFetcher(
             log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
-            config.etherscanApiKey
+            config.etherscanApiKey,
+            etherScanApiBaseUrl
         );
         
         this.gasPriceAvg = new GasPriceAvg(
@@ -64,8 +78,6 @@ module.exports = class GasServices {
         });  
 
         this.logger.info(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
-        //log4js.getLogger('GAS-SERVICE-WAKEUP');
-        //console.log(`Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`);
         this.logger.debug('Process is waiting to calculate average gas of ' ,avgGasPeriodInterval);
         await utils.sleep(avgGasPeriodInterval, { logger: this.logger });
     }
@@ -75,10 +87,9 @@ module.exports = class GasServices {
         try {
             globals.currentEthGasBasePrice = await this.gasPriceFetcher.getEtherscanBaseGasPrice();
             this.logger.debug('currentEthGasBasePrice: ' ,globals.currentEthGasBasePrice);
-            console.log("currentEthGasBasePrice: " + globals.currentEthGasBasePrice);
         } catch(err) {
             this.logger.error('Unhandled Error on runGasPriceService()', err);
-            process.exit();
+        // process.exit();
         }
     }
     
@@ -87,10 +98,9 @@ module.exports = class GasServices {
         try {
             globals.currentEthGasPriceAvg = await this.gasPriceAvg.calcAvg(avgGasCount, globals.currentEthGasBasePrice);
             this.logger.debug('currentEthGasPriceAvg: ' ,globals.currentEthGasPriceAvg);
-            console.log("currentEthGasPriceAvg: " + globals.currentEthGasPriceAvg);
         } catch(err) {
             logger.error('Unhandled Error on runGasWatcher()', err);
-            process.exit();
+        // process.exit();
         }
     }
     

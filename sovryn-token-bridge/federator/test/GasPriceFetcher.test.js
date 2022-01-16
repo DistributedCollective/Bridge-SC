@@ -34,13 +34,17 @@ describe('GasPriceFetcher', () => {
             }
         }
 
-            estimator = new EtherscanGasPriceFetcher({
-                etherscanApiKey: 'f00',
-                logger: fauxLogger,
-            });
-            estimatorWithoutApiKey = new EtherscanGasPriceFetcher({
-                logger: fauxLogger,
-            });
+        estimator = new EtherscanGasPriceFetcher(
+            fauxLogger,
+            'f00',
+            'https://example.invalid/api'
+        );
+
+        estimatorWithoutApiKey = new EtherscanGasPriceFetcher(
+            fauxLogger,
+            '',
+            'https://example.invalid/api'
+        );
 
         // estimator = new EtherscanGasPriceEstimator({
         //     web3: web3Mock,

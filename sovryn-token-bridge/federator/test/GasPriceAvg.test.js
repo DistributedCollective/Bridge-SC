@@ -1,4 +1,5 @@
 const gasPriceAvg = require("../src/lib/GasPriceAvg");
+let averageT; 
 
 describe('GasPriceAvg', () => {
 
@@ -11,27 +12,33 @@ describe('GasPriceAvg', () => {
             //initial average = 90 
             let averagePrice = await averageT.calcAvg(4,91);
             let tempAvg = averagePrice.toFixed(2);
-            console.log("tempAvg: "+ tempAvg);
-            // (90+91)/2 = 90.5
-            expect(tempAvg === (90.5));
+            // (91)/1 = 91.00
+            //expect(tempAvg).toBeCloseTo(90.5, 0.0001);
+            expect(tempAvg).toEqual("91.00");
             
             averagePrice = await averageT.calcAvg(4,112);
             tempAvg = averagePrice.toFixed(2);
-            console.log("tempAvg: "+ tempAvg);
-            // (90+91+112)/3 = 97.67
-            expect(tempAvg === (97.67));
+            // (91+112)/2 = 101.50
+            expect(tempAvg).toEqual("101.50");
+
+            // expect(tempAvg).toBeCloseTo(97.67, 0.0001);
 
             averagePrice = await averageT.calcAvg(4,110);
             tempAvg = averagePrice.toFixed(2);
-            console.log("tempAvg: "+ tempAvg);
-            // (90+91+112+110)/4 = 100.75
-            expect(tempAvg === (100.75));
+            // (91+112+110)/3 = 104.33
+            expect(tempAvg).toEqual("104.33");
             
             averagePrice = await averageT.calcAvg(4,99);
             tempAvg = averagePrice.toFixed(2);
-            console.log("tempAvg: "+ tempAvg);
             // (91+112+110+99)/4 = 103
-            expect(tempAvg === (103));
+            expect(tempAvg).toEqual("103.00");
+            // expect(tempAvg).toBeCloseTo(103, 0.0001);
+
+            averagePrice = await averageT.calcAvg(4,88);
+            tempAvg = averagePrice.toFixed(2);
+            // (112+110+99+88)/4 = 102.25
+            expect(tempAvg).toEqual("102.25");
+
         });
     });
 });

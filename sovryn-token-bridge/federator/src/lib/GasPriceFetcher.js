@@ -3,10 +3,15 @@ const https = require('https');
 const CustomError = require('./CustomError');
 
 module.exports = class GasPriceFetcher {
-    constructor(logger, etherscanApiKey)
+    constructor(
+        logger,
+        etherscanApiKey,
+        etherscanApiBaseUrl //= 'https://api.etherscan.io/api',
+        )
         {
             this.logger = logger;
             this.etherscanApiKey = etherscanApiKey;
+            this.etherscanApiBaseUrl = etherscanApiBaseUrl;
             //For Mainnet:
             // const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
             
@@ -14,16 +19,14 @@ module.exports = class GasPriceFetcher {
             //const etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
             
             //For Unit Testing only:
-            const etherscanApiBaseUrl = 'https://example.invalid/api';
+            //const etherscanApiBaseUrl = 'https://example.invalid/api';
             
             //wss://rinkeby.infura.io/ws/v3/
             // this.etherscanApiKey = etherscanApiKey;
-            this.etherscanApiBaseUrl = etherscanApiBaseUrl;
         }        
 
     async getEtherscanBaseGasPrice() {
         let url = `${this.etherscanApiBaseUrl}?module=gastracker&action=gasoracle`;
-        //console.log(url);
         // if (this.etherscanApiKey) {
         //     url += `&apikey=${this.etherscanApiKey}`;
         // }
@@ -40,8 +43,6 @@ module.exports = class GasPriceFetcher {
         const result = response.result || {};
         //this.logger.debug("result.SafeGasPrice: " ,result.SafeGasPrice);
 
-        //console.log("result.SafeGasPrice: " + result.SafeGasPrice);
-        //const gwei = 1000000000;
         return result.SafeGasPrice;
         // return {
         //     //lastblock: parseInt(result.LastBlock),

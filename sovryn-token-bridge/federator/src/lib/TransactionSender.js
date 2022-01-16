@@ -1,9 +1,7 @@
 
 var globals = require('./Globals');
 var constants = require('./Constants');
-
-console.log(constants.ETHERSCAN_CHAIN_ID); 
-
+ 
 const Tx = require('ethereumjs-tx');
 
 const ethUtils = require('ethereumjs-util');
@@ -17,11 +15,12 @@ const Common = require( '@ethereumjs/common' ).default;
 
 module.exports = class TransactionSender {
 
-    constructor(client, logger, config) {
+    constructor(client, logger, config, chainId) {
 
         this.client = client;
         this.logger = logger;
-        this.chainId = null;
+        this.chainId = chainId;
+        this.config = config;
         this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
 
         this.gasPriceEstimator = new GasPriceEstimator({
@@ -32,7 +31,7 @@ module.exports = class TransactionSender {
     }
 
     async getNonce(address) {
-        return this.client.eth.getTransactionCount(address, "pending");
+        return await this.client.eth.getTransactionCount(address, "pending");
     }
 
     numberToHexString(number) {
@@ -68,7 +67,7 @@ module.exports = class TransactionSender {
         const nonce = await this.getNonce(from);
         const chainId = await this.getChainId();
 
-        if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
+        if (parseInt(chainId) === parseInt(constants.ETHERSCAN_CHAIN_ID)) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
             let common = new Common( { chain : 'rinkeby', hardfork : 'london' } );
             const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { common } );
@@ -96,12 +95,12 @@ module.exports = class TransactionSender {
         let nonce = await this.getNonce(from);
         const gwei = 1000000000;
         const priorityFee = 2 ;
-        const sleepOnGas = 10 * 1000 ; // 10 Seconds
-        const maxSleepOnGas = 12;
+        const sleepOnGas = this.config.sleepOnGas * 1000 ; //10 * 1000 ; // 10 Seconds
+        const maxSleepOnGas = this.config.maxSleepOnGas; //12
         let sleepOnGasCounter = 0;
         let rawTx;
 
-            while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
+        while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
             await utils.sleep(sleepOnGas, { logger: this.logger });
             sleepOnGasCounter++;
             if (sleepOnGasCounter > maxSleepOnGas) {
@@ -109,15 +108,15 @@ module.exports = class TransactionSender {
             }    
         }        
 
-            rawTx = {
-            maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * 1.2 * gwei),
+        rawTx = {
+            maxFeePerGas: this.numberToHexString((parseInt(globals.currentEthGasBasePrice) + parseInt(priorityFee)) * 1.3 * gwei),
             maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
             value: this.numberToHexString(value),
             to: to,
             data: data,
             from: from,
             nonce: this.numberToHexString(nonce),
-            chainId:  this.numberToHexString(chain),
+            chainId:  this.numberToHexString(parseInt( chain)),
             accessList: [],
             type: "0x02",
             r: 0,
@@ -125,7 +124,6 @@ module.exports = class TransactionSender {
         }
         rawTx.gasLimit = this.numberToHexString(await this.getGasLimit(rawTx));
         this.logger.info('raw tx is:', { rawTx} );
-        console.log("ETH raw tx is:" + rawTx);
 
         return rawTx;
     }
@@ -156,9 +154,7 @@ module.exports = class TransactionSender {
 
     async sendTransaction(to, data, value, privateKey) {
         const stack = new Error().stack;
-        
         const chainId = await this.getChainId();
-        console.log("chainId: " +chainId);
 
         var from = await this.getAddress(privateKey);
         if (!from) {

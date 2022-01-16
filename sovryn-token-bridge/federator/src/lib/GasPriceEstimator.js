@@ -77,8 +77,6 @@ module.exports = class GasPriceEstimator {
 
     //     this.logger.debug('Fetching gas prices from Etherscan');
     //     const gasPrices = await this.getEtherscanGasPricesWithoutCaching();
-    //     console.log("gasPrices "+ gasPrices.safeGasPrice);
-    //     console.log("lastblock "+ gasPrices.lastblock);
     //     this.cachedEtherscanGasPrices = gasPrices;
     //     this.cachedEtherscanGasPriceTimestamp = Date.now();
     //     return gasPrices;
@@ -86,7 +84,6 @@ module.exports = class GasPriceEstimator {
     
     // async getEtherscanGasPricesWithoutCaching() {
     //     let url = `${this.etherscanApiBaseUrl}?module=gastracker&action=gasoracle`;
-    //     console.log(url);
     //     if (this.etherscanApiKey) {
     //         url += `&apikey=${this.etherscanApiKey}`;
     //     }

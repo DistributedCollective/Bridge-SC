@@ -1,10 +1,10 @@
 
 module.exports = class GasPriceAvg {
     constructor() {
-        this.arr = [90];
+        this.arr = [];
     }
  
-    async calcAvg(_avgGasCount, elem) {
+    calcAvg(_avgGasCount, elem) {
         this.arr.push(elem);
 
         if (this.arr.length > _avgGasCount){
