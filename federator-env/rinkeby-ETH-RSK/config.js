@@ -13,6 +13,8 @@ module.exports = {
     gasApiRunEvery: 5, // In Seconds,
     avgGasRunEvery: 10, // In Seconds,
     periodAvgGas: 240, // In minutes,
+    sleepOnGas: 2, // In Seconds
+    maxSleepOnGas: 3, // Count
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
