@@ -17,8 +17,8 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
-let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
-console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
+// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+// console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
 //For Mainnet:
 // const etherScanApiBaseUrl = 'https://api.etherscan.io/api';            
 //For RinkebyTestnet:
@@ -31,6 +31,9 @@ module.exports = class GasServices {
         this.logger = logger;
         this.config = config;
         
+        let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+        console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
+
         // this.gasPriceEstimator = new GasPriceEstimator({
         //     web3: this.client,
         //     logger: this.logger,
@@ -41,7 +44,7 @@ module.exports = class GasServices {
         this.gasPriceFetcher = new GasPriceFetcher(
             log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
             config.etherscanApiKey,
-            etherScanApiBaseUrl
+            etherscanApiBaseUrl
         );
         
         this.gasPriceAvg = new GasPriceAvg(
