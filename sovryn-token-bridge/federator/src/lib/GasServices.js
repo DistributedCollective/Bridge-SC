@@ -17,14 +17,8 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
-let etherscanApiBaseUrl;
-if(config.sidechain === './rinkeby.json') {
-    etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
-}
-else if (config.sidechain === './mainnet.json') {
-    etherscanApiBaseUrl = 'https://api.etherscan.io/api';
-}
-
+let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
 //For Mainnet:
 // const etherScanApiBaseUrl = 'https://api.etherscan.io/api';            
 //For RinkebyTestnet:
