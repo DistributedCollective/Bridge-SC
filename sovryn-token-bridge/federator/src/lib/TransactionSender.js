@@ -66,10 +66,18 @@ module.exports = class TransactionSender {
     async createRawTransaction(from, to, data, value, privateKey) {
         const nonce = await this.getNonce(from);
         const chainId = await this.getChainId();
+        let chainName;
 
         if (parseInt(chainId) === parseInt(constants.ETHERSCAN_CHAIN_ID)) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
-            let common = new Common( { chain : 'rinkeby', hardfork : 'london' } );
+             
+            if ( parseInt(chainId) === 1 ) {
+                chainName = 'mainnet'
+            }
+            else if ( parseInt(chainId) === 4 ) {
+                chainName = 'rinkeby'
+            }
+            let common = new Common( { chain : chainName, hardfork : 'london' } );
             const tx = ethereumJsTx.FeeMarketEIP1559Transaction.fromTxData(rawTxETH, { common } );
             return tx;
         }
