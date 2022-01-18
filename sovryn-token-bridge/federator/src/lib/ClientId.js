@@ -14,7 +14,9 @@ module.exports = class ClientId {
     async isEthereumChain() {
         const chainIdSide = await this.sideWeb3.eth.net.getId();
         const chainIdMain = await this.mainWeb3.eth.net.getId();
-        
-        return (chainIdSide === constants.ETHERSCAN_CHAIN_ID || chainIdMain === constants.ETHERSCAN_CHAIN_ID);
+        console.log("chainIdSide: " + chainIdSide);
+        console.log("chainIdMain: " + chainIdMain);
+        console.log("constants.ETHERSCAN_CHAIN_ID: " + constants.ETHERSCAN_CHAIN_ID);
+        return (parseInt(chainIdSide) === parseInt(constants.ETHERSCAN_CHAIN_ID) || parseInt(chainIdMain) === parseInt(constants.ETHERSCAN_CHAIN_ID));
     }
 }

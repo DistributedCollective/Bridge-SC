@@ -171,7 +171,7 @@ module.exports = class TransactionSender {
             let signedTx;
             
             if (privateKey && privateKey.length) {
-                if (chainId === constants.ETHERSCAN_CHAIN_ID ) {
+                if (parseInt(chainId) === parseInt(constants.ETHERSCAN_CHAIN_ID) ) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 }
                 else {
