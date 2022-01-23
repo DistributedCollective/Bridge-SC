@@ -9,6 +9,8 @@ eth.getAccounts = () => defaults.data.accounts;
 eth.getTransactionCount = () => defaults.data.ethTransactionCount;
 eth.getGasPrice = () => defaults.data.gasPrice;
 eth.estimateGas = () => defaults.data.estimatedGas;
+eth.getNonce = () => defaults.data.ethTransactionCount;
+
 
 let promiseSend = function(){
     var promiEvent = Web3PromiEvent();

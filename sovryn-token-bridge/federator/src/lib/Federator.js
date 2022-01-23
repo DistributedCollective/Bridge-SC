@@ -21,7 +21,7 @@ module.exports = class Federator {
         this.sideBridgeContract = new this.sideWeb3.eth.Contract(abiBridge, this.config.sidechain.bridge);
         this.federationContract = new this.sideWeb3.eth.Contract(abiFederation, this.config.sidechain.federation);
 
-        this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+        this.transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, '');
 
         this.lastBlockPath = `${config.storagePath || __dirname}/lastBlock.txt`;
         const failingTxIdsPath = `${config.storagePath || __dirname}/failingTxIds.txt`;
@@ -39,6 +39,7 @@ module.exports = class Federator {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
+
                 const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
 
                 const toBlock = currentBlock - ctr.getMinConfirmation();
@@ -110,7 +111,7 @@ module.exports = class Federator {
 
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, '');
             const from = await transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this._getCurrentBlockNumber();
 
@@ -218,7 +219,7 @@ module.exports = class Federator {
     async _voteTransaction(tokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData, transactionId, transactionIdU) {
         try {
 
-            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config);
+            const transactionSender = new TransactionSender(this.sideWeb3, this.logger, this.config, '');
             this.logger.info(`Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`);
 
             const isFailing = this._isFailingByTxId(transactionId, transactionHash) || this._isFailingByTxId(transactionIdU, transactionHash)

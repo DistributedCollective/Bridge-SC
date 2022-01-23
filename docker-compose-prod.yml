@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: sovryn/fed-tokenbridge:9.1
+    image: sovryn/fed-tokenbridge:9.9
     command: --name ${FED_ID}
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
@@ -24,6 +24,3 @@ services:
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_CONTAINER_EXCLUDE="name:datadog-agent"
       - DD_TAGS="FED_ENV:${FED_ENV} FED_ID:${FED_ID}"
-
-
-

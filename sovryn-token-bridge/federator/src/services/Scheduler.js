@@ -31,7 +31,7 @@ module.exports = class Scheduler {
     }
 
     async stop() {
-        this.logger.info('stop scheduler service');
+     this.logger.info('stop scheduler service');
         if (this.running) {
             if (this.pollingTimeout != null) {
                 clearTimeout(this.pollingTimeout);

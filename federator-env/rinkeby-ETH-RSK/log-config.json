@@ -15,7 +15,5 @@
         "default": {
             "appenders": ["file", "console"],
             "level": "debug" }
-    },
-    "pm2": true,
-    "pm2InstanceVar": "Federator"
+    }
 }
