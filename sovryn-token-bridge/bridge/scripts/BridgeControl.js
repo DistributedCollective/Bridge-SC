@@ -13,7 +13,9 @@ const RskmainnetTokensETH = require("./BridgeAddresses").rskmainnetTokensETH;
 const BmainnetETHToken = require("./BridgeAddresses").bmainnetETHToken;
 const RskbscmainnetETHToken = require("./BridgeAddresses").rskbscmainnetETHToken;
 const BmainnetBNB = require("./BridgeAddresses").bmainnetBNB;
+const RskmainnetRBTC = require("./BridgeAddresses").rskmainnetRBTC;
 const RskbscmainnetBNB = require("./BridgeAddresses").rskbscmainnetBNB;
+const BscbscbmainnetRBTC = require("./BridgeAddresses").bscbscbmainnetRBTC;
 const BmainnetSOV = require("./BridgeAddresses").bmainnetSOV;
 const MainnetSOV = require("./BridgeAddresses").mainnetSOV;
 
@@ -36,7 +38,7 @@ module.exports = async callback => {
             throw new Error('npx truffle exec ./scripts/BridgeControl.js --network <net> <bridgeType> <tokenType> <enableMethod> <input0> <input1> <input2>\n' + 
             'net: testnet, btestnet, rsktestnet, ropsten, btestnet, rsktestnet\n' +
             'bridgeType: bsc, eth\n'+
-            'tokenType: "", sov, stable, eth, bnb\n'+
+            'tokenType: "", sov, stable, eth, bnb, rbtc\n'+
             'enableMethod: name of the function to call\n'+
             'input0: first input to function\n'+
             'input1: second input to function\n'+
@@ -70,7 +72,8 @@ module.exports = async callback => {
         let federationAddress;
         let multiSigAddress;
         let allowTokensAddress;
-        
+        let erc777ConverterAddress;
+
         let tokens;
         let decimals;
 
@@ -109,6 +112,14 @@ module.exports = async callback => {
                 ];
                 decimals = [
                     BmainnetBNB.BNB_BMainnet[56].decimals
+                ];
+            }
+            else if(tokenType == "rbtc") {
+                tokens = [
+                    BscbscbmainnetRBTC.RBTC_BscBSCMAinnet[56].address
+                ];
+                decimals = [
+                    BscbscbmainnetRBTC.RBTC_BscBSCMAinnet[56].decimals
                 ];
             }    
             else if(tokenType == "sov") {
@@ -163,7 +174,14 @@ module.exports = async callback => {
                 decimals = [
                     RskmainnetTokens.SOV_RskMainnet[30].decimals
                 ];
-
+            };
+            if(tokenType == "rbtc") {
+                tokens = [
+                    RskmainnetRBTC.RBTC_RskMainnet[30].address.toLowerCase()
+                ];
+                decimals = [
+                    RskmainnetRBTC.RBTC_RskMainnet[30].decimals
+                ];
             };
             if(bridgeType == "bsc"){
                 bridgeAddress = RskBSCConfig.bridge;
