@@ -45,7 +45,7 @@ def sendEmail(needFundsWalletsOuput, subject){
                         </html>
 
                     """
-    emailext (from: "notifications@sovryn.app", to:"ororosovryn@protonmail.com, shlumperx@gmail.com, brave.pooh8@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
+    emailext (to:"ororosovryn@protonmail.com, shlumperx@gmail.com, brave.pooh8@gmail.com, elan@remake.money", mimeType: 'text/html', subject: subject, body: emailBody)
 
 }
 
