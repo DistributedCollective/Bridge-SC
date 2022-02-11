@@ -5,5 +5,5 @@
     "allowTokens": "0xeb23e848ceca88b7d0c019c7186bb86cefadd0bd",
     "erc777Converter": "0x573CAF2cA648e22fE9721EDB5DdfBdF5645ffd18",
     "host": "https://data-seed-prebsc-1-s1.binance.org:8545/",
-    "fromBlock": 14289770
+    "fromBlock": 16600000
 }
