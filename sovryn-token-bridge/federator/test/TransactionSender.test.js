@@ -56,7 +56,9 @@ describe('TransactionSender module tests', () => {
         web3Mock.eth.getTransactionCount = jest.fn().mockReturnValue(Promise.resolve('213'));
         web3Mock.eth.estimateGas = jest.fn().mockReturnValue(Promise.resolve('70000'));
 
-        const sender = new TransactionSender(web3Mock, logger, config, '4');
+        const configNoSleep = { ...config, sleepOnGas: 0 };
+
+        const sender = new TransactionSender(web3Mock, logger, configNoSleep, '4');
         await expect(sender.createRawTransaction(from, to, data, value)).rejects.toThrow(
             CustomError
         );
