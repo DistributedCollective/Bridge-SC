@@ -18,10 +18,9 @@ import "./IBridge.sol";
 import "./ISideToken.sol";
 import "./ISideTokenFactory.sol";
 import "./IAllowTokens.sol";
-import "./IBridgeReceiver.sol";
 import "./Utils.sol";
 
-contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
+contract Bridge_v4 is Initializable, IBridge, IERC777Recipient, UpgradablePausable, UpgradableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
@@ -55,8 +54,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     string private nativeTokenSymbol;
     //Bridge_V4 variables
     address public erc777ConverterAddr;
-    //Bridge_v5 variables
-    mapping(address => bool) public isBridgeReceiver;
 
     event FederationChanged(address _newFederation);
     event SideTokenFactoryChanged(address _newSideTokenFactory);
@@ -65,7 +62,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     event PrefixUpdated(bool _isSuffix, string _prefix);
     event RevokeTx(bytes32 tx_revoked);
     event erc777ConverterSet(address erc777ConverterAddress);
-    event BridgeReceiverStatusChanged(address bridgeReceiver, bool newStatus);
 
 // We are not using this initializer anymore because we are upgrading.
 //    function initialize(
@@ -86,7 +82,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 //    }
 
     function version() external pure returns (string memory) {
-        return "v5";
+        return "v3";
     }
 
     modifier onlyFederation() {
@@ -152,7 +148,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         _processTransaction(blockHash, transactionHash, receiver, amount, logIndex);
 
         if (knownTokens[tokenAddress]) {
-            _acceptCrossBackToToken(receiver, tokenAddress, decimals, granularity, amount,  userData);
+            _acceptCrossBackToToken(receiver, tokenAddress, decimals, granularity, amount);
         } else {
             _acceptCrossToSideToken(receiver, tokenAddress, decimals, granularity, amount, symbol, userData);
         }
@@ -199,10 +195,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
-    // When calling _acceptCrossBackToToken(), userData is used only for a bridge transfer to BridgeReceiver SC.
-    // When calling _acceptCrossBackToToken() to a non BridgeReceiver SC, the userData is logged in the AcceptedCrossTransfer event but is not actually being used.
-    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount, bytes memory userData
-) private {
+    function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount) private {
         require(decimals == 18, "Bridge: Invalid decimals cross back");
         //As side tokens are ERC777 we need to convert granularity to decimals
         (uint8 calculatedDecimals, uint256 formattedAmount) = Utils.calculateDecimalsAndAmount(tokenAddress, granularity, amount);
@@ -214,18 +207,14 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         //// Bridge v4 upgrade functions
         if (tokenAddress == WETHAddr) {
             address payable payableReceiver = address(uint160(receiver));
-            if (isBridgeReceiver[receiver]) {
-                IBridgeReceiver(payableReceiver).receiveEthFromBridge.value(amount)(userData);
-            } else {
-                (bool success, ) =
-                    payableReceiver.call.value(amount)("");
-                require(success, "Bridge: Failed to send ETH to receiver");
-            }
+            (bool success, ) =
+                payableReceiver.call.value(amount)("");
+            require(success, "Bridge: Failed to send ETH to receiver");
         }
         else {
             IERC20(tokenAddress).safeTransfer(receiver, formattedAmount);
         }
-        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, userData);
+        emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, calculatedDecimals, 1, "");
     }
 
     /**
@@ -509,15 +498,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
 
     function getErc777Converter() external view returns(address) {
         return erc777ConverterAddr;
-    }
-
-    function setBridgeReceiverStatus(
-        address receiverAddress,
-        bool status
-    ) external onlyOwner {
-        require(receiverAddress != address(0), "Cannot set zero address as bridge receiver");
-        isBridgeReceiver[receiverAddress] = status;
-        emit BridgeReceiverStatusChanged(receiverAddress, status);
     }
 
 // Function bytesToBytes32() replaced with _isZeroValue() to check if bytes userData is Zero
