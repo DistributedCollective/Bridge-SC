@@ -199,6 +199,8 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
         emit AcceptedCrossTransfer(tokenAddress, receiver, amount, decimals, granularity, formattedAmount, 18, calculatedGranularity, userData);
     }
 
+    // When calling _acceptCrossBackToToken(), userData is used only for a bridge transfer to BridgeReceiver SC.
+    // When calling _acceptCrossBackToToken() to a non BridgeReceiver SC, the userData is logged in the AcceptedCrossTransfer event but is not actually being used.
     function _acceptCrossBackToToken(address receiver, address tokenAddress, uint8 decimals, uint256 granularity, uint256 amount, bytes memory userData
 ) private {
         require(decimals == 18, "Bridge: Invalid decimals cross back");
