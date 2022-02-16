@@ -1,4 +1,5 @@
 const web3 = require('web3');
+
 module.exports = class ClientId {
     constructor(logger, config, Web3 = web3) {
         this.config = config;
@@ -13,7 +14,6 @@ module.exports = class ClientId {
         const chainIdMain = await this.mainWeb3.eth.net.getId();
         console.log('chainIdSide: ' + chainIdSide);
         console.log('chainIdMain: ' + chainIdMain);
-        console.log('constants.ETHERSCAN_CHAIN_ID: ' + constants.ETHERSCAN_CHAIN_ID);
         return parseInt(chainIdSide) === 1 || parseInt(chainIdMain) === 1;
     }
 };
