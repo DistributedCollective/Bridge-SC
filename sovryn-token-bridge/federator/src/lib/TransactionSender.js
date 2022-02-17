@@ -80,7 +80,6 @@ module.exports = class TransactionSender {
 
         const chainIdInt = parseInt(chainId);
 
-        // Check if Ethereum mainnet or testnet
         if (chainIdInt === MAINNET_ID || chainIdInt === RINKEBY_ID) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
 
