@@ -1,4 +1,5 @@
 var globals = require('./globals');
+const { MAINNET_ID, RINKEBY_ID } = require('./constants');
 
 const Tx = require('ethereumjs-tx');
 
@@ -64,9 +65,9 @@ module.exports = class TransactionSender {
 
     getChainName(chainId) {
         switch (chainId) {
-            case 1:
+            case MAINNET_ID:
                 return 'mainnet';
-            case 4:
+            case RINKEBY_ID:
                 return 'rinkeby';
             default:
                 throw new Error('Unknown chain id');
@@ -80,7 +81,7 @@ module.exports = class TransactionSender {
         const chainIdInt = parseInt(chainId);
 
         // Check if Ethereum mainnet or testnet
-        if (chainIdInt === 1 || chainIdInt === 4) {
+        if (chainIdInt === MAINNET_ID || chainIdInt === RINKEBY_ID) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
 
             const chainName = this.getChainName(chainIdInt);
@@ -188,7 +189,7 @@ module.exports = class TransactionSender {
             let signedTx;
 
             if (privateKey && privateKey.length) {
-                if (parseInt(chainId) === parseInt(constants.ETHERSCAN_CHAIN_ID)) {
+                if (parseInt(chainId) === parseInt(MAINNET_ID)) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 } else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);
