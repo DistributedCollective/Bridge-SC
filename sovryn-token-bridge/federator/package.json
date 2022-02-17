@@ -17,7 +17,7 @@
         "coverage": "jest --detectOpenHandles --coverage test/",
         "integrationTest": "rm -rf ./db/* && node ./integrationTest/integrationTest.js",
         "clean": "rm -rf ./db/*",
-        "mainChain": "js integrationTest/runGanacheMainchain.js",
+        "mainChain": "node integrationTest/runGanacheMainchain.js",
         "sideChain": "js integrationTest/runGanacheSidechain.js"
     },
     "dependencies": {

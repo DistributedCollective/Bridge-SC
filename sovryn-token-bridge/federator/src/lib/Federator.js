@@ -48,21 +48,21 @@ module.exports = class Federator {
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
-                const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
-                const toBlock = currentBlock - ctr.getMinConfirmation();
+                // const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
+                // const toBlock = currentBlock - ctr.getMinConfirmation();
 
-                this.logger.info('Running to Block', toBlock);
+                // this.logger.info('Running to Block', toBlock);
 
-                if (toBlock <= 0) return false;
+                // if (toBlock <= 0) return false;
 
-                const fromBlock = this._getFromBlock(toBlock);
-                if (!fromBlock) return false;
+                // const fromBlock = this._getFromBlock(toBlock);
+                // if (!fromBlock) return false;
 
-                this.logger.debug('Running from Block', fromBlock);
+                // this.logger.debug('Running from Block', fromBlock);
 
-                await this._processBlocks(ctr, fromBlock, toBlock);
+                // await this._processBlocks(ctr, fromBlock, toBlock);
 
-                this.logger.info('Federator run finished');
+                // this.logger.info('Federator run finished');
 
                 return true;
             } catch (err) {
