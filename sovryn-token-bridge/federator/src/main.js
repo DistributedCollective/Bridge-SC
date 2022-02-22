@@ -107,15 +107,15 @@ async function startServices() {
     // };
 
     try {
-        await p2pNode.launch();
+        await p2pNode.start();
     } catch (err) {
         logger.error("Couldn't start P2P network", err);
         process.exit();
     }
 
-    scheduler.start().catch((err) => {
-        logger.error('Unhandled Error on start()', err);
-    });
+    // scheduler.start().catch((err) => {
+    //     logger.error('Unhandled Error on start()', err);
+    // });
 }
 
 async function run() {
@@ -139,6 +139,11 @@ async function run() {
 }
 
 async function exitHandler() {
+    try {
+        await p2pNode.stop();
+    } catch (err) {
+        throw new Error(err);
+    }
     process.exit();
 }
 

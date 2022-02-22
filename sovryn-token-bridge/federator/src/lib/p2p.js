@@ -6,8 +6,12 @@ class P2p {
     net;
     logger;
 
-    constructor(name, port = 30303, peers, logger) {
+    constructor(name, port, peers, logger) {
         this.logger = logger;
+        this.initiateP2pNetwork(name, port, peers);
+    }
+
+    initiateP2pNetwork(name, port, peers) {
         this.createTransport(port);
         this.addPeers(peers);
         this.createNetwork(name);
@@ -37,6 +41,7 @@ class P2p {
     }
 
     addPeers(peers) {
+        if (!this.transport) throw new Error('No transport available');
         peers.forEach((peer) => {
             if (peer.address === '127.0.0.1' && peer.port === this.transport._port) return;
             this.transport.addManualPeer({
@@ -53,16 +58,24 @@ class P2p {
         });
     }
 
-    async launch() {
+    async start() {
         try {
             await this.net.join();
+            this.logger.info(
+                `Joined federators network | Node id: ${this.net.networkId} | Port: ${this.transport.port}`
+            );
         } catch (err) {
             throw new Error(err);
         }
+    }
 
-        this.logger.info(
-            `Joined federators network | Node id: ${this.net.networkId} | Port: ${this.transport.port}`
-        );
+    async stop() {
+        try {
+            await this.net.leave();
+            this.logger.info('Left federators network');
+        } catch (err) {
+            throw new Error(err);
+        }
     }
 
     getPeerAmount() {
