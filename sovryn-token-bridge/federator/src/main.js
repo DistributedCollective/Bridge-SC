@@ -1,7 +1,7 @@
 const log4js = require('log4js');
 const web3 = require('web3');
 
-const { launchP2pNetwork } = require('./lib/p2p.js');
+const P2p = require('./lib/P2p.js');
 const utils = require('./lib/utils');
 
 // Configurations
@@ -46,8 +46,8 @@ if (config.telegramBot && config.telegramBot.token && config.telegramBot.groupId
 } else {
     chatBot = new NullBot(log4js.getLogger('CHATBOT'));
 }
-
 const port = parseInt(process.argv[2]);
+const p2pNode = new P2p('bridge-federators', port, config.peers, logger);
 
 const clientId = new ClientId(log4js.getLogger('Get-Client-Id'), config, web3);
 
@@ -106,14 +106,12 @@ async function startServices() {
     //     }
     // };
 
-    // try {
-    //     await launchP2pNetwork(port, config.peers, logger);
-    // } catch (err) {
-    //     logger.error("Couldn't starp P2P network", err);
-    //     process.exit();
-    // }
-
-    await launchP2pNetwork(port, config.peers, logger);
+    try {
+        await p2pNode.launch();
+    } catch (err) {
+        logger.error("Couldn't start P2P network", err);
+        process.exit();
+    }
 
     scheduler.start().catch((err) => {
         logger.error('Unhandled Error on start()', err);
@@ -121,15 +119,22 @@ async function startServices() {
 }
 
 async function run() {
-    try {
-        console.log('Scheduler work');
-        // console.log('before mainfed');
-        // await mainFederator.run();
-        // console.log('before sidefed');
-        // await sideFederator.run();
-    } catch (err) {
-        logger.error('Unhandled Error on run()', err);
-        process.exit();
+    if (p2pNode.getPeerAmount() < config.minimumPeerAmount) {
+        logger.info('Waiting for enough peers');
+        return;
+    }
+
+    if (p2pNode.isLeader()) {
+        try {
+            console.log('Scheduler work');
+            // console.log('before mainfed');
+            // await mainFederator.run();
+            // console.log('before sidefed');
+            // await sideFederator.run();
+        } catch (err) {
+            logger.error('Unhandled Error on run()', err);
+            process.exit();
+        }
     }
 }
 
