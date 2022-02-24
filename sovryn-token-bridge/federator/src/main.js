@@ -46,8 +46,10 @@ if (config.telegramBot && config.telegramBot.token && config.telegramBot.groupId
 } else {
     chatBot = new NullBot(log4js.getLogger('CHATBOT'));
 }
-const port = parseInt(process.argv[2]);
-const p2pNode = new P2p('bridge-federators', port, config.peers, logger);
+
+const port = parseInt(process.argv[2]) || config.port;
+const privateKey = process.argv[3] || config.privateKey;
+const p2pNode = new P2p('bridge-federators', port, config.peers, privateKey, logger);
 
 const clientId = new ClientId(log4js.getLogger('Get-Client-Id'), config, web3);
 
@@ -113,9 +115,9 @@ async function startServices() {
         process.exit();
     }
 
-    // scheduler.start().catch((err) => {
-    //     logger.error('Unhandled Error on start()', err);
-    // });
+    scheduler.start().catch((err) => {
+        logger.error('Unhandled Error on start()', err);
+    });
 }
 
 async function run() {

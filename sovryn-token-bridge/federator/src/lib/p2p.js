@@ -1,18 +1,20 @@
-const { Network, AnonymousAuth } = require('ataraxia');
+const { ethers } = require('ethers');
+const { Network } = require('ataraxia');
 const { TCPTransport } = require('ataraxia-tcp');
+const { RSKKeyedAuth } = require('../vendors/RSKKeyedAuth');
 
 class P2p {
     transport;
     net;
     logger;
 
-    constructor(name, port, peers, logger) {
+    constructor(name, port, peers, privateKey, logger) {
         this.logger = logger;
-        this.initiateP2pNetwork(name, port, peers);
+        this.initiateP2pNetwork(name, port, peers, privateKey);
     }
 
-    initiateP2pNetwork(name, port, peers) {
-        this.createTransport(port);
+    initiateP2pNetwork(name, port, peers, privateKey) {
+        this.createTransport(port, peers, privateKey);
         this.addPeers(peers);
         this.createNetwork(name);
 
@@ -26,26 +28,32 @@ class P2p {
 
         this.net.onNodeUnavailable((node) => {
             this.logger.info(
-                `A node is left: ${node.id} | ${
+                `A node left: ${node.id} | ${
                     this.net.nodes.length
                 } total peer(s) | Leader: ${this.getLeaderId()}`
             );
         });
     }
 
-    createTransport(port) {
+    createTransport(port, peers, privateKey) {
+        const peerAddresses = peers.map((peer) => peer.address);
         this.transport = new TCPTransport({
             port,
-            authentication: [new AnonymousAuth()],
+            authentication: [
+                new RSKKeyedAuth({
+                    getPeerAddresses: async () => peerAddresses,
+                    signer: new ethers.Wallet(privateKey),
+                }),
+            ],
         });
     }
 
     addPeers(peers) {
         if (!this.transport) throw new Error('No transport available');
         peers.forEach((peer) => {
-            if (peer.address === '127.0.0.1' && peer.port === this.transport._port) return;
+            if (peer.ip === '127.0.0.1' && peer.port === this.transport._port) return;
             this.transport.addManualPeer({
-                host: peer.address,
+                host: peer.ip,
                 port: peer.port,
             });
         });
