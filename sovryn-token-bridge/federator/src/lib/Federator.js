@@ -8,10 +8,13 @@ const AppendOnlyFileStorage = require('../helpers/AppendOnlyFileStorage');
 const CustomError = require('./CustomError');
 const { NullBot } = require('./chatBots');
 const utils = require('./utils');
+const { SIGNATURE_REQUEST, SIGNATURE_SUBMISSION } = require('../helpers/p2pMessageTypes');
+const { sign } = require('crypto');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3, chatBot = null) {
+    constructor(config, logger, Web3 = web3, network, chatBot = null) {
         this.config = config;
+        this.network = network;
         this.logger = logger;
 
         this.mainWeb3 = new Web3(config.mainchain.host);
@@ -45,24 +48,25 @@ module.exports = class Federator {
         this.logger.info('Starting federator run');
         const maxAttempts = 20;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            // Get first and last blocks that will be scanned and run the scan
             try {
                 const currentBlock = await this._getCurrentBlockNumber();
                 const chainId = await this.mainWeb3.eth.net.getId();
-                // const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
-                // const toBlock = currentBlock - ctr.getMinConfirmation();
+                const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
+                const toBlock = currentBlock - ctr.getMinConfirmation();
 
-                // this.logger.info('Running to Block', toBlock);
+                this.logger.info('Running to Block', toBlock);
 
-                // if (toBlock <= 0) return false;
+                if (toBlock <= 0) return false;
 
-                // const fromBlock = this._getFromBlock(toBlock);
-                // if (!fromBlock) return false;
+                const fromBlock = this._getFromBlock(toBlock);
+                if (!fromBlock) return false;
 
-                // this.logger.debug('Running from Block', fromBlock);
+                this.logger.debug('Running from Block', fromBlock);
 
-                // await this._processBlocks(ctr, fromBlock, toBlock);
+                await this._processBlocks(ctr, fromBlock, toBlock);
 
-                // this.logger.info('Federator run finished');
+                this.logger.info('Federator run finished');
 
                 return true;
             } catch (err) {
@@ -84,6 +88,7 @@ module.exports = class Federator {
         }
     }
 
+    // Paginate blocks to scan, fetch events of each page and run processing of them
     async _processBlocks(ctr, fromBlock, toBlock) {
         const blocksPerPage = 100;
         const numberOfPages = Math.ceil((toBlock - fromBlock) / blocksPerPage);
@@ -103,6 +108,7 @@ module.exports = class Federator {
                 fromBlock: fromPageBlock,
                 toBlock: toPagedBlock,
             });
+
             if (!logs) throw new Error('Failed to obtain the logs');
             this.logger.info(`Found ${logs.length} logs`);
             const lastBlockAllConfirmed = await this._processLogs(ctr, logs); // undefined meaning all blocks were confirmed
@@ -120,6 +126,7 @@ module.exports = class Federator {
         }
     }
 
+    // Loop around logs to process each of them
     async _processLogs(ctr, logs) {
         try {
             const transactionSender = new TransactionSender(
@@ -139,7 +146,10 @@ module.exports = class Federator {
                 const { _amount: amount, _symbol: symbol } = log.returnValues;
 
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
-                    await this._processLog(log, from);
+                    const signatures = await this._requestSignatureFromFederators(log);
+                    this.logger.info('Collected enough signatures');
+                    console.log({ signatures });
+                    // await this._processLog(log, from);
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
                     allLogsConfirmed = false;
@@ -148,8 +158,31 @@ module.exports = class Federator {
 
             return newLastBlockNumber;
         } catch (err) {
-            throw new CustomError(`Exception processing logs`, err);
+            throw new CustomError('Exception processing logs', err);
         }
+    }
+
+    _requestSignatureFromFederators(log) {
+        return new Promise((resolve, reject) => {
+            this.logger.info('Requesting other federators to sign event');
+
+            setTimeout(
+                () => reject("Didn't get enough signatures after 10 minutes timeout"),
+                60000
+            );
+
+            const signatures = [];
+            this.network.net.onMessage(async (msg) => {
+                if (msg.type === SIGNATURE_SUBMISSION) {
+                    this.logger.info(`Submission received from ${msg.source.id}`);
+                    signatures.push(msg.data);
+                    if (signatures.length >= this.config.minimumPeerAmount) {
+                        resolve(signatures);
+                    }
+                }
+            });
+            this.network.net.broadcast(SIGNATURE_REQUEST, { log });
+        });
     }
 
     async _processLog(log, from) {
@@ -414,5 +447,25 @@ module.exports = class Federator {
 
     async _getCurrentBlockNumber() {
         return this.mainWeb3.eth.getBlockNumber();
+    }
+
+    async signTransaction({ blockNumber, id }) {
+        const logs = await this.mainBridgeContract.getPastEvents('Cross', {
+            fromBlock: blockNumber,
+            toBlock: blockNumber,
+            filter: { id },
+        });
+
+        if (logs.length !== 1) throw new Error('Invalid return when searching for event');
+
+        const { _amount, _to } = logs[0].returnValues;
+        const { blockHash, transactionHash, logIndex } = logs[0];
+        const txId = await this.mainBridgeContract.methods
+            .getTransactionId(blockHash, transactionHash, _to, _amount, logIndex)
+            .call();
+
+        const signature = this.mainWeb3.eth.accounts.sign(txId, this.config.privateKey);
+
+        return signature;
     }
 };

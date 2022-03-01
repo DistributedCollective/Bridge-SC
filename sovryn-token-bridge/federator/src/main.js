@@ -3,6 +3,7 @@ const web3 = require('web3');
 
 const P2p = require('./lib/P2p.js');
 const utils = require('./lib/utils');
+const { SIGNATURE_REQUEST, SIGNATURE_SUBMISSION } = require('./helpers/p2pMessageTypes');
 
 // Configurations
 const config = require('../config/config.js');
@@ -63,7 +64,13 @@ const gasServices = new GasServices(log4js.getLogger('ETH-GasServices'), config,
 //     log4js.getLogger('ETH-MAINNET-GasPriceFetAvg'),
 // );
 
-const mainFederator = new Federator(config, log4js.getLogger('MAIN-FEDERATOR'), web3, chatBot);
+const mainFederator = new Federator(
+    config,
+    log4js.getLogger('MAIN-FEDERATOR'),
+    web3,
+    p2pNode,
+    chatBot
+);
 
 const sideFederator = new Federator(
     {
@@ -74,8 +81,27 @@ const sideFederator = new Federator(
     },
     log4js.getLogger('SIDE-FEDERATOR'),
     web3,
+    p2pNode,
     chatBot
 );
+
+p2pNode.net.onMessage(async (msg) => {
+    if (msg.type === SIGNATURE_REQUEST) {
+        logger.info(
+            `A signature request has been received from ${msg.source.id} for event ${msg.data.log.id}`
+        );
+        try {
+            const { blockNumber, id } = msg.data.log;
+            const signature = await mainFederator.signTransaction({
+                blockNumber,
+                id,
+            });
+            msg.source.send(SIGNATURE_SUBMISSION, signature);
+        } catch (err) {
+            logger.error(err);
+        }
+    }
+});
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes
 // let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
@@ -128,9 +154,8 @@ async function run() {
 
     if (p2pNode.isLeader()) {
         try {
-            console.log('Scheduler work');
-            // console.log('before mainfed');
-            // await mainFederator.run();
+            console.log('before mainfed');
+            await mainFederator.run();
             // console.log('before sidefed');
             // await sideFederator.run();
         } catch (err) {
