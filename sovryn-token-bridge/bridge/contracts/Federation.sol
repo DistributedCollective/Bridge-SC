@@ -1,4 +1,5 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
 import "./IBridge.sol";
 import "./zeppelin/ownership/Ownable.sol";
@@ -56,38 +57,42 @@ contract Federation is Ownable {
         emit BridgeChanged(_bridge);
     }
 
-    function voteTransaction(
+    function executeTransaction(
         address originalTokenAddress,
         address receiver,
         uint256 amount,
-        string calldata symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity)
-    external returns(bool)
-    {
-        return _voteTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
-    }
-
-    function voteTransactionAt(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string calldata symbol,
+        string memory symbol,
         bytes32 blockHash,
         bytes32 transactionHash,
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes calldata userData)
-    external returns(bool)
+        bytes[] memory sigs
+    )
+    public returns(bool)
     {
-       return _voteTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+        return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
     }
 
-    function _voteTransaction(
+    function executeTransactionAt(
+        address originalTokenAddress,
+        address receiver,
+        uint256 amount,
+        string memory symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes memory userData,
+        bytes[] memory sigs
+    )
+    public returns(bool)
+    {
+       return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+    }
+
+    function _executeTransaction(
         address originalTokenAddress,
         address receiver,
         uint256 amount,

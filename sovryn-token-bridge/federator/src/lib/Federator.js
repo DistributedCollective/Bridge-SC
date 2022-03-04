@@ -148,8 +148,7 @@ module.exports = class Federator {
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
                     const signatures = await this._requestSignatureFromFederators(log);
                     this.logger.info('Collected enough signatures');
-                    console.log({ signatures });
-                    // await this._processLog(log, from);
+                    await this._processLog(log, from, signatures);
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
                     allLogsConfirmed = false;
@@ -185,7 +184,7 @@ module.exports = class Federator {
         });
     }
 
-    async _processLog(log, from) {
+    async _processLog(log, from, signatures) {
         const {
             _to: receiver,
             _amount: amount,
@@ -211,80 +210,80 @@ module.exports = class Federator {
             .call();
         this.logger.info('get transaction id:', transactionId);
 
+        console.log({ transactionId });
+
         let wasProcessed = await this.federationContract.methods
             .transactionWasProcessed(transactionId)
             .call();
         this.logger.info('wasProcessed:', wasProcessed);
-        if (!wasProcessed) {
-            this.logger.info('getting transactionIdU:', {
+
+        if (wasProcessed) {
+            this.logger.debug(
+                `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`
+            );
+            return;
+        }
+
+        this.logger.info('getting transactionIdU:', {
+            tokenAddress,
+            receiver,
+            amount,
+            symbol,
+            blockHash: log.blockHash,
+            transactionHash: log.transactionHash,
+            logIndex: log.logIndex,
+            decimals,
+            granularity,
+            userData,
+        });
+
+        let transactionIdU = await this.federationContract.methods
+            .getTransactionIdU(
                 tokenAddress,
                 receiver,
                 amount,
                 symbol,
-                blockHash: log.blockHash,
-                transactionHash: log.transactionHash,
-                logIndex: log.logIndex,
+                log.blockHash,
+                log.transactionHash,
+                log.logIndex,
                 decimals,
                 granularity,
-                userData,
-            });
+                userData || []
+            )
+            .call();
 
-            let transactionIdU = await this.federationContract.methods
-                .getTransactionIdU(
-                    tokenAddress,
-                    receiver,
-                    amount,
-                    symbol,
-                    log.blockHash,
-                    log.transactionHash,
-                    log.logIndex,
-                    decimals,
-                    granularity,
-                    userData || []
-                )
-                .call();
+        console.log({ transactionIdU });
 
-            this.logger.info('get transaction id U:', transactionIdU);
-            let wasProcessedU = await this.federationContract.methods
-                .transactionWasProcessed(transactionIdU)
-                .call();
-            this.logger.info('wasProcessedU:', wasProcessedU);
-            if (!wasProcessedU) {
-                let hasVoted = await this.federationContract.methods
-                    .hasVoted(transactionIdU)
-                    .call({ from: from });
-                if (!hasVoted) {
-                    this.logger.info(
-                        `Voting tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`
-                    );
-                    await this._voteTransaction(
-                        tokenAddress,
-                        receiver,
-                        amount,
-                        symbol,
-                        log.blockHash,
-                        log.transactionHash,
-                        log.logIndex,
-                        decimals,
-                        granularity,
-                        userData,
-                        transactionId,
-                        transactionIdU
-                    );
-                } else {
-                    this.logger.debug(
-                        `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol}  has already been voted by us`
-                    );
-                }
-            }
-        } else {
-            this.logger.debug(
-                `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed`
-            );
-        }
+        this.logger.info('get transaction id U:', transactionIdU);
+
+        let wasProcessedU = await this.federationContract.methods
+            .transactionWasProcessed(transactionIdU)
+            .call();
+        this.logger.info('wasProcessedU:', wasProcessedU);
+
+        if (wasProcessedU) return;
+
+        this.logger.info(
+            `Executing tx: ${log.transactionHash} block: ${log.blockHash} token: ${symbol}`
+        );
+        await this._executeTransaction(
+            tokenAddress,
+            receiver,
+            amount,
+            symbol,
+            log.blockHash,
+            log.transactionHash,
+            log.logIndex,
+            decimals,
+            granularity,
+            userData,
+            transactionId,
+            transactionIdU,
+            signatures
+        );
     }
 
-    async _voteTransaction(
+    async _executeTransaction(
         tokenAddress,
         receiver,
         amount,
@@ -296,7 +295,8 @@ module.exports = class Federator {
         granularity,
         userData,
         transactionId,
-        transactionIdU
+        transactionIdU,
+        signatures
     ) {
         try {
             const transactionSender = new TransactionSender(
@@ -314,10 +314,13 @@ module.exports = class Federator {
                 this._isFailingByTxId(transactionIdU, transactionHash);
             if (isFailing) return false;
 
+            const sigs = signatures.map((sig) => sig.signature);
+            console.log({ sigs });
+
             let txData;
             if (userData) {
                 txData = await this.federationContract.methods
-                    .voteTransactionAt(
+                    .executeTransactionAt(
                         tokenAddress,
                         receiver,
                         amount,
@@ -327,12 +330,13 @@ module.exports = class Federator {
                         logIndex,
                         decimals,
                         granularity,
-                        userData
+                        userData,
+                        sigs
                     )
                     .encodeABI();
             } else {
                 txData = await this.federationContract.methods
-                    .voteTransaction(
+                    .executeTransaction(
                         tokenAddress,
                         receiver,
                         amount,
@@ -341,7 +345,8 @@ module.exports = class Federator {
                         transactionHash,
                         logIndex,
                         decimals,
-                        granularity
+                        granularity,
+                        sigs
                     )
                     .encodeABI();
             }
@@ -356,7 +361,7 @@ module.exports = class Federator {
                 this.config.privateKey
             );
             this.logger.info(
-                `Voted transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionIdU:${transactionIdU}`
+                `Executed transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionIdU:${transactionIdU}`
             );
             return true;
         } catch (err) {
@@ -364,7 +369,7 @@ module.exports = class Federator {
                 // we don't want to crash everything when there's a single failed transaction, so we keep a dead-letter
                 // queue of those
                 const msgHeader =
-                    `EVM revert when voting for tx with ` +
+                    `EVM revert when executing tx with ` +
                     `idU: ${transactionIdU} hash: ${transactionHash} block: ${blockHash} token: ${symbol}.`;
                 const msgFooter = `The transaction will be marked as failing and not retried automatically again.`;
                 this.logger.error(msgHeader + ` Detailed error: ${err}\n` + msgFooter);
@@ -375,7 +380,7 @@ module.exports = class Federator {
                 return false;
             } else {
                 throw new CustomError(
-                    `Exception Voting tx:${transactionHash} block: ${blockHash} token ${symbol}`,
+                    `Exception executing tx:${transactionHash} block: ${blockHash} token ${symbol}`,
                     err
                 );
             }
@@ -385,7 +390,7 @@ module.exports = class Federator {
     _isFailingByTxId(txId, transactionHash) {
         if (this.failingTxIds.contains(txId)) {
             this.logger.info(
-                `Transaction with id ${txId}, hash: ${transactionHash} is marked as failing -- not voting for it`
+                `Transaction with id ${txId}, hash: ${transactionHash} is marked as failing -- not executing it`
             );
             return true;
         }

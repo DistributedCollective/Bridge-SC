@@ -30,7 +30,7 @@ contract MockBridge {
         uint256 _amount,
         uint32 _logIndex
     )
-        public pure returns(bytes32)
+        external pure returns(bytes32)
     {
         return keccak256(abi.encodePacked(_blockHash, _transactionHash, _receiver, _amount, _logIndex));
     }
