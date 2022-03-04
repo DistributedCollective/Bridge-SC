@@ -1,4 +1,5 @@
 const web3 = require('web3');
+const { ethers } = require('ethers');
 const fs = require('fs');
 const abiBridge = require('../../../abis/Bridge.json');
 const abiFederation = require('../../../abis/Federation.json');
@@ -210,8 +211,6 @@ module.exports = class Federator {
             .call();
         this.logger.info('get transaction id:', transactionId);
 
-        console.log({ transactionId });
-
         let wasProcessed = await this.federationContract.methods
             .transactionWasProcessed(transactionId)
             .call();
@@ -251,8 +250,6 @@ module.exports = class Federator {
                 userData || []
             )
             .call();
-
-        console.log({ transactionIdU });
 
         this.logger.info('get transaction id U:', transactionIdU);
 
@@ -306,16 +303,13 @@ module.exports = class Federator {
                 ''
             );
             this.logger.info(
-                `Voting Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`
+                `Executing Transfer ${amount} of ${symbol} trough sidechain bridge ${this.sideBridgeContract.options.address} to receiver ${receiver}`
             );
 
             const isFailing =
                 this._isFailingByTxId(transactionId, transactionHash) ||
                 this._isFailingByTxId(transactionIdU, transactionHash);
             if (isFailing) return false;
-
-            const sigs = signatures.map((sig) => sig.signature);
-            console.log({ sigs });
 
             let txData;
             if (userData) {
@@ -331,7 +325,7 @@ module.exports = class Federator {
                         decimals,
                         granularity,
                         userData,
-                        sigs
+                        signatures
                     )
                     .encodeABI();
             } else {
@@ -346,14 +340,11 @@ module.exports = class Federator {
                         logIndex,
                         decimals,
                         granularity,
-                        sigs
+                        signatures
                     )
                     .encodeABI();
             }
 
-            this.logger.info(
-                `voteTransaction(${tokenAddress}, ${receiver}, ${amount}, ${symbol}, ${blockHash}, ${transactionHash}, ${logIndex}, ${decimals}, ${granularity}, ${userData})`
-            );
             await transactionSender.sendTransaction(
                 this.federationContract.options.address,
                 txData,
@@ -363,6 +354,7 @@ module.exports = class Federator {
             this.logger.info(
                 `Executed transaction:${transactionHash} of block: ${blockHash} token ${symbol} to Federation Contract with TransactionIdU:${transactionIdU}`
             );
+
             return true;
         } catch (err) {
             if (transactionIdU && this._isEVMRevert(err)) {
@@ -463,14 +455,25 @@ module.exports = class Federator {
 
         if (logs.length !== 1) throw new Error('Invalid return when searching for event');
 
-        const { _amount, _to } = logs[0].returnValues;
+        const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
+            logs[0].returnValues;
         const { blockHash, transactionHash, logIndex } = logs[0];
-        const txId = await this.mainBridgeContract.methods
-            .getTransactionId(blockHash, transactionHash, _to, _amount, logIndex)
+        const txId = await this.federationContract.methods
+            .getTransactionIdU(
+                _tokenAddress,
+                _to,
+                _amount,
+                _symbol,
+                blockHash,
+                transactionHash,
+                logIndex,
+                _decimals,
+                _granularity,
+                _userData || []
+            )
             .call();
 
-        const signature = this.mainWeb3.eth.accounts.sign(txId, this.config.privateKey);
-
-        return signature;
+        const wallet = new ethers.Wallet(this.config.privateKey);
+        return await wallet.signMessage(ethers.utils.arrayify(txId));
     }
 };

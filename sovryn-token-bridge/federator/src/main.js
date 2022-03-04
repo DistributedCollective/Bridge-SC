@@ -48,9 +48,10 @@ if (config.telegramBot && config.telegramBot.token && config.telegramBot.groupId
     chatBot = new NullBot(log4js.getLogger('CHATBOT'));
 }
 
-const port = parseInt(process.argv[2]) || config.port;
-const privateKey = process.argv[3] || config.privateKey;
-const p2pNode = new P2p('bridge-federators', port, config.peers, privateKey, logger);
+if (process.argv[2]) config.port = parseInt(process.argv[2]);
+if (process.argv[3]) config.privateKey = process.argv[3];
+
+const p2pNode = new P2p('bridge-federators', config, logger);
 
 const clientId = new ClientId(log4js.getLogger('Get-Client-Id'), config, web3);
 

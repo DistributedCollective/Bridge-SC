@@ -4,10 +4,21 @@ pragma experimental ABIEncoderV2;
 import "../zeppelin/cryptography/ECDSA.sol";
 
 contract MockFederation {
+    uint256 public memberAmount;
+    uint256 public validationAmountRequired;
+
+    mapping(address => bool) public isMember;
     mapping(bytes32 => bool) public processed;
 
-	// event Voted(address indexed sender, bytes32 indexed transactionId, address originalTokenAddress, address receiver, uint256 amount, string symbol, bytes32 blockHash, bytes32 indexed transactionHash, uint32 logIndex, uint8 decimals, uint256 granularity, bytes userData);
     event Executed(bytes32 indexed transactionId);
+
+    constructor(address[] memory _members, uint256 _validationAmountRequired) public {
+        for (uint256 i; i < _members.length; i++) {
+            require(!isMember[_members[i]] && _members[i] != address(0), "Federation: Invalid member");
+            isMember[_members[i]] = true;
+        }
+        validationAmountRequired = _validationAmountRequired;
+    }     
 
     function executeTransaction(
         address originalTokenAddress,
@@ -79,43 +90,29 @@ contract MockFederation {
         bytes memory userData,
         bytes[] memory sigs
     )
-    private returns(bool) 
-    {
-        bytes32 transactionIdU = getTransactionIdU(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+    private returns(bool) {
+        require(isMember[msg.sender], "Only federators can execute transactions");
 
+        bytes32 transactionIdU = getTransactionIdU(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
         if (processed[transactionIdU])
             return true;
-
-        // emit Voted(msg.sender, transactionIdU, originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
         
+        uint256 memberValidations = 1; // Sender implicitly accepts
+        for (uint256 i; i < sigs.length; i +=1) {
+            bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionIdU));
+            address signer = ECDSA.recover(hash, sigs[i]);
 
-				/******** CHECK SIGNATURES HERE ***********/
-        // uint transactionCount = getTransactionCount(transactionIdU);
-        // if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
-            processed[transactionIdU] = true;
-            
-            // bool acceptTransfer = bridge.acceptTransferAt(
-            //     originalTokenAddress,
-            //     receiver,
-            //     amount,
-            //     symbol,
-            //     blockHash,
-            //     transactionHash,
-            //     logIndex,
-            //     decimals,
-            //     granularity,
-            //     userData
-            // );
-            // require(acceptTransfer, "Federation: Bridge acceptTransfer error");
-						
-            emit Executed(transactionIdU);
-            return true;
+            if (isMember[signer]) {
+                memberValidations += 1;
+            }
+        }
 
-        // }
+        require(memberValidations >= validationAmountRequired && memberValidations >= memberAmount / 2 + 1, "Not enough validations");
+        processed[transactionIdU] = true;                    
+        return true;
     }
 
     function getSigner(bytes32 transactionId, bytes memory signature) public pure returns (address signer) {
-        // bytes memory bMessage = abi.encode(msg.sender);
         bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionId));
         signer = ECDSA.recover(hash, signature);
     }

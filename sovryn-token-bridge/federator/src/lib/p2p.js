@@ -8,9 +8,9 @@ class P2p {
     net;
     logger;
 
-    constructor(name, port, peers, privateKey, logger) {
+    constructor(name, config, logger) {
         this.logger = logger;
-        this.initiateP2pNetwork(name, port, peers, privateKey);
+        this.initiateP2pNetwork(name, config.port, config.peers, config.privateKey);
     }
 
     initiateP2pNetwork(name, port, peers, privateKey) {
