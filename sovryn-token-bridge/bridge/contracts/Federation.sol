@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "./IBridge.sol";
 import "./zeppelin/ownership/Ownable.sol";
+import "./zeppelin/cryptography/ECDSA.sol";
 
 contract Federation is Ownable {
     uint constant public MAX_MEMBER_COUNT = 50;
@@ -67,11 +68,11 @@ contract Federation is Ownable {
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes[] memory sigs
+        bytes[] memory signatures
     )
     public returns(bool)
     {
-        return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "");
+        return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, "", signatures);
     }
 
     function executeTransactionAt(
@@ -85,11 +86,11 @@ contract Federation is Ownable {
         uint8 decimals,
         uint256 granularity,
         bytes memory userData,
-        bytes[] memory sigs
+        bytes[] memory signatures
     )
     public returns(bool)
     {
-       return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
+       return _executeTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData, signatures);
     }
 
     function _executeTransaction(
@@ -102,7 +103,8 @@ contract Federation is Ownable {
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes memory userData
+        bytes memory userData,
+        bytes[] memory signatures
     ) internal onlyMember returns(bool) {
         // solium-disable-next-line max-len
         require(initStageDone == true, "Federation: Cannot process TX while initStageDone == false");
@@ -120,7 +122,7 @@ contract Federation is Ownable {
        // Using transactionIdU instead.
        // This should be updated in Federator BE as well.
        // Function processTransaction() created to solve EVM stack to deep error
-        if (processTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData)) {    
+        if (processTransaction(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData, signatures)) {    
             // No need to update processed[transactionId], since it is used only for backward competability
             // processed[transactionId] = true;
             return true;
@@ -138,26 +140,33 @@ contract Federation is Ownable {
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes memory userData)
+        bytes memory userData,
+        bytes[] memory signatures
+    )
     internal returns(bool) 
-    {
+    {        
         bytes32 transactionIdU = getTransactionIdU(originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
-
         if (processed[transactionIdU])
             return true;
 
-        if (votes[transactionIdU][_msgSender()])
-            return true;
-
+        // Sender implicitly accepts
         votes[transactionIdU][_msgSender()] = true;
-        // solium-disable-next-line max-len
-       emit Voted(_msgSender(), transactionIdU, originalTokenAddress, receiver, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity, userData);
-        
-        uint transactionCount = getTransactionCount(transactionIdU);
-        if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
-            processed[transactionIdU] = true;
-            bool acceptTransfer = bridge.acceptTransferAt(
-                originalTokenAddress,
+        uint256 memberValidations = 1; 
+
+        for (uint256 i; i < signatures.length; i +=1) {
+            bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionIdU));
+            address signer = ECDSA.recover(hash, signatures[i]);
+
+            if (isMember[signer] && !votes[transactionIdU][signer]) {
+                votes[transactionIdU][signer] = true;
+                memberValidations += 1;
+            }
+        }
+
+        require(memberValidations >= required && memberValidations >= members.length / 2 + 1, "Not enough validations");
+
+        processed[transactionIdU] = true;
+        releaseTokensOnBridge(originalTokenAddress,
                 receiver,
                 amount,
                 symbol,
@@ -166,14 +175,39 @@ contract Federation is Ownable {
                 logIndex,
                 decimals,
                 granularity,
-                userData
-            );
-            require(acceptTransfer, "Federation: Bridge acceptTransfer error");
-            emit Executed(transactionIdU);
-            return true;
+                userData);              
+        emit Executed(transactionIdU);
 
-        }
+        return true;
     }
+
+    function releaseTokensOnBridge(
+        address originalTokenAddress,
+        address receiver,
+        uint256 amount,
+        string memory symbol,
+        bytes32 blockHash,
+        bytes32 transactionHash,
+        uint32 logIndex,
+        uint8 decimals,
+        uint256 granularity,
+        bytes memory userData
+    ) private {
+        bool acceptTransfer = bridge.acceptTransferAt(
+            originalTokenAddress,
+            receiver,
+            amount,
+            symbol,
+            blockHash,
+            transactionHash,
+            logIndex,
+            decimals,
+            granularity,
+            userData
+        );
+        require(acceptTransfer, "Federation: Bridge acceptTransfer error");
+    }
+
     function getTransactionCount(bytes32 transactionId) public view returns(uint) {
         uint count = 0;
         for (uint i = 0; i < members.length; i++) {

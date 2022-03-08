@@ -102,7 +102,7 @@ contract MockFederation {
             bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionIdU));
             address signer = ECDSA.recover(hash, sigs[i]);
 
-            if (isMember[signer]) {
+            if (isMember[signer] && signer != msg.sender) {
                 memberValidations += 1;
             }
         }
@@ -110,11 +110,6 @@ contract MockFederation {
         require(memberValidations >= validationAmountRequired && memberValidations >= memberAmount / 2 + 1, "Not enough validations");
         processed[transactionIdU] = true;                    
         return true;
-    }
-
-    function getSigner(bytes32 transactionId, bytes memory signature) public pure returns (address signer) {
-        bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionId));
-        signer = ECDSA.recover(hash, signature);
     }
 
     function transactionWasProcessed(bytes32 transactionId) external view returns(bool)

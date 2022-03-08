@@ -279,6 +279,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
     //V3 upgrade change global token fee to per token fee
+        // uint256 fee = allowTokens.getFeePerToken(tokenToUse);
         uint256 fee = allowTokens.getFeePerToken(tokenToUse);
         if(fee>0 ){
             if (tokenToUse== WETHAddr ) {
@@ -290,6 +291,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             }
         }
         uint256 amountMinusFees = amount.sub(fee);
+        
         if (isASideToken) {
             verifyWithAllowTokens(tokenToUse, amount, isASideToken);
             //Side Token Crossing
@@ -319,7 +321,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             //We consider the amount before fees converted to 18 decimals to check the limits
             verifyWithAllowTokens(tokenToUse, formattedAmount, isASideToken);
             emit Cross(tokenToUse, receiver, amountMinusFees, symbol, userData, decimals, granularity);
-        }     
+        }
     }
 
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){
