@@ -3,7 +3,12 @@ const web3 = require('web3');
 
 const P2p = require('./lib/P2p.js');
 const utils = require('./lib/utils');
-const { SIGNATURE_REQUEST, SIGNATURE_SUBMISSION } = require('./helpers/p2pMessageTypes');
+const {
+    MAIN_SIGNATURE_REQUEST,
+    SIDE_SIGNATURE_REQUEST,
+    MAIN_SIGNATURE_SUBMISSION,
+    SIDE_SIGNATURE_SUBMISSION,
+} = require('./helpers/p2pMessageTypes');
 
 // Configurations
 const config = require('../config/config.js');
@@ -87,22 +92,28 @@ const sideFederator = new Federator(
 );
 
 p2pNode.net.onMessage(async (msg) => {
-    if (msg.type === SIGNATURE_REQUEST) {
-        logger.info(
-            `A signature request has been received from ${msg.source.id} for event ${msg.data.log.id}`
-        );
-        try {
-            const { blockNumber, id } = msg.data.log;
-            const signature = await mainFederator.signTransaction({
-                blockNumber,
-                id,
-            });
-            msg.source.send(SIGNATURE_SUBMISSION, signature);
-        } catch (err) {
-            logger.error(err);
-        }
+    if (msg.type === MAIN_SIGNATURE_REQUEST) {
+        await handleRequest(msg, mainFederator, MAIN_SIGNATURE_SUBMISSION);
+    } else if (msg.type === SIDE_SIGNATURE_REQUEST) {
+        await handleRequest(msg, sideFederator, SIDE_SIGNATURE_SUBMISSION);
     }
 });
+
+async function handleRequest(msg, federator, submissionType) {
+    logger.info(
+        `A signature request has been received from ${msg.source.id} for event ${msg.data.log.id}`
+    );
+    try {
+        const { blockNumber, id } = msg.data.log;
+        const signature = await federator.signTransaction({
+            blockNumber,
+            id,
+        });
+        msg.source.send(submissionType, signature);
+    } catch (err) {
+        logger.error(err);
+    }
+}
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes
 // let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
@@ -157,8 +168,8 @@ async function run() {
         try {
             console.log('before mainfed');
             await mainFederator.run();
-            // console.log('before sidefed');
-            // await sideFederator.run();
+            console.log('before sidefed');
+            await sideFederator.run();
         } catch (err) {
             logger.error('Unhandled Error on run()', err);
             process.exit();

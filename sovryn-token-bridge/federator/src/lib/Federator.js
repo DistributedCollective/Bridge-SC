@@ -9,7 +9,12 @@ const AppendOnlyFileStorage = require('../helpers/AppendOnlyFileStorage');
 const CustomError = require('./CustomError');
 const { NullBot } = require('./chatBots');
 const utils = require('./utils');
-const { SIGNATURE_REQUEST, SIGNATURE_SUBMISSION } = require('../helpers/p2pMessageTypes');
+const {
+    MAIN_SIGNATURE_REQUEST,
+    SIDE_SIGNATURE_REQUEST,
+    MAIN_SIGNATURE_SUBMISSION,
+    SIDE_SIGNATURE_SUBMISSION,
+} = require('../helpers/p2pMessageTypes');
 const { sign } = require('crypto');
 
 module.exports = class Federator {
@@ -171,9 +176,15 @@ module.exports = class Federator {
                 60000
             );
 
+            // Select correct message type depending on main on side federator
+            const { request, submission } =
+                this.logger.category === 'MAIN-FEDERATOR'
+                    ? { request: MAIN_SIGNATURE_REQUEST, submission: MAIN_SIGNATURE_SUBMISSION }
+                    : { request: SIDE_SIGNATURE_REQUEST, submission: SIDE_SIGNATURE_SUBMISSION };
+
             const signatures = [];
             this.network.net.onMessage(async (msg) => {
-                if (msg.type === SIGNATURE_SUBMISSION) {
+                if (msg.type === submission) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
                     signatures.push(msg.data);
                     if (signatures.length >= this.config.minimumPeerAmount) {
@@ -181,7 +192,7 @@ module.exports = class Federator {
                     }
                 }
             });
-            this.network.net.broadcast(SIGNATURE_REQUEST, { log });
+            this.network.net.broadcast(request, { log });
         });
     }
 
