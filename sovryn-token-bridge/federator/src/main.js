@@ -128,23 +128,23 @@ startServices().catch((err) => {
 });
 
 async function startServices() {
-    // let isEth;
-    // try {
-    //     isEth = await clientId.isEthereumChain();
-    //     console.log('isEth: ' + isEth);
-    // } catch (err) {
-    //     logger.error('Unhandled Error on isEthereumChain()', err);
-    //     process.exit();
-    // }
+    let isEth;
+    try {
+        isEth = await clientId.isEthereumChain();
+        console.log('isEth: ' + isEth);
+    } catch (err) {
+        logger.error('Unhandled Error on isEthereumChain()', err);
+        process.exit();
+    }
 
-    // if (isEth){
-    //     try {
-    //         await gasServices.startGasServices();
-    //     } catch(err) {
-    //         logger.error('Cannnot start ETH gas services()', err);
-    //         process.exit();
-    //     }
-    // };
+    if (isEth) {
+        try {
+            await gasServices.startGasServices();
+        } catch (err) {
+            logger.error('Cannnot start ETH gas services()', err);
+            process.exit();
+        }
+    }
 
     try {
         await p2pNode.start();
