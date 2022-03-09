@@ -1,3 +1,5 @@
+#Bridge_v5 version is deployed only on RSK side of BSC bridge (to support RBTC redeem from BSC to RSK and to FastBTC)
+#Bridge_v4 version is deployed currently on all other bridge instances (BSC side of BSC bridge and ETH bridge both sides)
 # RSK <-> ETH Token Bridge
 
 Ethereum/RSK Bridge that allows to move ERC20 tokens from one chain to the other.
