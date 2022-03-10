@@ -7,6 +7,9 @@ The federators will be the owners of the contracts willing to allow to cross the
 ## Config
 
 Go to /federator/config copy `config.sample.js` file and rename it to `config.js` set mainchain and sidechain to point to the json files of the networks you are suing, for example rsktestnet-kovan.json and kovan.json, `make sure to set the host parameter of those files`. Create the file `federator.key` inside the config folder, and add the private key of the member of the Federation contract. The members of the federation are controled by the MultiSig contract, same that is owner of the Bridge and AllowedTokens contracts.
+The minimumPeerAmount field affect the number of p2p node a federator needs to be connected to in order to start fetching the bridge's events. It also affects the number of signatures required before sending the token release transaction.
+The port field needs to be updated if you run multiple federators on the same machine.
+Fill the peers field with the ip, port and address of each federator who want to connect to and accept in your network.
 
 ## Usage
 
@@ -56,12 +59,12 @@ Also you need to create a `federators.key` file with the federator private in it
 
 ### Latest block
 
-The federator will use the block number in  `./federator/db/latestBlock.txt` for the main chain and `./federator/db/side-fed/latestBlock.txt` for the side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
+The federator will use the block number in `./federator/db/latestBlock.txt` for the main chain and `./federator/db/side-fed/latestBlock.txt` for the side chain as starting point. This is important as the federator will increase the number each time it successfully polls for blocks, and indicates the last block run.
 If this files don't exist, the program will automatically create them using the `config.fromBlock` number. This is ok, but the default config number is the creation of the contract and may be too far from the current block number, having a negative impact in performance even preventing the program from running. This is way it should be as closest as the current block number minus the confirmations blocks as posible.
 
 ### Docker image
 
-Once you have  changed this configurations create the **docker image from the root folder** using.
+Once you have changed this configurations create the **docker image from the root folder** using.
 `docker build . -t fed-tokenbridge`
 
 Then run :
