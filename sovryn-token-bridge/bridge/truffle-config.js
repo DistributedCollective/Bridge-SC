@@ -156,7 +156,7 @@ module.exports = {
     },
     plugins: ['truffle-contract-size', 'solidity-coverage'],
     mocha: {
-        reporter: 'eth-gas-reporter',
+        // reporter: 'eth-gas-reporter',
         //reporterOptions : { ... } // See options below
     },
     compilers: {
