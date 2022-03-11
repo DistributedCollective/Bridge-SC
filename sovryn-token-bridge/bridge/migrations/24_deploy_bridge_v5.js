@@ -1,6 +1,6 @@
 //const { scripts, ConfigManager } = require('@openzeppelin/cli');
 const BridgeProxy = artifacts.require("Bridge_v0");
-const BridgeImpl = artifacts.require("Bridge_v4");
+const BridgeImpl = artifacts.require("Bridge");
 const MultiSigWallet = artifacts.require("MultiSigWallet");
 const Utils = artifacts.require("Utils");
 const proxyAdminAbi = require('../../abis/ProxyAdmin.json');
