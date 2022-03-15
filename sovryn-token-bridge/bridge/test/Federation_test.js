@@ -1385,7 +1385,7 @@ contract('Federation', async function(accounts) {
       );
     });
 
-    it('executeTransaction should be successfull if already voted', async function() {
+    it('executeTransaction should be successfull if already executed', async function() {
       //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
       let transactionId = await this.federation.getTransactionIdU(
         originalTokenAddress,
@@ -1445,7 +1445,7 @@ contract('Federation', async function(accounts) {
       utils.checkRcpt(receipt);
     });
 
-    it.only('executeTransaction should be successful sending extra data', async function() {
+    it('executeTransaction should be successful sending extra data', async function() {
       const extraData = 'Extra data';
       this.federation.removeMember(fedMember2);
       //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
@@ -1499,7 +1499,7 @@ contract('Federation', async function(accounts) {
       assert.equal(utils.hexaToString(event.events[8].value), extraData);
     });
 
-    it.only('revoke transaction', async function() {
+    it('revoke transaction', async function() {
       // 2 out of 2 federators votes. transcation get processed
       //let transactionId = await this.federation.getTransactionId(originalTokenAddress, anAccount, amount, symbol, blockHash, transactionHash, logIndex, decimals, granularity);
       let transactionId = await this.federation.getTransactionIdU(
@@ -1611,6 +1611,135 @@ contract('Federation', async function(accounts) {
         },
       );
       assert.equal(transactionWasProcessed, false);
+    });
+
+    it('should count each signature once', async function() {
+      await this.federation.addMember(fedMember3);
+      await this.federation.changeRequirement(3);
+
+      let transactionId = await this.federation.getTransactionIdU(
+        originalTokenAddress,
+        anAccount,
+        amount,
+        symbol,
+        blockHash,
+        transactionHash,
+        logIndex,
+        decimals,
+        granularity,
+        Buffer.from(extraData),
+      );
+
+      const signatures = [];
+      signatures.push(
+        web3.eth.accounts.sign(transactionId, fedMember2Pk).signature,
+      );
+      signatures.push(
+        web3.eth.accounts.sign(transactionId, fedMember2Pk).signature,
+      );
+
+      await utils.expectThrow(
+        this.federation.executeTransaction(
+          originalTokenAddress,
+          anAccount,
+          amount,
+          symbol,
+          blockHash,
+          transactionHash,
+          logIndex,
+          decimals,
+          granularity,
+          signatures,
+          { from: fedMember1 },
+        ),
+      );
+    });
+
+    it('should fail it one signature is from sender', async function() {
+      await this.federation.addMember(fedMember3);
+      await this.federation.changeRequirement(3);
+
+      let transactionId = await this.federation.getTransactionIdU(
+        originalTokenAddress,
+        anAccount,
+        amount,
+        symbol,
+        blockHash,
+        transactionHash,
+        logIndex,
+        decimals,
+        granularity,
+        Buffer.from(extraData),
+      );
+
+      const signatures = [];
+      signatures.push(
+        web3.eth.accounts.sign(transactionId, fedMember1Pk).signature,
+      );
+      signatures.push(
+        web3.eth.accounts.sign(transactionId, fedMember2Pk).signature,
+      );
+
+      await utils.expectThrow(
+        this.federation.executeTransaction(
+          originalTokenAddress,
+          anAccount,
+          amount,
+          symbol,
+          blockHash,
+          transactionHash,
+          logIndex,
+          decimals,
+          granularity,
+          signatures,
+          { from: fedMember1 },
+        ),
+      );
+    });
+
+    it('should fail if some signatures are not from a member', async function() {
+      await this.federation.addMember(fedMember3);
+      await this.federation.changeRequirement(3);
+
+      let transactionId = await this.federation.getTransactionIdU(
+        originalTokenAddress,
+        anAccount,
+        amount,
+        symbol,
+        blockHash,
+        transactionHash,
+        logIndex,
+        decimals,
+        granularity,
+        Buffer.from(extraData),
+      );
+
+      const signatures = [];
+      signatures.push(
+        web3.eth.accounts.sign(transactionId, fedMember2Pk).signature,
+      );
+      signatures.push(
+        web3.eth.accounts.sign(
+          transactionId,
+          '0xc1b7aaa00498c19c15f0daa8e2c7c18051924ef4355013dc2619f8fe44bc5ba7',
+        ).signature,
+      );
+
+      await utils.expectThrow(
+        this.federation.executeTransaction(
+          originalTokenAddress,
+          anAccount,
+          amount,
+          symbol,
+          blockHash,
+          transactionHash,
+          logIndex,
+          decimals,
+          granularity,
+          signatures,
+          { from: fedMember1 },
+        ),
+      );
     });
   });
 

@@ -157,7 +157,9 @@ contract Federation is Ownable {
             bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", transactionIdU));
             address signer = ECDSA.recover(hash, signatures[i]);
 
-            if (isMember[signer] && !votes[transactionIdU][signer]) {
+            require(isMember[signer], "Some signature is not from member");
+
+            if (!votes[transactionIdU][signer]) {
                 votes[transactionIdU][signer] = true;
                 memberValidations += 1;
             }
