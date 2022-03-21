@@ -1,5 +1,6 @@
 #Bridge_v5 version is deployed only on RSK side of BSC bridge (to support RBTC redeem from BSC to RSK and to FastBTC)
 #Bridge_v4 version is deployed currently on all other bridge instances (BSC side of BSC bridge and ETH bridge both sides)
+
 # RSK <-> ETH Token Bridge
 
 Ethereum/RSK Bridge that allows to move ERC20 tokens from one chain to the other.
@@ -17,7 +18,7 @@ See the [FAQ](https://developers.rsk.co/tools/tokenbridge/faq/) to know more abo
   <img src="./docs/images/token-bridge-diagram.png"/>
 </p>
 
-The bridges on each contract are upgradeable, this would enable a smooth transition to a more decentralized bridge in the future. Here's is a link to the first 
+The bridges on each contract are upgradeable, this would enable a smooth transition to a more decentralized bridge in the future. Here's is a link to the first
 [POC of the trustless decentralized bridge](https://github.com/rsksmart/decentralized-tokenbridge)
 
 ## Usage
@@ -44,7 +45,6 @@ The ABI to interact with the contracts are in the ['abis folder'](./abis)
 
 The dapp of the token bridge can be found in the ['UI Folder'](./ui)
 
-
 ### Federation
 
 A federation sends notification of events happening in the bridge of one chain to another chain. The federation is composed of oracles listening to the events created in one chain and sending it to the other chain. When a majority of the federators votes on an event, the bridge accepts the event as valid and releases the tokens on the other chain.
@@ -54,12 +54,18 @@ See the ['federator'](./federator/README.md) for more information about federati
 
 An integration test is prepared for contracts and federators. To properly run integration test, you need check network config in the `truffle-config.js` and `package.json` in `bridge` folder with your test chains' configuration before run `npm run deployIntegrationTest`.
 
-1. Check `mnemonic.key` in `bridge` 
+1. Check `mnemonic.key` in `bridge`
 1. Check `infura.key` in `bridge`
 1. Check `federator.key` in `federator/config`
 1. Check `config.js` in `federator/config`
 1. Check your `networkName` in `bridge/migrations/4_deploy_erc1820.js` when your test network does not have **ERC1820:Pseudo-introspection Registry Contract** deployed.
 
 Then
+
 1. run `npm run deployIntegrationTest` in `bridge`
 1. run `npm run integrationTest` in `federator`
+
+### Containers
+
+You can run an local test environment in docker containers using the following command:
+`docker-compose -f docker-compose-test.yml up --build --force-recreate`

@@ -1,0 +1,46 @@
+version: '3.7'
+
+services:
+    network1:
+        build: ./bridge/ganache-container
+        ports:
+            - 8545:8545
+        volumes:
+            - ./bridge/ganache-container/package-network1.json:/app/package.json
+
+    network2:
+        build: ./bridge/ganache-container
+        ports:
+            - 8546:8546
+        volumes:
+            - ./bridge/ganache-container/package-network2.json:/app/package.json
+
+    federator1:
+        build: .
+        ports:
+            - 30303:30303
+        depends_on:
+            - network1
+            - network2
+        volumes:
+            - ./federator/config/config-federator1.js:/app/federator/config/config.js
+
+    federator2:
+        build: .
+        ports:
+            - 30304:30304
+        depends_on:
+            - network1
+            - network2
+        volumes:
+            - ./federator/config/config-federator2.js:/app/federator/config/config.js
+
+    federator3:
+        build: .
+        ports:
+            - 30305:30303
+        depends_on:
+            - network1
+            - network2
+        volumes:
+            - ./federator/config/config-federator3.js:/app/federator/config/config.js

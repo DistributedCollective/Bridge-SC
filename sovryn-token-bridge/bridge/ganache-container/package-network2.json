@@ -1,0 +1,15 @@
+{
+  "name": "ganache-docker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ganache -p 8546 --chain.chainId 3 --chain.networkId 3 --miner.blockTime 3 --wallet.mnemonic 'school canvas absurd wheel under include butter around just strike work now'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ganache": "^7.0.3"
+  }
+}
