@@ -3,6 +3,6 @@
     "federation": "0x91Bb4d62207E369AfCf889fB991D2d2008cc72f0",
     "multiSig": "0x88f6b2bc66f4c31a3669b9b1359524abf79cfc4a",
     "allowTokens": "0x952b706a9ab5fd2d3b36205648ed7852676afbe7",
-    "host": "http://network1:8545",
+    "host": "http://localhost:8545",
     "fromBlock": 0
 }

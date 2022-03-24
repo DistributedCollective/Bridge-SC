@@ -17,9 +17,11 @@
         "host": "http://127.0.0.1:8545",
         "fromBlock": 50000
     },
+    "minimumPeerAmount": 1,
+    "port": 30303,
     "runEvery": 1,
-    "sleepOnGas": 2, 
-    "maxSleepOnGas": 3, 
+    "sleepOnGas": 2,
+    "maxSleepOnGas": 3,
     "confirmations": 0,
     "confirmationTable": {
         "1": {
@@ -126,8 +128,8 @@
                 }
             ]
         }
-
     },
-    "privateKey": "",
+    "peers": [],
+    "privateKey": "0xc62f308268e0e2cc95f98f2c58416516a2965ce11e0ea7f448ef8b891a8f3bc3",
     "storagePath": "./db"
 }

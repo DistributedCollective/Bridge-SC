@@ -18,7 +18,7 @@ const {
 const { sign } = require('crypto');
 
 module.exports = class Federator {
-    constructor(config, logger, Web3 = web3, network, chatBot = null) {
+    constructor(config, logger, network, Web3 = web3, chatBot = null) {
         this.config = config;
         this.network = network;
         this.logger = logger;
@@ -141,7 +141,6 @@ module.exports = class Federator {
                 this.config,
                 ''
             );
-            const from = await transactionSender.getAddress(this.config.privateKey);
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
@@ -154,7 +153,7 @@ module.exports = class Federator {
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
                     const signatures = await this._requestSignatureFromFederators(log);
                     this.logger.info('Collected enough signatures');
-                    await this._processLog(log, from, signatures);
+                    await this._processLog(log, signatures);
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
                     allLogsConfirmed = false;
@@ -171,7 +170,7 @@ module.exports = class Federator {
         return new Promise((resolve, reject) => {
             this.logger.info('Requesting other federators to sign event');
 
-            setTimeout(
+            const timer = setTimeout(
                 () => reject("Didn't get enough signatures after 10 minutes timeout"),
                 60000
             );
@@ -183,11 +182,14 @@ module.exports = class Federator {
                     : { request: SIDE_SIGNATURE_REQUEST, submission: SIDE_SIGNATURE_SUBMISSION };
 
             const signatures = [];
-            this.network.net.onMessage(async (msg) => {
+            const listener = this.network.net.onMessage((msg) => {
                 if (msg.type === submission) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
                     signatures.push(msg.data);
                     if (signatures.length >= this.config.minimumPeerAmount) {
+                        console.log('END');
+                        clearTimeout(timer);
+                        listener.unsubscribe();
                         resolve(signatures);
                     }
                 }
@@ -196,7 +198,7 @@ module.exports = class Federator {
         });
     }
 
-    async _processLog(log, from, signatures) {
+    async _processLog(log, signatures) {
         const {
             _to: receiver,
             _amount: amount,

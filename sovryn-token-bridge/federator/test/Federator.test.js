@@ -93,7 +93,7 @@ describe('Federator module tests', () => {
     });
 
     it('Runs the main federator process sucessfully', async () => {
-        let federator = new Federator(testConfig, logger, web3Mock);
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
         let result = await federator.run();
 
         expect(result).toBeTruthy();
@@ -103,7 +103,7 @@ describe('Federator module tests', () => {
         const expectedConfirmations = 5760;
         const twoPages = 2002;
         const currentBlock = testConfig.mainchain.fromBlock + twoPages + expectedConfirmations;
-        const federator = new Federator(testConfig, logger, web3Mock);
+        const federator = new Federator(testConfig, logger, {}, web3Mock);
 
         mockFederatorMethods(federator, {
             getBlockNumber: () => Promise.resolve(currentBlock),
@@ -126,7 +126,7 @@ describe('Federator module tests', () => {
         const expectedConfirmations = 5760;
         const onePage = 1001;
         const currentBlock = testConfig.mainchain.fromBlock + onePage + expectedConfirmations;
-        const federator = new Federator(testConfig, logger, web3Mock);
+        const federator = new Federator(testConfig, logger, {}, web3Mock);
         mockFederatorMethods(federator, {
             getBlockNumber: () => Promise.resolve(currentBlock),
             getId: () => Promise.resolve(1),
@@ -157,15 +157,15 @@ describe('Federator module tests', () => {
         expect(value).toEqual('test');
     });
 
-    it('Should no vote for empty log and receiver', async () => {
+    it('Should not execute empty log and receiver', async () => {
         eth.sendSignedTransaction = jest.fn().mockImplementation(() => {
             throw new Error('Some Error');
         });
 
-        let federator = new Federator(testConfig, logger, web3Mock);
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
         try {
-            await federator._voteTransaction(null, null);
+            await federator._executeTransaction(null, null);
             expect(false).toBeTruthy();
         } catch (err) {
             expect(err).not.toBeNull();
@@ -173,9 +173,9 @@ describe('Federator module tests', () => {
         expect(fs.existsSync(testPath)).toBeFalsy();
     });
 
-    // Skipped because it will change with signatures
-    it('Votes a transaction from a log entry', async () => {
-        let federator = new Federator(testConfig, logger, web3Mock);
+    // For some unkown reason, passes only when ran alone with .only
+    it('Execute a transaction from a log entry', async () => {
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
         let log = {
             logIndex: 2,
@@ -208,13 +208,15 @@ describe('Federator module tests', () => {
             },
         };
 
-        let result = await federator._voteTransaction(log, '0x0');
+        let result = await federator._executeTransaction(log, '0x0');
         expect(result).toBeTruthy();
     });
 
+    // For some unkown reason, passes only when ran alone with .only
     it('Should return undefined for a list of 1 confirmed log', async () => {
-        let federator = new Federator(testConfig, logger, web3Mock);
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
+        federator._requestSignatureFromFederators = () => ['signature1', 'signature2'];
         let logs = [
             {
                 logIndex: 2,
@@ -254,8 +256,63 @@ describe('Federator module tests', () => {
         expect(result).toBeUndefined();
     });
 
+    it('should get signatures when request', async () => {
+        const { SIDE_SIGNATURE_SUBMISSION } = require('../src/helpers/p2pMessageTypes');
+
+        const signature = 'SIGNATURE';
+
+        const mockP2p = {
+            net: {
+                onMessage: (func) => {
+                    this.callback = func;
+                    return { unsubscribe: () => {} };
+                },
+                broadcast: () =>
+                    this.callback({
+                        type: SIDE_SIGNATURE_SUBMISSION,
+                        source: { id: 'TEST-ID' },
+                        data: signature,
+                    }),
+            },
+        };
+        let federator = new Federator(testConfig, logger, mockP2p, web3Mock);
+
+        let log = {
+            logIndex: 2,
+            blockNumber: 10000,
+            blockHash: '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash: '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_a755a817',
+            returnValues: {
+                0: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                1: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                2: '1000000000000000000',
+                3: 'MAIN',
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '50',
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461',
+            },
+            event: 'Cross',
+            signature: '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics: [
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826',
+                ],
+            },
+        };
+        const res = await federator._requestSignatureFromFederators(log);
+        expect(res[0]).toBe(signature);
+    });
+
     it('Should return the logBlockNumber for a list of 1 unconfirmed log', async () => {
-        let federator = new Federator(testConfig, logger, web3Mock);
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
         const logBlockNumber = 2683000;
         let logs = [
@@ -297,8 +354,10 @@ describe('Federator module tests', () => {
         expect(result).toEqual(logBlockNumber - 1);
     });
 
+    // For some unkown reason, passes only when ran alone with .only
     it('Should return the second logBlockNumber for a list of 2 log, only first confirmed', async () => {
-        let federator = new Federator(testConfig, logger, web3Mock);
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
+        federator._requestSignatureFromFederators = () => ['signature1', 'signature2'];
         disableEtherscanGasPrices(federator.transactionSender);
         const firstLogBlockNumber = 15000;
         const currentBlockNumber = 42000;
@@ -374,7 +433,49 @@ describe('Federator module tests', () => {
         expect(result).toEqual(secondLogBlockNumber - 1);
     });
 
-    describe('voteTransaction error cases', () => {
+    it('should sign message', async () => {
+        let federator = new Federator(testConfig, logger, {}, web3Mock);
+        federator.mainBridgeContract.getPastEvents = () => [
+            {
+                logIndex: 2,
+                blockNumber: 15000,
+                blockHash: '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+                transactionHash:
+                    '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+                transactionIndex: 0,
+                address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+                id: 'log_a755a817',
+                returnValues: {
+                    0: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                    1: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                    2: '1000000000000000000',
+                    3: 'MAIN',
+                    _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                    _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                    _amount: '1000',
+                    _symbol: 'MAIN',
+                    _userData: '0x45787472612064617461',
+                },
+                event: 'Cross',
+                signature: '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                raw: {
+                    data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                    topics: [
+                        '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                        '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                        '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826',
+                    ],
+                },
+            },
+        ];
+
+        const res = await federator.signTransaction({ blockNumber: 4, id: 123 });
+        expect(typeof res).toBe('string');
+        expect(res.substring(0, 2)).toBe('0x');
+        expect(res).toHaveLength(132);
+    });
+
+    describe('executeTransaction error cases', () => {
         const log = {
             logIndex: 2,
             blockNumber: 2557,
@@ -409,7 +510,7 @@ describe('Federator module tests', () => {
         let sendTransactionSpy;
 
         beforeEach(() => {
-            federator = new Federator(testConfig, logger, web3Mock);
+            federator = new Federator(testConfig, logger, {}, web3Mock);
             disableEtherscanGasPrices(federator.transactionSender);
             sendTransactionSpy = jest.spyOn(TransactionSender.prototype, 'sendTransaction');
         });
@@ -424,7 +525,7 @@ describe('Federator module tests', () => {
 
             expect(sendTransactionSpy).toHaveBeenCalledTimes(0); // sanity check
 
-            let result = await federator._voteTransaction(
+            let result = await federator._executeTransaction(
                 log,
                 '0x0',
                 null,
@@ -442,7 +543,7 @@ describe('Federator module tests', () => {
             expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
 
             // After another call, it should NOT try to send the transaction again
-            result = await federator._voteTransaction(
+            result = await federator._executeTransaction(
                 log,
                 '0x0',
                 null,
@@ -466,11 +567,11 @@ describe('Federator module tests', () => {
                 sendTransaction: () => createPromiEventError('Invalid JSON RPC response: ""'),
             });
 
-            await expect(federator._voteTransaction(log, '0x0')).rejects.toThrow(CustomError);
+            await expect(federator._executeTransaction(log, '0x0')).rejects.toThrow(CustomError);
             expect(sendTransactionSpy).toHaveBeenCalledTimes(1);
 
             // After another call, it should try to send the transaction again
-            await expect(federator._voteTransaction(log, '0x0')).rejects.toThrow(CustomError);
+            await expect(federator._executeTransaction(log, '0x0')).rejects.toThrow(CustomError);
             expect(sendTransactionSpy).toHaveBeenCalledTimes(2);
         });
     });

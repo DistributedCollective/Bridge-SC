@@ -73,8 +73,8 @@ const gasServices = new GasServices(log4js.getLogger('ETH-GasServices'), config,
 const mainFederator = new Federator(
     config,
     log4js.getLogger('MAIN-FEDERATOR'),
-    web3,
     p2pNode,
+    web3,
     chatBot
 );
 
@@ -86,8 +86,8 @@ const sideFederator = new Federator(
         storagePath: `${config.storagePath}/side-fed`,
     },
     log4js.getLogger('SIDE-FEDERATOR'),
-    web3,
     p2pNode,
+    web3,
     chatBot
 );
 

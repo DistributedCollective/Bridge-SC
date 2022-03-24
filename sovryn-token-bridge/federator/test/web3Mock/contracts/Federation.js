@@ -4,42 +4,42 @@ const defaults = require('../defaults');
 const methods = {};
 
 methods.transactionCount = () => ({
-    call: () => Promise.resolve(defaults.data.transactionCount)
+    call: () => Promise.resolve(defaults.data.transactionCount),
 });
 
 methods.getTransactionId = () => ({
-    call: () => Promise.resolve(defaults.data.transactionId)
+    call: () => Promise.resolve(defaults.data.transactionId),
 });
 
 methods.getTransactionIdU = () => ({
-    call: () => Promise.resolve(defaults.data.transactionIdU)
+    call: () => Promise.resolve(defaults.data.transactionIdU),
 });
 
 methods.transactionWasProcessed = () => ({
-    call: () => Promise.resolve(false)
+    call: () => Promise.resolve(false),
 });
 
-methods.voteTransaction = () => ({
-    encodeABI: () => '0x0'
+methods.executeTransaction = () => ({
+    encodeABI: () => '0x0',
 });
 
 methods.confirmations = () => ({
-    call: () => Promise.resolve(defaults.data.confirmations)
+    call: () => Promise.resolve(defaults.data.confirmations),
 });
 
 methods.confirmTransaction = () => ({
-    encodeABI: () => '0x0'
+    encodeABI: () => '0x0',
 });
 
 methods.submitTransaction = () => ({
-    encodeABI: () => '0x0'
+    encodeABI: () => '0x0',
 });
 
 methods.hasVoted = () => ({
-    call: () => false
+    call: () => false,
 });
 
-methods.voteTransactionAt = () => ({
+methods.executeTransactionAt = () => ({
     encodeABI: () => '0x0',
 });
 
