@@ -2,8 +2,10 @@ const log4js = require('log4js');
 const web3 = require('web3');
 
 const P2p = require('./lib/P2p.js');
-const utils = require('./lib/utils');
+const { eliminateDuplicates } = require('./lib/utils');
 const {
+    MAIN_FEDERATOR,
+    SIDE_FEDERATOR,
     MAIN_SIGNATURE_REQUEST,
     SIDE_SIGNATURE_REQUEST,
     MAIN_SIGNATURE_SUBMISSION,
@@ -56,7 +58,9 @@ if (config.telegramBot && config.telegramBot.token && config.telegramBot.groupId
 if (process.argv[2]) config.port = parseInt(process.argv[2]);
 if (process.argv[3]) config.privateKey = process.argv[3];
 
-const p2pNode = new P2p('bridge-federators', config, logger);
+const federatorsAdresses = [config.mainchain.federation, config.sidechain.federation].map(contract);
+
+const p2pNode = new P2p(logger);
 
 const clientId = new ClientId(log4js.getLogger('Get-Client-Id'), config, web3);
 
@@ -71,6 +75,7 @@ const gasServices = new GasServices(log4js.getLogger('ETH-GasServices'), config,
 // );
 
 const mainFederator = new Federator(
+    MAIN_FEDERATOR,
     config,
     log4js.getLogger('MAIN-FEDERATOR'),
     p2pNode,
@@ -79,6 +84,7 @@ const mainFederator = new Federator(
 );
 
 const sideFederator = new Federator(
+    SIDE_FEDERATOR,
     {
         ...config,
         mainchain: config.sidechain,
@@ -111,7 +117,7 @@ async function handleRequest(msg, federator, submissionType) {
         });
         msg.source.send(submissionType, signature);
     } catch (err) {
-        logger.error(err);
+        logger.warn(err);
     }
 }
 
@@ -147,6 +153,17 @@ async function startServices() {
     // }
 
     try {
+        await mainFederator.getMemberAddresses();
+        await sideFederator.getMemberAddresses();
+        const membersAddresses = eliminateDuplicates(mainFederator.members, sideFederator.members);
+
+        p2pNode.initiateP2pNetwork(
+            'bridge-federators',
+            config.port,
+            config.peers,
+            membersAddresses,
+            config.privateKey
+        );
         await p2pNode.start();
     } catch (err) {
         logger.error("Couldn't start P2P network", err);

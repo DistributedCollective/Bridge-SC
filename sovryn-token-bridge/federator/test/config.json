@@ -17,7 +17,7 @@
         "host": "http://127.0.0.1:8545",
         "fromBlock": 50000
     },
-    "minimumPeerAmount": 1,
+    "minimumPeerAmount": 2,
     "port": 30303,
     "runEvery": 1,
     "sleepOnGas": 2,

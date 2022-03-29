@@ -10,15 +10,17 @@ const CustomError = require('./CustomError');
 const { NullBot } = require('./chatBots');
 const utils = require('./utils');
 const {
+    MAIN_FEDERATOR,
     MAIN_SIGNATURE_REQUEST,
     SIDE_SIGNATURE_REQUEST,
     MAIN_SIGNATURE_SUBMISSION,
     SIDE_SIGNATURE_SUBMISSION,
-} = require('../helpers/p2pMessageTypes');
+} = require('./constants');
 const { sign } = require('crypto');
 
 module.exports = class Federator {
-    constructor(config, logger, network, Web3 = web3, chatBot = null) {
+    constructor(type, config, logger, network, Web3 = web3, chatBot = null) {
+        this.type = type;
         this.config = config;
         this.network = network;
         this.logger = logger;
@@ -48,6 +50,10 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
+    }
+
+    async getMemberAddresses() {
+        return await this.federationContract.methods.getMembers().call();
     }
 
     async run() {
@@ -166,7 +172,7 @@ module.exports = class Federator {
         }
     }
 
-    _requestSignatureFromFederators(log) {
+    async _requestSignatureFromFederators(log) {
         return new Promise((resolve, reject) => {
             this.logger.info('Requesting other federators to sign event');
 
@@ -177,25 +183,57 @@ module.exports = class Federator {
 
             // Select correct message type depending on main on side federator
             const { request, submission } =
-                this.logger.category === 'MAIN-FEDERATOR'
+                this.type === MAIN_FEDERATOR
                     ? { request: MAIN_SIGNATURE_REQUEST, submission: MAIN_SIGNATURE_SUBMISSION }
                     : { request: SIDE_SIGNATURE_REQUEST, submission: SIDE_SIGNATURE_SUBMISSION };
 
-            const signatures = [];
-            const listener = this.network.net.onMessage((msg) => {
-                if (msg.type === submission) {
+            const signatures = new Set();
+            const listener = this.network.net.onMessage(async (msg) => {
+                if (msg.type === submission && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
-                    signatures.push(msg.data);
-                    if (signatures.length >= this.config.minimumPeerAmount) {
-                        console.log('END');
+
+                    const { signature } = msg.data;
+                    const signerAddress = await this.recoverLogSigner(log, signature);
+
+                    if (!this.members.includes(signerAddress)) {
+                        this.logger.warn(
+                            `Submission from ${msg.source.id} has not been signed by a member of federation`
+                        );
+                        return;
+                    }
+
+                    signatures.add(signature);
+                    if (signatures.size >= this.config.minimumPeerAmount) {
                         clearTimeout(timer);
                         listener.unsubscribe();
-                        resolve(signatures);
+                        resolve(Array.from(signatures));
                     }
                 }
             });
             this.network.net.broadcast(request, { log });
         });
+    }
+
+    async recoverLogSigner(log, signature) {
+        const { blockHash, transactionHash, logIndex } = log;
+        const { _tokenAddress, _to, _amount, _symbol, _userData, _decimals, _granularity } =
+            log.returnValues;
+        const txId = await this.federationContract.methods
+            .getTransactionIdU(
+                _tokenAddress,
+                _to,
+                _amount,
+                _symbol,
+                blockHash,
+                transactionHash,
+                logIndex,
+                _decimals,
+                _granularity,
+                _userData || []
+            )
+            .call();
+        const digest = ethers.utils.hashMessage(ethers.utils.arrayify(txId));
+        return ethers.utils.recoverAddress(digest, signature);
     }
 
     async _processLog(log, signatures) {
@@ -308,6 +346,8 @@ module.exports = class Federator {
         transactionIdU,
         signatures
     ) {
+        signatures = signatures && this._removeNotNeededSignatures(signatures);
+
         try {
             const transactionSender = new TransactionSender(
                 this.sideWeb3,
@@ -402,6 +442,10 @@ module.exports = class Federator {
         return false;
     }
 
+    _removeNotNeededSignatures(signatures) {
+        return signatures.slice(0, this.config.minimumPeerAmount);
+    }
+
     _getFromBlock(toBlock) {
         if (!fs.existsSync(this.config.storagePath)) {
             fs.mkdirSync(this.config.storagePath);
@@ -466,11 +510,21 @@ module.exports = class Federator {
             filter: { id },
         });
 
-        if (logs.length !== 1) throw new Error('Invalid return when searching for event');
+        if (logs.length !== 1) throw new CustomError('Invalid return when searching for event');
 
         const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
             logs[0].returnValues;
         const { blockHash, transactionHash, logIndex } = logs[0];
+
+        const chainId = await this.mainWeb3.eth.net.getId();
+        const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
+        const currentBlock = await this._getCurrentBlockNumber();
+
+        if (!this._isConfirmed(ctr, _symbol, _amount, currentBlock, blockNumber))
+            throw new CustomError(
+                `Block number ${blockNumber} not confirmed yet. No signature provided to leader.`
+            );
+
         const txId = await this.federationContract.methods
             .getTransactionIdU(
                 _tokenAddress,
@@ -487,6 +541,7 @@ module.exports = class Federator {
             .call();
 
         const wallet = new ethers.Wallet(this.config.privateKey);
-        return await wallet.signMessage(ethers.utils.arrayify(txId));
+        const signature = await wallet.signMessage(ethers.utils.arrayify(txId));
+        return { signature, logId: id };
     }
 };

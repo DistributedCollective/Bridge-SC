@@ -8,13 +8,12 @@ class P2p {
     net;
     logger;
 
-    constructor(name, config, logger) {
+    constructor(name, config, federatorsAdresses, logger) {
         this.logger = logger;
-        this.initiateP2pNetwork(name, config.port, config.peers, config.privateKey);
     }
 
-    initiateP2pNetwork(name, port, peers, privateKey) {
-        this.createTransport(port, peers, privateKey);
+    initiateP2pNetwork(name, port, peers, federatorsAdresses, privateKey) {
+        this.createTransport(port, federatorsAdresses, privateKey);
         this.addPeers(peers);
         this.createNetwork(name);
 
@@ -35,13 +34,12 @@ class P2p {
         });
     }
 
-    createTransport(port, peers, privateKey) {
-        const peerAddresses = peers.map((peer) => peer.address);
+    createTransport(port, federatorsAdresses, privateKey) {
         this.transport = new TCPTransport({
             port,
             authentication: [
                 new RSKKeyedAuth({
-                    getPeerAddresses: async () => peerAddresses,
+                    getPeerAddresses: async () => federatorsAdresses,
                     signer: new ethers.Wallet(privateKey),
                 }),
             ],

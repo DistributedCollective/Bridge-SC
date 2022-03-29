@@ -1,13 +1,12 @@
 const ethUtils = require('ethereumjs-util');
 const Web3 = require('web3');
 
-
 async function waitBlocks(client, numberOfBlocks) {
     var startBlock = await client.eth.getBlockNumber();
     var currentBlock = startBlock;
-    while(numberOfBlocks > currentBlock - startBlock) {
+    while (numberOfBlocks > currentBlock - startBlock) {
         var newBlock = await client.eth.getBlockNumber();
-        if(newBlock != currentBlock){
+        if (newBlock != currentBlock) {
             currentBlock = newBlock;
         } else {
             await sleep(20000);
@@ -16,29 +15,21 @@ async function waitBlocks(client, numberOfBlocks) {
 }
 
 async function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve,ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function exponentialSleep(attempt = 0, opts = {}) {
-    const {
-        maxSleepMs = 256000,
-        initialSleepMs = 1000,
-        logger = null,
-    } = opts;
-    let sleepMs = initialSleepMs * (2 ** attempt);
+    const { maxSleepMs = 256000, initialSleepMs = 1000, logger = null } = opts;
+    let sleepMs = initialSleepMs * 2 ** attempt;
     sleepMs = Math.min(sleepMs, maxSleepMs);
-    if(logger) {
+    if (logger) {
         logger.debug(`Sleeping ${sleepMs} ms`);
     }
     return await sleep(sleepMs);
 }
 
 async function sleepRandomNumberOfBlocks(chainId, opts = {}) {
-    const {
-        minBlocks = 0,
-        maxBlocks = 7,
-        logger = null,
-    } = opts;
+    const { minBlocks = 0, maxBlocks = 7, logger = null } = opts;
     chainId = parseInt(chainId);
     let blockTime = 13; // ethereum
     if (chainId === 30 || chainId === 31) {
@@ -49,14 +40,10 @@ async function sleepRandomNumberOfBlocks(chainId, opts = {}) {
         blockTime = 5;
     }
 
-    const numBlocks = Math.floor(
-        Math.random() * (maxBlocks - minBlocks) + minBlocks
-    );
+    const numBlocks = Math.floor(Math.random() * (maxBlocks - minBlocks) + minBlocks);
     const sleepMs = blockTime * numBlocks * 1000;
     if (logger) {
-        logger.info(
-            `Sleeping ~${numBlocks} blocks with block time ${blockTime} s = ${sleepMs} ms`
-        )
+        logger.info(`Sleeping ~${numBlocks} blocks with block time ${blockTime} s = ${sleepMs} ms`);
     }
     return await sleep(sleepMs);
 }
@@ -68,12 +55,14 @@ async function waitForReceipt(txHash) {
         const checkInterval = setInterval(async () => {
             timeElapsed += interval;
             let receipt = await web3.eth.getTransactionReceipt(txHash);
-            if(receipt != null) {
+            if (receipt != null) {
                 clearInterval(checkInterval);
                 resolve(receipt);
             }
-            if(timeElapsed > 70000) {
-                reject(`Operation took too long <a target="_blank" href="${config.explorer}/tx/${txHash}">check Tx on the explorer</a>`);
+            if (timeElapsed > 70000) {
+                reject(
+                    `Operation took too long <a target="_blank" href="${config.explorer}/tx/${txHash}">check Tx on the explorer</a>`
+                );
             }
         }, interval);
     });
@@ -84,8 +73,8 @@ function hexStringToBuffer(hexString) {
 }
 
 function stripHexPrefix(str) {
-    return (str.indexOf('0x') == 0) ? str.slice(2) : str;
-  }
+    return str.indexOf('0x') == 0 ? str.slice(2) : str;
+}
 
 function privateToAddress(privateKey) {
     return ethUtils.bufferToHex(ethUtils.privateToAddress(this.hexStringToBuffer(privateKey)));
@@ -97,42 +86,45 @@ function memoryUsage() {
     return Math.round(heapUsed / (1024 * 1024));
 }
 
-
 function calculatePrefixesSuffixes(nodes) {
     const prefixes = [];
     const suffixes = [];
     const ns = [];
-    
+
     for (let i = 0; i < nodes.length; i++) {
         nodes[i] = stripHexPrefix(nodes[i]);
     }
 
     for (let k = 0, l = nodes.length; k < l; k++) {
-        if (k + 1 < l && nodes[k+1].indexOf(nodes[k]) >= 0)
-            continue;
-        
+        if (k + 1 < l && nodes[k + 1].indexOf(nodes[k]) >= 0) continue;
+
         ns.push(nodes[k]);
     }
 
     let hash = Web3.utils.sha3(Buffer.from(ns[0], 'hex'));
     hash = stripHexPrefix(hash);
-    
+
     prefixes.push('0x');
     suffixes.push('0x');
-    
+
     for (let k = 1, l = ns.length; k < l; k++) {
         const p = ns[k].indexOf(hash);
-        
+
         prefixes.push(ethUtils.addHexPrefix(ns[k].substring(0, p)));
         suffixes.push(ethUtils.addHexPrefix(ns[k].substring(p + hash.length)));
-        
+
         hash = Web3.utils.sha3(Buffer.from(ns[k], 'hex'));
         hash = stripHexPrefix(hash);
     }
-    
+
     return { prefixes: prefixes, suffixes: suffixes };
 }
 
+function eliminateDuplicates(arrays) {
+    const set = new Set();
+    arrays.forEach((array) => array.forEach((item) => set.add(item)));
+    return Array.from(set);
+}
 
 module.exports = {
     waitBlocks: waitBlocks,
@@ -145,5 +137,6 @@ module.exports = {
     memoryUsage: memoryUsage,
     calculatePrefixesSuffixes: calculatePrefixesSuffixes,
     zeroHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    waitForReceipt: waitForReceipt
-}
+    waitForReceipt: waitForReceipt,
+    eliminateDuplicates: eliminateDuplicates,
+};
