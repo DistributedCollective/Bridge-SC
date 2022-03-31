@@ -53,6 +53,8 @@
         "kind-of": ">=6.0.3",
         "mem": ">=4.0.0",
         "minimist": "^1.2.5",
+        "prettier": "^2.6.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.19",
         "tree-kill": ">=1.2.2",
         "truffle-contract-size": "^2.0.1",
         "yargs-parser": ">=13.1.2"

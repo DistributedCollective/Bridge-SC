@@ -1,16 +1,9 @@
 pragma solidity ^0.5.0;
-pragma experimental ABIEncoderV2;
 
 import "./IBridge.sol";
 import "./zeppelin/ownership/Ownable.sol";
-import "./zeppelin/cryptography/ECDSA.sol";
 
 contract Federation is Ownable {
-    struct SignatureInfo {
-        bytes signature;
-        uint256 deadline;
-    }
-
     uint256 public constant MAX_MEMBER_COUNT = 50;
     address private constant NULL_ADDRESS = address(0);
 
@@ -115,14 +108,14 @@ contract Federation is Ownable {
         address originalTokenAddress,
         address receiver,
         uint256 amount,
-        string memory symbol,
+        string calldata symbol,
         bytes32 blockHash,
         bytes32 transactionHash,
         uint32 logIndex,
         uint8 decimals,
         uint256 granularity,
-        bytes memory userData
-    ) public returns (bool) {
+        bytes calldata userData
+    ) external returns (bool) {
         return
             _voteTransaction(
                 originalTokenAddress,
@@ -248,7 +241,7 @@ contract Federation is Ownable {
         uint256 transactionCount = getTransactionCount(transactionIdU);
         if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
             processed[transactionIdU] = true;
-            releaseTokensOnBridge(
+            bool acceptTransfer = bridge.acceptTransferAt(
                 originalTokenAddress,
                 receiver,
                 amount,
@@ -260,241 +253,10 @@ contract Federation is Ownable {
                 granularity,
                 userData
             );
+            require(acceptTransfer, "Federation: Bridge acceptTransfer error");
             emit Executed(transactionIdU);
             return true;
         }
-    }
-
-    function executeTransaction(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string memory symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity,
-        SignatureInfo[] memory signaturesInfos
-    ) public returns (bool) {
-        return
-            _executeTransaction(
-                originalTokenAddress,
-                receiver,
-                amount,
-                symbol,
-                blockHash,
-                transactionHash,
-                logIndex,
-                decimals,
-                granularity,
-                "",
-                signaturesInfos
-            );
-    }
-
-    function executeTransactionAt(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string memory symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity,
-        bytes memory userData,
-        SignatureInfo[] memory signaturesInfos
-    ) public returns (bool) {
-        return
-            _executeTransaction(
-                originalTokenAddress,
-                receiver,
-                amount,
-                symbol,
-                blockHash,
-                transactionHash,
-                logIndex,
-                decimals,
-                granularity,
-                userData,
-                signaturesInfos
-            );
-    }
-
-    function _executeTransaction(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string memory symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity,
-        bytes memory userData,
-        SignatureInfo[] memory signaturesInfos
-    ) internal onlyMember returns (bool) {
-        // solium-disable-next-line max-len
-        require(
-            initStageDone == true,
-            "Federation: Cannot process TX while initStageDone == false"
-        );
-
-        bytes32 transactionId = getTransactionId(
-            originalTokenAddress,
-            receiver,
-            amount,
-            symbol,
-            blockHash,
-            transactionHash,
-            logIndex,
-            decimals,
-            granularity
-        );
-        if (processed[transactionId]) return true;
-
-        // Bug fix //
-        // UserData is not included in transactionId hash.
-        // In order to keep backward competability, since transctions that were already processed are marked as processed[transactionId],
-        // We keep the transactionId and adding transactionIdU (that includes userData hashing)
-        // Assuming  processed[transactionId) == false from this line
-        // Depreciating transactionId for unprocessed transaction.
-        // Using transactionIdU instead.
-        // This should be updated in Federator BE as well.
-        // Function processTransaction() created to solve EVM stack to deep error
-        if (
-            processSignedTransaction(
-                originalTokenAddress,
-                receiver,
-                amount,
-                symbol,
-                blockHash,
-                transactionHash,
-                logIndex,
-                decimals,
-                granularity,
-                userData,
-                signaturesInfos
-            )
-        ) {
-            // No need to update processed[transactionId], since it is used only for backward competability
-            // processed[transactionId] = true;
-            return true;
-        }
-        return true;
-    }
-
-    function processSignedTransaction(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string memory symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity,
-        bytes memory userData,
-        SignatureInfo[] memory signaturesInfos
-    ) internal returns (bool) {
-        bytes32 transactionIdU = getTransactionIdU(
-            originalTokenAddress,
-            receiver,
-            amount,
-            symbol,
-            blockHash,
-            transactionHash,
-            logIndex,
-            decimals,
-            granularity,
-            userData
-        );
-        if (processed[transactionIdU]) return true;
-
-        // Sender implicitly accepts
-        votes[transactionIdU][_msgSender()] = true;
-        uint256 memberValidations = 1;
-
-        for (uint256 i; i < signaturesInfos.length; i += 1) {
-            require(
-                signaturesInfos[i].deadline > block.timestamp,
-                "Some signature is not valid anymore"
-            );
-
-            uint256 chainId;
-            assembly {
-                chainId := chainid()
-            }
-            bytes32 hash = keccak256(
-                abi.encodePacked(
-                    "\x19Ethereum Signed Message:\n116",
-                    abi.encodePacked(
-                        transactionIdU,
-                        chainId,
-                        address(this),
-                        signaturesInfos[i].deadline
-                    )
-                )
-            );
-            address signer = ECDSA.recover(hash, signaturesInfos[i].signature);
-
-            require(isMember[signer], "Signature doesn't match any member");
-
-            if (!votes[transactionIdU][signer]) {
-                votes[transactionIdU][signer] = true;
-                memberValidations += 1;
-            }
-        }
-
-        require(
-            memberValidations >= required && memberValidations >= members.length / 2 + 1,
-            "Not enough validations"
-        );
-
-        processed[transactionIdU] = true;
-        releaseTokensOnBridge(
-            originalTokenAddress,
-            receiver,
-            amount,
-            symbol,
-            blockHash,
-            transactionHash,
-            logIndex,
-            decimals,
-            granularity,
-            userData
-        );
-        emit Executed(transactionIdU);
-
-        return true;
-    }
-
-    function releaseTokensOnBridge(
-        address originalTokenAddress,
-        address receiver,
-        uint256 amount,
-        string memory symbol,
-        bytes32 blockHash,
-        bytes32 transactionHash,
-        uint32 logIndex,
-        uint8 decimals,
-        uint256 granularity,
-        bytes memory userData
-    ) private {
-        bool acceptTransfer = bridge.acceptTransferAt(
-            originalTokenAddress,
-            receiver,
-            amount,
-            symbol,
-            blockHash,
-            transactionHash,
-            logIndex,
-            decimals,
-            granularity,
-            userData
-        );
-        require(acceptTransfer, "Federation: Bridge acceptTransfer error");
     }
 
     function getTransactionCount(bytes32 transactionId) public view returns (uint256) {
