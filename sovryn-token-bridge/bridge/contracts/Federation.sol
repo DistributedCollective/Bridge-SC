@@ -414,11 +414,9 @@ contract Federation is Ownable {
         );
         if (processed[transactionIdU]) return true;
 
-        // address[] memory validators = new address[](signaturesInfos.length + 1);
         // Sender implicitly accepts
         votes[transactionIdU][_msgSender()] = true;
         uint256 memberValidations = 1;
-        // validators[0] = _msgSender();
         emit Signed(transactionIdU, _msgSender());
 
         for (uint256 i; i < signaturesInfos.length; i += 1) {
@@ -444,13 +442,11 @@ contract Federation is Ownable {
             );
             address signer = ECDSA.recover(hash, signaturesInfos[i].signature);
 
-            emit Signed(transactionIdU, signer);
-
             require(isMember[signer], "Signature doesn't match any member");
-
             if (!votes[transactionIdU][signer]) {
                 votes[transactionIdU][signer] = true;
                 memberValidations += 1;
+                emit Signed(transactionIdU, signer);
             }
         }
 
