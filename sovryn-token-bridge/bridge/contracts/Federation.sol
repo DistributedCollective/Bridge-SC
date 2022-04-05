@@ -39,6 +39,7 @@ contract Federation is Ownable {
         uint256 granularity,
         bytes userData
     );
+    event Signed(bytes32 indexed transactionId, address validator);
     event Executed(bytes32 indexed transactionId);
     event MemberAddition(address indexed member);
     event MemberRemoval(address indexed member);
@@ -248,7 +249,7 @@ contract Federation is Ownable {
         uint256 transactionCount = getTransactionCount(transactionIdU);
         if (transactionCount >= required && transactionCount >= members.length / 2 + 1) {
             processed[transactionIdU] = true;
-            releaseTokensOnBridge(
+            bool acceptTransfer = bridge.acceptTransferAt(
                 originalTokenAddress,
                 receiver,
                 amount,
@@ -260,6 +261,7 @@ contract Federation is Ownable {
                 granularity,
                 userData
             );
+            require(acceptTransfer, "Federation: Bridge acceptTransfer error");
             emit Executed(transactionIdU);
             return true;
         }
@@ -412,9 +414,12 @@ contract Federation is Ownable {
         );
         if (processed[transactionIdU]) return true;
 
+        // address[] memory validators = new address[](signaturesInfos.length + 1);
         // Sender implicitly accepts
         votes[transactionIdU][_msgSender()] = true;
         uint256 memberValidations = 1;
+        // validators[0] = _msgSender();
+        emit Signed(transactionIdU, _msgSender());
 
         for (uint256 i; i < signaturesInfos.length; i += 1) {
             require(
@@ -439,6 +444,8 @@ contract Federation is Ownable {
             );
             address signer = ECDSA.recover(hash, signaturesInfos[i].signature);
 
+            emit Signed(transactionIdU, signer);
+
             require(isMember[signer], "Signature doesn't match any member");
 
             if (!votes[transactionIdU][signer]) {
@@ -453,7 +460,9 @@ contract Federation is Ownable {
         );
 
         processed[transactionIdU] = true;
+
         releaseTokensOnBridge(
+            transactionIdU,
             originalTokenAddress,
             receiver,
             amount,
@@ -471,6 +480,7 @@ contract Federation is Ownable {
     }
 
     function releaseTokensOnBridge(
+        bytes32 transactionIdU,
         address originalTokenAddress,
         address receiver,
         uint256 amount,
@@ -482,6 +492,20 @@ contract Federation is Ownable {
         uint256 granularity,
         bytes memory userData
     ) private {
+        emit Voted(
+            _msgSender(),
+            transactionIdU,
+            originalTokenAddress,
+            receiver,
+            amount,
+            symbol,
+            blockHash,
+            transactionHash,
+            logIndex,
+            decimals,
+            granularity,
+            userData
+        );
         bool acceptTransfer = bridge.acceptTransferAt(
             originalTokenAddress,
             receiver,

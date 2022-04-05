@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 import "./IBridge.sol";
 import "./zeppelin/ownership/Ownable.sol";
 
-contract Federation is Ownable {
+contract Federation_v3 is Ownable {
     uint256 public constant MAX_MEMBER_COUNT = 50;
     address private constant NULL_ADDRESS = address(0);
 

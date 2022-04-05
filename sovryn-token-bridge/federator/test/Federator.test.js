@@ -211,25 +211,7 @@ describe('Federator module tests', () => {
             },
         };
 
-        const { blockHash, transactionHash, logIndex } = log;
-        const { _tokenAddress, _to, _amount, _symbol } = log.returnValues;
-
-        let result = await federator._executeTransaction(
-            _tokenAddress,
-            _to,
-            _amount,
-            _symbol,
-            blockHash,
-            transactionHash,
-            logIndex,
-            18,
-            1,
-            '0x0',
-            '0xffffff',
-            '0xfffff1',
-            ['sig1', 'sig2']
-        );
-        console.log({ result });
+        let result = await federator._executeTransaction(log, '0x0');
         expect(result).toBeTruthy();
     });
 
