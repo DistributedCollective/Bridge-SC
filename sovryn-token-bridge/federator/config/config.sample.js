@@ -24,6 +24,7 @@ module.exports = {
     runEvery: 2, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
+    signaturesTTL: 120, // 2 minutes
     storagePath: './db',
     federatorInstanceId: '',
     etherscanApiKey: etherscanApiKey,
@@ -337,7 +338,6 @@ module.exports = {
         {
             ip: '127.0.0.1',
             port: 30303,
-            address: '0x8c981fEa9Fa5eD6248a50da281ffD7fB87D0ee16',
         },
     ],
 };

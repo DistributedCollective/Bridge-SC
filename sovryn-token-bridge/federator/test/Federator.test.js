@@ -382,6 +382,8 @@ describe('Federator module tests', () => {
     });
 
     describe('Signatures', () => {
+        const chainId = 1;
+        const contractAddress = testConfig.sidechain.federation;
         const wallets = [];
         const signatures = [];
 
@@ -454,6 +456,10 @@ describe('Federator module tests', () => {
             },
         ];
 
+        function createTimestamp(secondesOffset) {
+            return Math.floor(Date.now() / 1000) + secondesOffset;
+        }
+
         beforeAll(async () => {
             wallets.push(new ethers.Wallet(testConfig.privateKey));
             wallets.push(
@@ -468,9 +474,19 @@ describe('Federator module tests', () => {
             );
 
             const txId = '0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1';
-            signatures.push(await wallets[0].signMessage(ethers.utils.arrayify(txId)));
-            signatures.push(await wallets[1].signMessage(ethers.utils.arrayify(txId)));
-            signatures.push(await wallets[2].signMessage(ethers.utils.arrayify(txId)));
+
+            const deadline = createTimestamp(120);
+            const payload = ethers.utils.solidityPack(
+                ['bytes32', 'uint256', 'address', 'uint256'],
+                [txId, chainId, contractAddress, deadline]
+            );
+            for (let i = 0; i < wallets.length; i += 1) {
+                const signature = await wallets[i].signMessage(ethers.utils.arrayify(payload));
+                signatures.push({
+                    signature,
+                    deadline,
+                });
+            }
         });
 
         it('should get signatures when request', async () => {
@@ -484,12 +500,12 @@ describe('Federator module tests', () => {
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[0], logId: log.id },
+                            data: { signatureData: signatures[0], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[1], logId: log.id },
+                            data: { signatureData: signatures[1], logId: log.id },
                         });
                     },
                 },
@@ -515,17 +531,17 @@ describe('Federator module tests', () => {
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[0], logId: log.id },
+                            data: { signatureData: signatures[0], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[0], logId: log.id },
+                            data: { signatureData: signatures[0], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[1], logId: log.id },
+                            data: { signatureData: signatures[1], logId: log.id },
                         });
                     },
                 },
@@ -551,17 +567,17 @@ describe('Federator module tests', () => {
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[0], logId: log.id },
+                            data: { signatureData: signatures[0], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[1], logId: 'log_d7528a15' },
+                            data: { signatureData: signatures[1], logId: 'log_d7528a15' },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[2], logId: log.id },
+                            data: { signatureData: signatures[2], logId: log.id },
                         });
                     },
                 },
@@ -587,17 +603,17 @@ describe('Federator module tests', () => {
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[0], logId: log.id },
+                            data: { signatureData: signatures[0], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[1], logId: log.id },
+                            data: { signatureData: signatures[1], logId: log.id },
                         });
                         this.callback({
                             type: MAIN_SIGNATURE_SUBMISSION,
                             source: { id: 'TEST-ID' },
-                            data: { signature: signatures[2], logId: log.id },
+                            data: { signatureData: signatures[2], logId: log.id },
                         });
                     },
                 },
@@ -616,14 +632,23 @@ describe('Federator module tests', () => {
             const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
             federator.mainBridgeContract.getPastEvents = () => [logs[0]];
 
-            const { signature, logId } = await federator.signTransaction({
+            const { signatureData, logId } = await federator.signTransaction({
                 blockNumber: logs[0].blockNumber,
                 id: logs[0].id,
             });
-            expect(typeof signature).toBe('string');
-            expect(signature.substring(0, 2)).toBe('0x');
-            expect(signature).toHaveLength(132);
+            expect(typeof signatureData.deadline).toBe('number');
+            expect(typeof signatureData.signature).toBe('string');
+            expect(signatureData.signature.substring(0, 2)).toBe('0x');
+            expect(signatureData.signature).toHaveLength(132);
             expect(logId).toBe(logs[0].id);
+
+            const signer = await federator._recoverLogSigner(
+                logs[0],
+                signatureData,
+                MAIN_SIGNATURE_SUBMISSION
+            );
+            const wallet = new ethers.Wallet(testConfig.privateKey);
+            expect(signer).toBe(wallet.address);
         });
 
         it('should not sign message if no matching event fetched', async () => {

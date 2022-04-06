@@ -126,6 +126,10 @@ function eliminateDuplicates(arrays) {
     return Array.from(set);
 }
 
+function createTimestamp(secondesOffset) {
+    return Math.floor(Date.now() / 1000) + secondesOffset;
+}
+
 module.exports = {
     waitBlocks: waitBlocks,
     sleep: sleep,
@@ -139,4 +143,5 @@ module.exports = {
     zeroHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
     waitForReceipt: waitForReceipt,
     eliminateDuplicates: eliminateDuplicates,
+    createTimestamp: createTimestamp,
 };

@@ -9,6 +9,7 @@ The federators will be the owners of the contracts willing to allow to cross the
 Go to /federator/config copy `config.sample.js` file and rename it to `config.js` set mainchain and sidechain to point to the json files of the networks you are suing, for example rsktestnet-kovan.json and kovan.json, `make sure to set the host parameter of those files`. Create the file `federator.key` inside the config folder, and add the private key of the member of the Federation contract. The members of the federation are controled by the MultiSig contract, same that is owner of the Bridge and AllowedTokens contracts.
 The minimumPeerAmount field affect the number of p2p node a federator needs to be connected to in order to start fetching the bridge's events. It also affects the number of signatures required before sending the token release transaction.
 The port field needs to be updated if you run multiple federators on the same machine.
+The signaturesTTL field sets the time during which the signatures produced by the federation is usable.
 Fill the peers field with the ip, port and address of each federator who want to connect to and accept in your network.
 
 ## Usage

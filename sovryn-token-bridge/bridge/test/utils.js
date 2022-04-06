@@ -157,19 +157,22 @@ async function produceSignatures(
   contractAddress,
   deadline
 ) {
+  const payload = ethers.utils.solidityPack(
+    ["bytes32", "uint256", "address", "uint256"],
+    [transactionId, chainId, contractAddress, deadline]
+  );
+
   const signatures = [];
+
   for (let i = 0; i < privateKeys.length; i += 1) {
     const wallet = new ethers.Wallet(privateKeys[i]);
-    const payload = ethers.utils.solidityPack(
-      ["bytes32", "uint256", "address", "uint256"],
-      [transactionId, chainId, contractAddress, deadline]
-    );
     const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
     signatures.push({
       signature,
       deadline,
     });
   }
+
   return signatures;
 }
 

@@ -20,6 +20,7 @@
     "minimumPeerAmount": 2,
     "port": 30303,
     "runEvery": 1,
+    "signaturesTTL": 120,
     "sleepOnGas": 2,
     "maxSleepOnGas": 3,
     "confirmations": 0,

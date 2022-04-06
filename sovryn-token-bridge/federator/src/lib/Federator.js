@@ -182,18 +182,24 @@ module.exports = class Federator {
             );
 
             // Select correct message type depending on main on side federator
-            const { request, submission } =
+            const { requestType, submissionType } =
                 this.type === MAIN_FEDERATOR
-                    ? { request: MAIN_SIGNATURE_REQUEST, submission: MAIN_SIGNATURE_SUBMISSION }
-                    : { request: SIDE_SIGNATURE_REQUEST, submission: SIDE_SIGNATURE_SUBMISSION };
+                    ? {
+                          requestType: MAIN_SIGNATURE_REQUEST,
+                          submissionType: MAIN_SIGNATURE_SUBMISSION,
+                      }
+                    : {
+                          requestType: SIDE_SIGNATURE_REQUEST,
+                          submissionType: SIDE_SIGNATURE_SUBMISSION,
+                      };
 
             const signatures = new Set();
             const listener = this.network.net.onMessage(async (msg) => {
-                if (msg.type === submission && msg.data.logId === log.id) {
+                if (msg.type === submissionType && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
 
-                    const { signature } = msg.data;
-                    const signerAddress = await this.recoverLogSigner(log, signature);
+                    const { signatureData } = msg.data;
+                    const signerAddress = await this._recoverLogSigner(log, signatureData);
 
                     if (!this.members.includes(signerAddress)) {
                         this.logger.warn(
@@ -202,7 +208,7 @@ module.exports = class Federator {
                         return;
                     }
 
-                    signatures.add(signature);
+                    signatures.add(signatureData);
                     if (signatures.size >= this.config.minimumPeerAmount) {
                         clearTimeout(timer);
                         listener.unsubscribe();
@@ -210,14 +216,15 @@ module.exports = class Federator {
                     }
                 }
             });
-            this.network.net.broadcast(request, { log });
+            this.network.net.broadcast(requestType, { log });
         });
     }
 
-    async recoverLogSigner(log, signature) {
+    async _recoverLogSigner(log, signatureData) {
         const { blockHash, transactionHash, logIndex } = log;
         const { _tokenAddress, _to, _amount, _symbol, _userData, _decimals, _granularity } =
             log.returnValues;
+        const { signature, deadline } = signatureData;
         const txId = await this.federationContract.methods
             .getTransactionIdU(
                 _tokenAddress,
@@ -232,7 +239,16 @@ module.exports = class Federator {
                 _userData || []
             )
             .call();
-        const digest = ethers.utils.hashMessage(ethers.utils.arrayify(txId));
+
+        const networkId = await this.sideWeb3.eth.net.getId();
+        const federationAddress = this.config.sidechain.federation;
+
+        const payload = ethers.utils.solidityPack(
+            ['bytes32', 'uint256', 'address', 'uint256'],
+            [txId, networkId, federationAddress, deadline]
+        );
+
+        const digest = ethers.utils.hashMessage(ethers.utils.arrayify(payload));
         return ethers.utils.recoverAddress(digest, signature);
     }
 
@@ -540,8 +556,14 @@ module.exports = class Federator {
             )
             .call();
 
+        const deadline = utils.createTimestamp(this.config.signaturesTTL);
+        const payload = ethers.utils.solidityPack(
+            ['bytes32', 'uint256', 'address', 'uint256'],
+            [txId, chainId, this.config.sidechain.federation, deadline]
+        );
+
         const wallet = new ethers.Wallet(this.config.privateKey);
-        const signature = await wallet.signMessage(ethers.utils.arrayify(txId));
-        return { signature, logId: id };
+        const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
+        return { signatureData: { signature, deadline }, logId: id };
     }
 };
