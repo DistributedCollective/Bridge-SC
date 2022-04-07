@@ -8,7 +8,7 @@ class P2p {
     net;
     logger;
 
-    constructor(name, config, federatorsAdresses, logger) {
+    constructor(logger) {
         this.logger = logger;
     }
 

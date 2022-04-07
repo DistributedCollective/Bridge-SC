@@ -10,7 +10,7 @@ const {
     SIDE_SIGNATURE_REQUEST,
     MAIN_SIGNATURE_SUBMISSION,
     SIDE_SIGNATURE_SUBMISSION,
-} = require('./helpers/p2pMessageTypes');
+} = require('./lib/constants');
 
 // Configurations
 const config = require('../config/config.js');
@@ -58,8 +58,6 @@ if (config.telegramBot && config.telegramBot.token && config.telegramBot.groupId
 if (process.argv[2]) config.port = parseInt(process.argv[2]);
 if (process.argv[3]) config.privateKey = process.argv[3];
 
-const federatorsAdresses = [config.mainchain.federation, config.sidechain.federation].map(contract);
-
 const p2pNode = new P2p(logger);
 
 const clientId = new ClientId(log4js.getLogger('Get-Client-Id'), config, web3);
@@ -97,13 +95,15 @@ const sideFederator = new Federator(
     chatBot
 );
 
-p2pNode.net.onMessage(async (msg) => {
-    if (msg.type === MAIN_SIGNATURE_REQUEST) {
-        await handleRequest(msg, mainFederator, MAIN_SIGNATURE_SUBMISSION);
-    } else if (msg.type === SIDE_SIGNATURE_REQUEST) {
-        await handleRequest(msg, sideFederator, SIDE_SIGNATURE_SUBMISSION);
-    }
-});
+function initiateP2pListener() {
+    p2pNode.net.onMessage(async (msg) => {
+        if (msg.type === MAIN_SIGNATURE_REQUEST) {
+            await handleRequest(msg, mainFederator, MAIN_SIGNATURE_SUBMISSION);
+        } else if (msg.type === SIDE_SIGNATURE_REQUEST) {
+            await handleRequest(msg, sideFederator, SIDE_SIGNATURE_SUBMISSION);
+        }
+    });
+}
 
 async function handleRequest(msg, federator, submissionType) {
     logger.info(
@@ -164,6 +164,8 @@ async function startServices() {
             membersAddresses,
             config.privateKey
         );
+        console.log(p2pNode);
+        // initiateP2pListener();
         await p2pNode.start();
     } catch (err) {
         logger.error("Couldn't start P2P network", err);
