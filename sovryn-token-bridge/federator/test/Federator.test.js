@@ -161,10 +161,6 @@ describe('Federator module tests', () => {
     });
 
     it('Should not execute empty log and receiver', async () => {
-        eth.sendSignedTransaction = jest.fn().mockImplementation(() => {
-            throw new Error('Some Error');
-        });
-
         let federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
         try {
@@ -176,11 +172,10 @@ describe('Federator module tests', () => {
         expect(fs.existsSync(testPath)).toBeFalsy();
     });
 
-    // For some unkown reason, passes only when ran alone with .only
-    it.skip('Execute a transaction from a log entry', async () => {
-        let federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+    it('Execute a transaction from a log entry', async () => {
+        const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
-        let log = {
+        const log = {
             logIndex: 2,
             blockNumber: 2557,
             blockHash: '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
@@ -211,12 +206,28 @@ describe('Federator module tests', () => {
             },
         };
 
-        let result = await federator._executeTransaction(log, '0x0');
+        const { blockHash, transactionHash, logIndex } = log;
+        const { _tokenAddress, _to, _amount, _symbol } = log.returnValues;
+
+        const result = await federator._executeTransaction(
+            _tokenAddress,
+            _to,
+            _amount,
+            _symbol,
+            blockHash,
+            transactionHash,
+            logIndex,
+            18,
+            1,
+            '0x0',
+            '0xffffff',
+            '0xfffff1',
+            ['sig1', 'sig2']
+        );
         expect(result).toBeTruthy();
     });
 
-    // For some unkown reason, passes only when ran alone with .only
-    it.skip('Should return undefined for a list of 1 confirmed log', async () => {
+    it('Should return undefined for a list of 1 confirmed log', async () => {
         let federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
         disableEtherscanGasPrices(federator.transactionSender);
         federator._requestSignatureFromFederators = () => ['signature1', 'signature2'];
@@ -303,7 +314,7 @@ describe('Federator module tests', () => {
     });
 
     // For some unkown reason, passes only when ran alone with .only
-    it.skip('Should return the second logBlockNumber for a list of 2 log, only first confirmed', async () => {
+    it('Should return the second logBlockNumber for a list of 2 log, only first confirmed', async () => {
         let federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
         federator._requestSignatureFromFederators = () => ['signature1', 'signature2'];
         disableEtherscanGasPrices(federator.transactionSender);
@@ -456,10 +467,6 @@ describe('Federator module tests', () => {
             },
         ];
 
-        function createTimestamp(secondesOffset) {
-            return Math.floor(Date.now() / 1000) + secondesOffset;
-        }
-
         beforeAll(async () => {
             wallets.push(new ethers.Wallet(testConfig.privateKey));
             wallets.push(
@@ -475,7 +482,7 @@ describe('Federator module tests', () => {
 
             const txId = '0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1';
 
-            const deadline = createTimestamp(120);
+            const deadline = Math.floor(Date.now() / 1000) + 120;
             const payload = ethers.utils.solidityPack(
                 ['bytes32', 'uint256', 'address', 'uint256'],
                 [txId, chainId, contractAddress, deadline]
