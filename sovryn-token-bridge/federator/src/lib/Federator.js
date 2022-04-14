@@ -52,8 +52,12 @@ module.exports = class Federator {
         this.chatBot = chatBot || new NullBot(this.logger);
     }
 
+    async populateMemberAddresses() {
+        this.members = await this.federationContract.methods.getMembers().call();
+    }
+
     async getMemberAddresses() {
-        return await this.federationContract.methods.getMembers().call();
+        return this.members;
     }
 
     async run() {
@@ -532,7 +536,7 @@ module.exports = class Federator {
             logs[0].returnValues;
         const { blockHash, transactionHash, logIndex } = logs[0];
 
-        const chainId = await this.mainWeb3.eth.net.getId();
+        const chainId = await this.sideWeb3.eth.net.getId();
         const ctr = new ConfirmationTableReader(chainId, this.confirmationTable);
         const currentBlock = await this._getCurrentBlockNumber();
 
@@ -564,6 +568,7 @@ module.exports = class Federator {
 
         const wallet = new ethers.Wallet(this.config.privateKey);
         const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
+
         return { signatureData: { signature, deadline }, logId: id };
     }
 };

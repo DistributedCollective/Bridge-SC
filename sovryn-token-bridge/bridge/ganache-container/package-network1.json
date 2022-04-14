@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ganache -p 8545 --chain.chainId 1 --chain.networkId 1 --miner.blockTime 3 --wallet.mnemonic 'school canvas absurd wheel under include butter around just strike work now'"
+    "start": "ganache -p 8545 --chain.chainId 1 --chain.networkId 1 --miner.blockTime 1 --wallet.mnemonic 'school canvas absurd wheel under include butter around just strike work now'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ganache": "^7.0.3"
+    "ganache": "7.0.3"
   }
 }

@@ -153,9 +153,12 @@ async function startServices() {
     // }
 
     try {
-        await mainFederator.getMemberAddresses();
-        await sideFederator.getMemberAddresses();
-        const membersAddresses = eliminateDuplicates(mainFederator.members, sideFederator.members);
+        await mainFederator.populateMemberAddresses();
+        await sideFederator.populateMemberAddresses();
+        const membersAddresses = eliminateDuplicates([
+            await mainFederator.getMemberAddresses(),
+            await sideFederator.getMemberAddresses(),
+        ]);
 
         p2pNode.initiateP2pNetwork(
             'bridge-federators',
@@ -164,12 +167,13 @@ async function startServices() {
             membersAddresses,
             config.privateKey
         );
-        console.log(p2pNode);
-        // initiateP2pListener();
+
+        initiateP2pListener();
         await p2pNode.start();
     } catch (err) {
         logger.error("Couldn't start P2P network", err);
-        process.exit();
+        setTimeout(() => startServices(), 2000);
+        return;
     }
 
     scheduler.start().catch((err) => {

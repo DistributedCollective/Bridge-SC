@@ -74,6 +74,8 @@ contract Federation is Ownable {
                 "Federation: Invalid members"
             );
             isMember[_members[i]] = true;
+            // members.push(_members[i]);
+
             emit MemberAddition(_members[i]);
         }
         required = _required;

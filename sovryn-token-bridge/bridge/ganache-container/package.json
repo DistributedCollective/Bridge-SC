@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ganache": "^7.0.3"
+    "ganache": "7.0.3"
   }
 }

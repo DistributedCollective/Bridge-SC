@@ -1,27 +1,37 @@
-const MockERC20 = artifacts.require('MockERC20');
-const Bridge = artifacts.require('Bridge');
+const MockERC20 = artifacts.require("MockERC20");
+const AllowTokens = artifacts.require("AllowTokens");
+const Bridge = artifacts.require("Bridge");
 
-const user = '0xd248CD168c8640C7CC14815Eb542061449aB29cf';
+const user = "0x189Ec9a470F38Ee8Dc732b8fCC9d03624cD0d6A0";
 
 module.exports = async (callback) => {
-    const mockERC20 = await MockERC20.deployed();
+  try {
+    console.log("Deploying mock token");
+    const mockERC20 = await MockERC20.new();
+    console.log("Mock token Deployed: ", mockERC20.address);
+    const allowTokens = await AllowTokens.deployed();
+
+    await allowTokens.addAllowedToken(mockERC20.address);
+    await allowTokens.setFeeAndMinPerToken(mockERC20.address, 1, 1);
+    console.log("Token allowed");
+
     const bridge = await Bridge.deployed();
 
-    try {
-        await mockERC20.mint(user, '100000000000000000000'); // 100 tokens
-        console.log('Token minted');
-        await mockERC20.approve(bridge.address, '100000000000000000000', {
-            from: user,
-        });
-        console.log('Token approved');
+    await mockERC20.mint(user, "100000000000000000000"); // 100 tokens
+    console.log("Token minted");
+    await mockERC20.approve(bridge.address, "100000000000000000000", {
+      from: user,
+    });
+    console.log("Token approved");
 
-        await bridge.receiveTokens(mockERC20.address, 1_000_000, {
-            from: user,
-        });
-        console.log('Tokens sent through the bridge');
-    } catch (err) {
-        console.log(`An error occured: ${err}`);
-    }
+    const res = await bridge.receiveTokens(mockERC20.address, "1000000", {
+      from: user,
+    });
+    console.log("Tokens sent through the bridge");
+    console.log(res);
+  } catch (err) {
+    console.log(`An error occured: ${err}`);
+  }
 
-    callback();
+  callback();
 };

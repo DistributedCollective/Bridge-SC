@@ -1,8 +1,8 @@
 {
     "bridge": "0x7611295C54845FED699F9f80783564dD6ea45467",
-    "federation": "0x91Bb4d62207E369AfCf889fB991D2d2008cc72f0",
+    "federation": "0xcf9F608EC69C842dff7969Fba721aA05Fc963109",
     "multiSig": "0x88f6b2bc66f4c31a3669b9b1359524abf79cfc4a",
     "allowTokens": "0x952b706a9ab5fd2d3b36205648ed7852676afbe7",
-    "host": "http://localhost:8545",
+    "host": "http://network1:8545",
     "fromBlock": 0
 }
