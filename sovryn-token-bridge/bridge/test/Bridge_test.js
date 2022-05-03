@@ -5,7 +5,7 @@ const truffleAssert = require('truffle-assertions');
 ZWeb3.initialize(web3.currentProvider);
 
 //Upgradable Contracts
-const Bridge_v1 = Contracts.getFromLocal('Bridge_v1');
+const Bridge_v0 = Contracts.getFromLocal('Bridge_v0');
 const Bridge = Contracts.getFromLocal('Bridge');
 const BridgeArtifact = artifacts.require('./Bridge');
 
@@ -53,10 +53,10 @@ contract('Bridge', async function (accounts) {
         this.utilsContract = await UtilsContract.deployed();
 
         this.project = await TestHelper();
-        Bridge_v1.link({ "Utils": this.utilsContract.address });
+        Bridge_v0.link({ "Utils": this.utilsContract.address });
         Bridge.link({ "Utils": this.utilsContract.address });
 
-        const proxy = await this.project.createProxy(Bridge_v1, {
+        const proxy = await this.project.createProxy(Bridge_v0, {
             initMethod: 'initialize',
             initArgs: [bridgeManager, federation, this.allowTokens.address, this.sideTokenFactory.address, 'e']
         });
@@ -1594,7 +1594,7 @@ contract('Bridge', async function (accounts) {
             this.mirrorSideTokenFactory = await SideTokenFactory.new();
             this.mirrormockERC20Receiver= await mockERC20Receiver.new();
 
-            const proxy = await this.project.createProxy(Bridge_v1, {
+            const proxy = await this.project.createProxy(Bridge_v0, {
                     initMethod: 'initialize',
                     initArgs: [bridgeManager, federation, this.mirrorAllowTokens.address, this.mirrorSideTokenFactory.address, 'r']
             });
@@ -2480,7 +2480,7 @@ contract('Bridge', async function (accounts) {
 
 //             this.mirrorSideTokenFactory = await SideTokenFactory.new();
 
-//             const proxy = await this.project.createProxy(Bridge_v1, {
+//             const proxy = await this.project.createProxy(Bridge_v0, {
 //                     initMethod: 'initialize',
 //                     initArgs: [this.multiSig.address, this.mirrorFed.address, this.mirrorAllowTokens.address, this.mirrorSideTokenFactory.address, 'r']
 //             });
@@ -2490,7 +2490,7 @@ contract('Bridge', async function (accounts) {
 
 //             await this.mirrorSideTokenFactory.transferPrimary(this.mirrorBridge.address);
        
-// //             this.mirrorBridge = await Bridge_v1.new();
+// //             this.mirrorBridge = await Bridge_v0.new();
 //              this.decimals = "18";
 
 //             // let data = this.mirrorBridge.methods['initialize(address,address,address,address,string)'](
