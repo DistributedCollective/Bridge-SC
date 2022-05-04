@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const { Network } = require('ataraxia');
 const { TCPTransport } = require('ataraxia-tcp');
+
 const { RSKKeyedAuth } = require('../vendors/RSKKeyedAuth');
 
 class P2p {
