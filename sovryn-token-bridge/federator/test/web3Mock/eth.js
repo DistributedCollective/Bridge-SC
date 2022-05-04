@@ -11,11 +11,10 @@ eth.getGasPrice = () => defaults.data.gasPrice;
 eth.estimateGas = () => defaults.data.estimatedGas;
 eth.getNonce = () => defaults.data.ethTransactionCount;
 
-
-let promiseSend = function(){
+let promiseSend = function () {
     var promiEvent = Web3PromiEvent();
 
-    setTimeout(function() {
+    setTimeout(function () {
         promiEvent.eventEmitter.emit('transactionHash', defaults.data.receipt.transactionHash);
         promiEvent.resolve(defaults.data.receipt);
     }, 10);
@@ -28,14 +27,14 @@ eth.sendTransaction = promiseSend;
 eth.Contract = contractMapping;
 
 eth.net = {
-    getId: () => defaults.data.netId
-}
+    getId: () => defaults.data.netId,
+};
 
 eth.mockMethods = (methods) => {
     return {
         ...eth,
-        ...methods
+        ...methods,
     };
-}
+};
 
 module.exports = eth;
