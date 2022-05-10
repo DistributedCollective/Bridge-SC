@@ -226,7 +226,23 @@ contract('AllowTokens', async function (accounts) {
             utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, 0, web3.utils.toWei('1'), { from: manager }));
         });
 
+        it('fail if (maxPerToken > 0 ) & (minAmount > maxPerToken)', async function() {
+            let newMax = web3.utils.toWei('2');
+            let newFee = web3.utils.toWei('3')
+            let newMin = web3.utils.toWei('3');
+            await this.allowTokens.setMaxPerToken(this.token.address, newMax, { from: manager });
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin), { from: manager });
 
+            
+            await this.allowTokens.setMaxPerToken(this.token.address, 0, { from: manager });
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
+            
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
     });
 
     describe('Max Per token', async function() {

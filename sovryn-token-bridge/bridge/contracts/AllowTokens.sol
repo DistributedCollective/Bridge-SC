@@ -151,23 +151,13 @@ contract AllowTokens is IAllowTokens, Ownable {
         return feeConstToken[token];
     }
 
-   //function setMinPerToken(address token, uint256 minAmount) external onlyOwner {
-   //     require(minAmount <= maxTokensAllowed, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
-   //     require(minAmount >= feeConstToken[token], "AllowTokens: Min Tokens should be equal bigger than fee");
-   //     minAllowedToken[token] = minAmount;
-   //    emit MinPerTokenChanged(token, minAmount);
-   // }
-
-    //function setFeePerToken(address token, uint256 feeConst) external onlyOwner {
-    //    require(feeConst >= minAllowedToken[token], "AllowTokens: Fee per Token should be equal or bigger than Min allowed");
-    //    feeConstToken[token] = feeConst;
-    //    emit FeePerTokenChanged(token, feeConst);
-    //}
-
     function setFeeAndMinPerToken(address token, uint256 _feeConst, uint256 _minAmount) external onlyOwner {
         require(_minAmount <= maxTokensAllowed, "AllowTokens: Min Tokens should be equal or smaller than Max Tokens");
         require(_minAmount >= _feeConst, "AllowTokens: Min Tokens should be equal bigger than fee");
         require(_feeConst > 0, "AllowTokens: Fee Should be> 0");
+        if (maxAllowedToken[token] != 0 ) {
+            require(_minAmount <= maxAllowedToken[token], "AllowTokens: Min Tokens should be equal or smaller than maxAllowedToken");
+        }
         feeConstToken[token] = _feeConst;
         minAllowedToken[token] = _minAmount;
         emit FeeAndMinPerTokenChanged(token, _feeConst, _minAmount);
