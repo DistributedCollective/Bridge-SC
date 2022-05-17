@@ -60,7 +60,7 @@ module.exports = {
         rsktestnet: {
             provider: () =>
                 //new HDWalletProvider(MNEMONIC, "http://45.79.214.38"),
-                new HDWalletProvider(MNEMONIC, 'wss://testnet.sovryn.app/ws'),
+                new HDWalletProvider(MNEMONIC, 'wss://testnet.sovryn.app/websocket'),
             network_id: 31,
             gas: 6300000,
             gasPrice: 70000000, // 0.07 gwei
@@ -82,12 +82,12 @@ module.exports = {
         //Ethereum
         ropsten: {
             provider: () =>
-                new HDWalletProvider(MNEMONIC, 'https://ropsten.infura.io/v3/' + INFURA_API_KEY),
+                new HDWalletProvider(MNEMONIC, 'wss://ropsten.infura.io/ws/v3/' + INFURA_API_KEY),
             //provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
             network_id: 3,
             networkCheckTimeout: 1e9,
             timeoutBlocks: 500000,
-            gas: 8000000,
+            gas: 6300000,
             gasPrice: 10000000000,
             skipDryRun: true,
         },
