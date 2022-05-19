@@ -226,7 +226,64 @@ contract('AllowTokens', async function (accounts) {
             utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, 0, web3.utils.toWei('1'), { from: manager }));
         });
 
+        it('fail if (maxPerToken > 0 ) & (minAmount > maxPerToken)', async function() {
+            let newMax = web3.utils.toWei('2');
+            let newFee = web3.utils.toWei('3')
+            let newMin = web3.utils.toWei('3');
+            await this.allowTokens.setMaxPerToken(this.token.address, newMax, { from: manager });
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin), { from: manager });
 
+            
+            await this.allowTokens.setMaxPerToken(this.token.address, 0, { from: manager });
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
+            
+            let feeToken = await this.allowTokens.getFeePerToken(this.token.address);
+            let minToken = await this.allowTokens.getMinPerToken(this.token.address);
+
+            assert.equal(newFee.toString(), feeToken.toString());
+            assert.equal(newMin.toString(), minToken.toString());
+        });
+    });
+
+    describe('Max Per token', async function() {
+
+        it ('sets a new amount of max per token', async function() {
+            let newMax = web3.utils.toWei('2');
+            await this.allowTokens.setMaxPerToken(this.token.address, newMax, { from: manager });
+
+            let maxToken = await this.allowTokens.getMaxPerToken(this.token.address);
+
+            assert.equal(newMax.toString(), maxToken.toString());
+        });
+
+        it('fail if not the owner', async function() {
+            let newMax = web3.utils.toWei('2');
+            await this.allowTokens.setMaxPerToken(this.token.address, newMax, { from: manager });
+
+            let maxToken = await this.allowTokens.getMaxPerToken(this.token.address);
+
+            assert.equal(newMax.toString(), maxToken.toString());
+            
+            let newMax1 = web3.utils.toWei('5');
+
+            utils.expectThrow(this.allowTokens.setFeeAndMinPerToken(this.token.address, newMax1, { from: tokenDeployer }));
+            
+            minToken = await this.allowTokens.getMaxPerToken(this.token.address);
+            
+            assert.equal(newMax.toString(), maxToken.toString());
+        });
+
+        it('fail if maxPerToken is bigger than maxTokensAllowed', async function() {
+            await this.allowTokens.setMaxTokensAllowed(web3.utils.toWei('10'), { from: manager });
+            utils.expectThrow(this.allowTokens.setMaxPerToken(this.token.address, web3.utils.toWei('11'), { from: manager }));
+        });
+
+        it('fail if maxPerToken is smaller than min', async function() {
+            let newFee = web3.utils.toWei('2');
+            let newMin = web3.utils.toWei('3');
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, newFee, newMin, { from: manager });
+            utils.expectThrow(this.allowTokens.setMaxPerToken(this.token.address, web3.utils.toWei('2'), { from: manager }));
+        });
     });
 
     describe('Max Daily Limit tokens', async function() {
@@ -360,8 +417,23 @@ contract('AllowTokens', async function (accounts) {
             assert.equal(result, true);
         });
 
+        it('should check if amount is smaller or equal to maxPerToken only if maxPerToken is set', async function() {
+            let newMax = web3.utils.toWei('2');
+            
+            await this.allowTokens.setFeeAndMinPerToken(this.token.address, web3.utils.toWei('0.5'), web3.utils.toWei('0.5'),{ from: manager }) ;
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, web3.utils.toWei('3'), 0, true);
+            assert.equal(result, true);
 
+            await this.allowTokens.setMaxPerToken(this.token.address, newMax ,{ from: manager });
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, web3.utils.toWei('3'), 0, true);
+            assert.equal(result, false);
 
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, web3.utils.toWei('1') , 0, true);
+            assert.equal(result, true);
+
+            result = await this.allowTokens.isValidTokenTransfer(this.token.address, web3.utils.toWei('2'), 0, true);
+            assert.equal(result, true);
+        });
     });
 
     describe('Calls from MultiSig', async function() {
