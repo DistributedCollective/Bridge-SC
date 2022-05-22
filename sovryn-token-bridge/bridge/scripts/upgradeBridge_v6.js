@@ -1,6 +1,6 @@
 /*
  * Upgrade the bridge contract.
- * Run like this: npx truffle exec scripts/upgradeBridge_v5.js  --network rsktestnet scripts/Upgrade_v5_Configs/UpgradeTestnet_BscBridge_Rsktestnet_Config.json
+ * Run like this: npx truffle exec scripts/upgradeBridge_v6.js  --network rsktestnet scripts/Upgrade_v6_Configs/UpgradeTestnet_EthBridge_Rsktestnet_Config.json
  */
 const fs = require('fs');
 const bridgeAbi = require("../../abis/Bridge.json");
@@ -114,36 +114,36 @@ async function upgradeBridge({
 // Stage 0
 // Should be executed only after former federation state was copied with storeFederationState.js
 
-// //Set bridge address on federation
-// //0.1
-//     console.log('set Bridge address on Federation')
-//     const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
-//         txXpts
-//     //     {
-//     //     from: deployerAddress,
-//     // }
-//     );
-//     console.log('Result:', setBridgeFederationResult);
-// // Finish initStage on federation
-// // 0.2
-//     console.log('Finish initStage on federation')
-//     const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
-//         txXpts
-//     //     {
-//     //     from: deployerAddress,
-//     // }
-//     );
-//     console.log('Result:', finishInitStageFederationResult);
-// //Transfer federation ownership to multisig
-// //0.3
-//     console.log('Transfer federation ownership to multisig')
-//     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
-//         txXpts
-//     //     {
-//     //     from: deployerAddress,
-//     // }
-//     );
-//     console.log('Result:', transferFederationToMultiSigResult);
+//Set bridge address on federation
+//0.1
+    console.log('set Bridge address on Federation')
+    const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
+        txXpts
+    //     {
+    //     from: deployerAddress,
+    // }
+    );
+    console.log('Result:', setBridgeFederationResult);
+// Finish initStage on federation
+// 0.2
+    console.log('Finish initStage on federation')
+    const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
+        txXpts
+    //     {
+    //     from: deployerAddress,
+    // }
+    );
+    console.log('Result:', finishInitStageFederationResult);
+//Transfer federation ownership to multisig
+//0.3
+    console.log('Transfer federation ownership to multisig')
+    const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
+        txXpts
+    //     {
+    //     from: deployerAddress,
+    // }
+    );
+    console.log('Result:', transferFederationToMultiSigResult);
 
 // //Set bridge address on erc777Converter
 // //0.4

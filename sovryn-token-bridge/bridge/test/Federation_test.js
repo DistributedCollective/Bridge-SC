@@ -5,7 +5,7 @@ const abiDecoder = require("abi-decoder");
 ZWeb3.initialize(web3.currentProvider);
 
 //Upgradable Contracts
-const Bridge_v1 = Contracts.getFromLocal("Bridge_v1");
+const Bridge_v0 = Contracts.getFromLocal("Bridge_v0");
 const Bridge = Contracts.getFromLocal("Bridge");
 
 const Federation = artifacts.require("./Federation");
@@ -301,9 +301,9 @@ contract("Federation", async function (accounts) {
       this.utilsContract = await UtilsContract.deployed();
       this.project = await TestHelper();
 
-      Bridge_v1.link({ Utils: this.utilsContract.address });
+      Bridge_v0.link({ Utils: this.utilsContract.address });
       Bridge.link({ Utils: this.utilsContract.address });
-      this.proxy = await this.project.createProxy(Bridge_v1, {
+      this.proxy = await this.project.createProxy(Bridge_v0, {
         initMethod: "initialize",
         initArgs: [
           deployer,
@@ -548,9 +548,9 @@ contract("Federation", async function (accounts) {
       this.utilsContract = await UtilsContract.deployed();
       this.project = await TestHelper();
 
-      Bridge_v1.link({ Utils: this.utilsContract.address });
+      Bridge_v0.link({ Utils: this.utilsContract.address });
       Bridge.link({ Utils: this.utilsContract.address });
-      this.proxy = await this.project.createProxy(Bridge_v1, {
+      this.proxy = await this.project.createProxy(Bridge_v0, {
         initMethod: "initialize",
         initArgs: [
           deployer,

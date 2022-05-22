@@ -290,7 +290,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
     function crossTokens(address tokenToUse, address receiver, uint256 amount, bytes memory userData) private {
         bool isASideToken = originalTokens[tokenToUse] != NULL_ADDRESS;
     //V3 upgrade change global token fee to per token fee
-        // uint256 fee = allowTokens.getFeePerToken(tokenToUse);
         uint256 fee = allowTokens.getFeePerToken(tokenToUse);
         if(fee>0 ){
             if (tokenToUse== WETHAddr ) {
