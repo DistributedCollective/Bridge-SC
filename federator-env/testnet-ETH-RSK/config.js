@@ -12,7 +12,7 @@ module.exports = {
     runEvery: 2, // In minutes,
     gasApiRunEvery: 5, // In Seconds,
     avgGasRunEvery: 10, // In Seconds,
-    periodAvgGas: 240, // In minutes,
+    periodAvgGas: 20, // In minutes,
     sleepOnGas: 2, // In Seconds
     maxSleepOnGas: 3, // Count
     minimumPeerAmount: 2,
