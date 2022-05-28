@@ -11,3 +11,4 @@ federator.log
 test/lib/*.txt
 coverage
 manuallyCheck.txt
+config/peers.config.js

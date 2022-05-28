@@ -16,6 +16,7 @@ const {
 const config = require('../config/config.js');
 const logConfig = require('../config/log-config.json');
 log4js.configure(logConfig);
+const peersConfig = require('../config/peers.config.js');
 
 // Services
 const Scheduler = require('./services/Scheduler.js');
@@ -152,6 +153,12 @@ async function startServices() {
     //     }
     // }
 
+
+    let fedAddress = config.federatorAddress;
+    let peers = peersConfig.peers
+    let peersFiltered = peers.filter(peer => peer.address !== fedAddress);
+    console.log(peersFiltered);
+
     try {
         await mainFederator.populateMemberAddresses();
         await sideFederator.populateMemberAddresses();
@@ -163,7 +170,7 @@ async function startServices() {
         p2pNode.initiateP2pNetwork(
             'bridge-federators',
             config.port,
-            config.peers,
+            peersFiltered,
             membersAddresses,
             config.privateKey
         );

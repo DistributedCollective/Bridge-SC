@@ -19,6 +19,7 @@ module.exports = {
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
     federatorInstanceId: 'federatorInstanceId_replace_this',
+    federatorAddress: 'federatorAddress_replace_this',
 	telegramBot: {
 		token: telegramToken,
 		groupId: -572987924,

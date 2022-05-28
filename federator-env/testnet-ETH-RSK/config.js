@@ -22,6 +22,7 @@ module.exports = {
     signaturesTTL: 120,
     storagePath: './db',
     federatorInstanceId: 'federatorInstanceId_replace_this',
+    federatorAddress: 'federatorAddress_replace_this',
 	telegramBot: {
 		token: telegramToken,
 		groupId: -572987924,

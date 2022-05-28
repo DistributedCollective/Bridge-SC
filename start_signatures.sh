@@ -60,8 +60,12 @@ if [ "$FED_ENV" = "rinkeby-ETH-RSK" ]; then
      echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json
 fi
 
+echo "Enter Federator public address:"
+read FED_ADDRESS
 
-echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
+sed -i 's/federatorAddress_replace_this/'"$FED_ADDRESS"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
+
+echo "starting federator on $FED_ENV.. this should take 30 sec, please wait"
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
 echo "getting fed secret:"
