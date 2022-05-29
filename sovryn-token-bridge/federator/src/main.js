@@ -1,7 +1,7 @@
 const log4js = require('log4js');
 const web3 = require('web3');
 
-const P2p = require('./lib/P2p.js');
+const P2p = require('./lib/p2p');
 const { eliminateDuplicates } = require('./lib/utils');
 const {
     MAIN_FEDERATOR,
