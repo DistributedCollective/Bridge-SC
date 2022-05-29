@@ -54,6 +54,13 @@ if [ "$FED_ENV" = "testnet-ETH-RSK" ]; then
      echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json
 fi
 
+if [ "$FED_ENV" = "rinkeby-ETH-RSK" ]; then
+     echo "Enter etherium testnet RPC url:"
+     read ETHER_RPC
+     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json
+fi
+
+
 echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."

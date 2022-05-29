@@ -1,5 +1,6 @@
 const log4js = require('log4js');
 const web3 = require('web3');
+const utils = require('./lib/utils');
 
 // Configurations
 const config = require('../config/config.js');
@@ -8,12 +9,24 @@ log4js.configure(logConfig);
 
 // Services
 const Scheduler = require('./services/Scheduler.js');
+
+//GasPriceFetcher
 const Federator = require('./lib/Federator.js');
 const {TelegramBot, NullBot} = require('./lib/chatBots.js');
+const ClientId = require('./lib/ClientId.js');
+// const GasPriceFetcher = require('./lib/GasPriceFetcher.js');
+// const GasPriceAvg = require('./lib/GasPriceAvg.js');
+const GasServices = require('./lib/GasServices.js');
+
+// Global GasPrice Variables
+// let currentEthGasBasePrice;
+// let currentEthGasPriceAvg;
 
 const logger = log4js.getLogger('Federators');
 logger.info('RSK Host', config.mainchain.host);
 logger.info('ETH Host', config.sidechain.host);
+
+this.logger = logger;
 
 if(!config.mainchain || !config.sidechain) {
     logger.error('Mainchain and Sidechain configuration are required');
@@ -33,6 +46,26 @@ if(config.telegramBot && config.telegramBot.token && config.telegramBot.groupId)
         log4js.getLogger('CHATBOT')
     );
 }
+
+const clientId = new ClientId(
+    log4js.getLogger('Get-Client-Id'),
+    config,
+    web3,
+);
+
+const gasServices = new GasServices(
+    log4js.getLogger('ETH-GasServices'),
+    config,
+    web3,
+);
+
+// const gasPriceFetcher = new GasPriceFetcher(
+//     log4js.getLogger('ETH-MAINNET-GasPriceFetcher'),
+// );
+
+// const gasPriceAvg = new GasPriceAvg(
+//     log4js.getLogger('ETH-MAINNET-GasPriceFetAvg'),
+// );
 
 const mainFederator = new Federator(
     config,
@@ -54,15 +87,44 @@ const sideFederator = new Federator(
 );
 
 let pollingInterval = config.runEvery * 1000 * 60; // Minutes
+// let gasApiPollingInterval = config.gasApiRunEvery * 1000 ; // Seconds
+// let avgGasPollingInterval = config.avgGasRunEvery * 1000 ; // Seconds
+// let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60 ; // Minutes
+// let avgGasCount;
+
 let scheduler = new Scheduler(pollingInterval, logger, { run: () => run() });
 
-scheduler.start().catch((err) => {
-    logger.error('Unhandled Error on start()', err);
-});
+startServices().catch(err => { console.error('Error starting services:', err) });
 
+async function startServices() {
+    let isEth;
+    try {
+        isEth = await clientId.isEthereumChain();
+        console.log("isEth: " + isEth);
+    } catch(err) {
+        logger.error('Unhandled Error on isEthereumChain()', err);
+        process.exit();
+    }   
+
+    if (isEth){
+        try {
+            await gasServices.startGasServices();
+        } catch(err) {
+            logger.error('Cannnot start ETH gas services()', err);
+            process.exit();
+        }
+    };
+
+    scheduler.start().catch((err) => {
+        logger.error('Unhandled Error on start()', err);
+    });
+}
+    
 async function run() {
     try {
+        console.log("before mainfed");
         await mainFederator.run();
+        console.log("before sidefed");
         await sideFederator.run();
     } catch(err) {
         logger.error('Unhandled Error on run()', err);

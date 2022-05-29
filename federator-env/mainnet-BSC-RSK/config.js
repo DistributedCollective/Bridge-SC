@@ -322,6 +322,42 @@ module.exports = {
         "30": {
             "default": 100,
             "minConfirmation": 10,
+            "RBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 500000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "bRBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 500000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 50
+                }
+            ],
             "SOV": [
                 {
                     "amount": 0,
@@ -794,6 +830,42 @@ module.exports = {
         "56": {
             "default": 400,
             "minConfirmation": 10,
+            "RBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 500000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "bRBTC": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 50000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 500000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 50
+                }
+            ],
             "SOV": [
                 {
                     "amount": 0,

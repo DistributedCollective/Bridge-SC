@@ -1,0 +1,9 @@
+{
+    "bridge": "0x5AD904C479F6634c0B0d0aAd14024020B64B6A9C",
+    "federation": "0x8b7A7F7c610C171cB4345e3092F094d36A0b7940",
+    "multiSig": "0x0f73c31b831E644699744972D10b173610B742Dc",
+    "allowTokens": "0x2AD3fEE78944b21822F13f0C701f7Fa8F902E75a",
+    "erc777Converter": "0x5789Ddf066A18c6E3C1095329BEc8912F922a5CC",
+    "host": "https://rinkeby.infura.io/v3/4fe5ff5edc5c49478fb19383cff276dd",
+    "fromBlock": 9780500
+}

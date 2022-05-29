@@ -5,5 +5,5 @@
     "allowTokens": "0xa9f2ccb27fe01479a1f21f3a236989c614f801bc",
     "erc777Converter": "0x15694581d442cfE30A48cacc3D347A4af4932830",
     "host": "https://testnet.sovryn.app/rpc",
-    "fromBlock": 2291220
+    "fromBlock": 2550000
 }   

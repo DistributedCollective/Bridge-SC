@@ -1,0 +1,9 @@
+{
+    "bridge": "0xba8872d960a7f8655c6dbc54db32ce48b702f209",
+    "federation": "0xce145ed46be8d825ee84b8c3ada7901d08bd746b",
+    "multiSig": "0x19f87f667e92bca68219b833dbfb00092b924bf9",
+    "allowTokens": "0x6d7f690c601574742651c119b7711838a405cae3",
+    "erc777Converter": "0x1C39965dDF4c34B0FF689649A2F29AA776DfCabb",
+    "host": "https://testnet2.sovryn.app/rpc",
+    "fromBlock": 2329317
+}
