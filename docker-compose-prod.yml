@@ -2,7 +2,7 @@ version: "3"
 services:
   federation:
     image: sovryn/fed-tokenbridge:10.1
-    command: --name ${FED_ID}
+    command: --name "winnie-eth-testnet2"
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
       - ./federator-env/${FED_ENV}/db:/app/federator/db
