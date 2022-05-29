@@ -33,6 +33,7 @@ module.exports = {
     storagePath: './db',
     federatorInstanceId: 'federatorInstanceId_replace_this',
     federatorAddress: 'federatorAddress_replace_this',
+    etherscanApiKey: etherscanApiKey,
 	telegramBot: {
 		token: telegramToken,
 		groupId: -572987924,
