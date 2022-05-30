@@ -25,7 +25,7 @@ module.exports = {
     sleepOnGas: 2, // In Seconds
     maxSleepOnGas: 3, // Count
     minimumPeerAmount: 2,
-    port: 22,
+    port: 30303,
     runEvery: 2, // In minutes,
     irmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
