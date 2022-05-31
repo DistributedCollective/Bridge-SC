@@ -50,7 +50,7 @@ class P2p {
     addPeers(peers) {
         if (!this.transport) throw new Error('No transport available');
         peers.forEach((peer) => {
-            if (peer.ip === '127.0.0.1' && peer.port === this.transport._port) return;
+            // if (peer.ip === '127.0.0.1' && peer.port === this.transport._port) return;
             this.transport.addManualPeer({
                 host: peer.ip,
                 port: peer.port,
