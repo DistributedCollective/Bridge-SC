@@ -16,6 +16,8 @@ module.exports = class ClientId {
         const chainIdMain = await this.mainWeb3.eth.net.getId();
         console.log('chainIdSide: ' + chainIdSide);
         console.log('chainIdMain: ' + chainIdMain);
-        return parseInt(chainIdSide) === MAINNET_ID || parseInt(chainIdMain) === RINKEBY_ID || parseInt(chainIdMain) === ROPSTEN_ID;
+        return parseInt(chainIdSide) === MAINNET_ID || parseInt(chainIdMain) === MAINNET_ID ||
+               parseInt(chainIdSide) === RINKEBY_ID || parseInt(chainIdMain) === RINKEBY_ID ||
+               parseInt(chainIdSide) === ROPSTEN_ID || parseInt(chainIdMain) === ROPSTEN_ID;
     }
 };
