@@ -144,14 +144,14 @@ async function startServices() {
         process.exit();
     }
 
-    // if (isEth) {
-    //     try {
-    //         await gasServices.startGasServices();
-    //     } catch (err) {
-    //         logger.error('Cannnot start ETH gas services()', err);
-    //         process.exit();
-    //     }
-    // }
+    if (isEth) {
+        try {
+            await gasServices.startGasServices();
+        } catch (err) {
+            logger.error('Cannnot start ETH gas services()', err);
+            process.exit();
+        }
+    }
 
 
     let fedAddress = config.federatorAddress;

@@ -1,6 +1,6 @@
 const web3 = require('web3');
 
-const { MAINNET_ID, RINKEBY_ID } = require('./constants');
+const { MAINNET_ID, RINKEBY_ID, ROPSTEN_ID } = require('./constants');
 
 module.exports = class ClientId {
     constructor(logger, config, Web3 = web3) {
@@ -16,6 +16,6 @@ module.exports = class ClientId {
         const chainIdMain = await this.mainWeb3.eth.net.getId();
         console.log('chainIdSide: ' + chainIdSide);
         console.log('chainIdMain: ' + chainIdMain);
-        return parseInt(chainIdSide) === MAINNET_ID || parseInt(chainIdMain) === RINKEBY_ID;
+        return parseInt(chainIdSide) === MAINNET_ID || parseInt(chainIdMain) === RINKEBY_ID || parseInt(chainIdMain) === ROPSTEN_ID;
     }
 };
