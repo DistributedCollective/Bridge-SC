@@ -301,7 +301,6 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             }
         }
         uint256 amountMinusFees = amount.sub(fee);
-        
         if (isASideToken) {
             verifyWithAllowTokens(tokenToUse, amount, isASideToken);
             //Side Token Crossing
@@ -331,7 +330,7 @@ contract Bridge is Initializable, IBridge, IERC777Recipient, UpgradablePausable,
             //We consider the amount before fees converted to 18 decimals to check the limits
             verifyWithAllowTokens(tokenToUse, formattedAmount, isASideToken);
             emit Cross(tokenToUse, receiver, amountMinusFees, symbol, userData, decimals, granularity);
-        }
+        }     
     }
 
     function _createSideToken(address token, string memory symbol, uint256 granularity) private returns (ISideToken sideToken){

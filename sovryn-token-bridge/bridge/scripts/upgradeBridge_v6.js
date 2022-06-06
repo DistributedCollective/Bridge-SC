@@ -114,36 +114,36 @@ async function upgradeBridge({
 // Stage 0
 // Should be executed only after former federation state was copied with storeFederationState.js
 
-//Set bridge address on federation
-//0.1
-    console.log('set Bridge address on Federation')
-    const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', setBridgeFederationResult);
-// Finish initStage on federation
-// 0.2
-    console.log('Finish initStage on federation')
-    const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', finishInitStageFederationResult);
-//Transfer federation ownership to multisig
-//0.3
-    console.log('Transfer federation ownership to multisig')
-    const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
-        txXpts
-    //     {
-    //     from: deployerAddress,
-    // }
-    );
-    console.log('Result:', transferFederationToMultiSigResult);
+// //Set bridge address on federation
+// //0.1
+//     console.log('set Bridge address on Federation')
+//     const setBridgeFederationResult = await federation.methods.setBridge(bridgeProxyAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', setBridgeFederationResult);
+// // Finish initStage on federation
+// // 0.2
+//     console.log('Finish initStage on federation')
+//     const finishInitStageFederationResult = await federation.methods.endDeploymentSetup().send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', finishInitStageFederationResult);
+// //Transfer federation ownership to multisig
+// //0.3
+//     console.log('Transfer federation ownership to multisig')
+//     const transferFederationToMultiSigResult = await federation.methods.transferOwnership(multiSigAddress).send(
+//         txXpts
+//     //     {
+//     //     from: deployerAddress,
+//     // }
+//     );
+//     console.log('Result:', transferFederationToMultiSigResult);
 
 // //Set bridge address on erc777Converter
 // //0.4
@@ -210,11 +210,11 @@ async function upgradeBridge({
     // console.log(upgradeData);
     // const upgradeResult = await multiSig.methods.submitTransaction(proxyAdminAddress, 0, upgradeData).send(txOpts);
     // console.log('Result:', upgradeResult);
-// //5
-//     console.log('change Federation address on the bridge')
-//     console.log(changeFederationData);
-//     const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
-//     console.log('Result:', changeFedAddressResult);
+//5
+    console.log('change Federation address on the bridge')
+    console.log(changeFederationData);
+    const changeFedAddressResult = await multiSig.methods.submitTransaction(bridgeProxyAddress, 0, changeFederationData).send(txOpts);
+    console.log('Result:', changeFedAddressResult);
 // //6
 //     console.log('set erc777Converter address on the bridge')
 //     console.log(setErc777ConverterData);
