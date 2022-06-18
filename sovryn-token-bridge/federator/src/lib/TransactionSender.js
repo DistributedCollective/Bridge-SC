@@ -1,5 +1,5 @@
 var globals = require('./globals');
-const { MAINNET_ID, RINKEBY_ID } = require('./constants');
+const { MAINNET_ID, RINKEBY_ID, ROPSTEN_ID } = require('./constants');
 
 const Tx = require('ethereumjs-tx');
 
@@ -69,6 +69,8 @@ module.exports = class TransactionSender {
                 return 'mainnet';
             case RINKEBY_ID:
                 return 'rinkeby';
+            case ROPSTEN_ID:
+                    return 'ropsten';
             default:
                 throw new Error('Unknown chain id');
         }
@@ -80,7 +82,7 @@ module.exports = class TransactionSender {
 
         const chainIdInt = parseInt(chainId);
 
-        if (chainIdInt === MAINNET_ID || chainIdInt === RINKEBY_ID) {
+        if (chainIdInt === MAINNET_ID || chainIdInt === RINKEBY_ID || chainIdInt === ROPSTEN_ID) {
             const rawTxETH = await this.createETHRawTransaction(from, to, data, value, chainId);
 
             const chainName = this.getChainName(chainIdInt);
@@ -188,7 +190,7 @@ module.exports = class TransactionSender {
             let signedTx;
 
             if (privateKey && privateKey.length) {
-                if (parseInt(chainId) === parseInt(MAINNET_ID)) {
+                if (parseInt(chainId) === parseInt(MAINNET_ID) || chainIdInt === RINKEBY_ID || chainIdInt === ROPSTEN_ID) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 } else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);
