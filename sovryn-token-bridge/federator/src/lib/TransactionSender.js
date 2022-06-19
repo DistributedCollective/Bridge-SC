@@ -190,7 +190,7 @@ module.exports = class TransactionSender {
             let signedTx;
 
             if (privateKey && privateKey.length) {
-                if (parseInt(chainId) === parseInt(MAINNET_ID) || chainIdInt === RINKEBY_ID || chainIdInt === ROPSTEN_ID) {
+                if (parseInt(chainId) === parseInt(MAINNET_ID) || parseInt(chainId) === parseInt(RINKEBY_ID) || parseInt(chainId) === parseInt(ROPSTEN_ID)) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 } else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);
