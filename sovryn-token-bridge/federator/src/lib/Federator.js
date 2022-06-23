@@ -267,6 +267,25 @@ module.exports = class Federator {
             _userData: userData,
         } = log.returnValues;
 
+        // We check the status from the bridge first before bothering checking the Federation contract.
+        // Actually, a check from the bridge is all that we need (in principle)
+        let bridgeTransactionId = await this.sideBridgeContract.methods.getTransactionId(
+            log.blockHash,
+            log.transactionHash,
+            receiver,
+            amount,
+            log.logIndex,
+        ).call();
+        this.logger.info('Bridge transaction id:', bridgeTransactionId);
+        let wasProcessed = await this.sideBridgeContract.methods.processed(bridgeTransactionId).call();
+        this.logger.info('was processed (bridge):', wasProcessed);
+        if (wasProcessed) {
+            this.logger.debug(
+                `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed (on Bridge)`
+            );
+            return;
+        }
+
         let transactionId = await this.federationContract.methods
             .getTransactionId(
                 tokenAddress,
@@ -282,7 +301,7 @@ module.exports = class Federator {
             .call();
         this.logger.info('get transaction id:', transactionId);
 
-        let wasProcessed = await this.federationContract.methods
+        wasProcessed = await this.federationContract.methods
             .transactionWasProcessed(transactionId)
             .call();
         this.logger.info('wasProcessed:', wasProcessed);
