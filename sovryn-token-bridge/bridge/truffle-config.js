@@ -102,8 +102,8 @@ module.exports = {
       network_id: 1,
       networkCheckTimeout: 1e9,
       timeoutBlocks: 500000,
-      gas: 6700000,
-      gasPrice: 50000000000,  //50 GWei
+      gas: 1400000,
+      gasPrice: 30000000000,  //50 GWei
       skipDryRun: true
     },
     //Binance
@@ -119,7 +119,7 @@ module.exports = {
     bmainnet: {
       //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.binance.org`),
       //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.defibit.io/`),
-      provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed.binance.org/`),
+      provider: () => new HDWalletProvider(secrets.seed, `http://bscmainnet1.sovryn.app:8545/`),
       network_id: 56,
       gas: 6300000,
       confirmations: 6,
