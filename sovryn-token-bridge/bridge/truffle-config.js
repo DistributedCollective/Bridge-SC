@@ -68,18 +68,18 @@ module.exports = {
         },
         rskmainnet: {
             provider: () =>
-                //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
-                // new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
-                new HDWalletProvider(secrets.seed, 'http://18.221.155.102:4444/'),
+            //  new HDWalletProvider(MNEMONIC, "https://public-node.rsk.co"),
+            // new HDWalletProvider(secrets.seed, "wss://mainnet.sovryn.app/ws"),
+            new HDWalletProvider(secrets.seed, "http://18.221.155.102:4444/"),
             // new HDWalletProvider(secrets.seed, "https://mainnet.sovryn.app/rpc"),
             //  new HDWalletProvider(secrets.seed, "https://mainnet2.sovryn.app/rpc"),
             //new HDWalletProvider(secrets.seed, new Web3.providers.WebSocketProvider("wss://mainnet.sovryn.app/ws")),
             network_id: 30,
             gas: 6800000,
-            gasPrice: 65000000, // 0.065 gwei
-            skipDryRun: true,
-        },
-        //Ethereum
+            gasPrice: 65500000, // 0.065 gwei
+            skipDryRun: true
+          },
+              //Ethereum
         ropsten: {
             provider: () =>
                 new HDWalletProvider(MNEMONIC, 'wss://ropsten.infura.io/ws/v3/' + INFURA_API_KEY),
@@ -136,13 +136,13 @@ module.exports = {
         bmainnet: {
             //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.binance.org`),
             //provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed1.defibit.io/`),
-            provider: () => new HDWalletProvider(secrets.seed, `https://bsc-dataseed.binance.org/`),
+            provider: () => new HDWalletProvider(secrets.seed, `http://bscmainnet1.sovryn.app:8545/`),
             network_id: 56,
             gas: 6300000,
             confirmations: 6,
             timeoutBlocks: 200,
-            skipDryRun: true,
-        },
+            skipDryRun: true
+          },      
         localA: {
             host: '127.0.0.1',
             port: 8545,

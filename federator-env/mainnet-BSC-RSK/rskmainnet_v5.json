@@ -1,8 +1,8 @@
 {
     "bridge": "0x971b97c8cc82e7d27bc467c2dc3f219c6ee2e350",
-    "federation": "0xAb8F212eA333626a96999A865072095aDE95Eb5a",
+    "federation": "0xA7938270C2bF99A9cF033c9d35156d2dDb097B12",
     "multiSig": "0xee9ea57555d9533d71f6f77e0e480961f068a6c5",
-    "allowTokens": "0x200FD7a1cCEa4651F15008cC99bF82d7461EFd3F",
+    "allowTokens": "0xa2f50a2c699c1aa3b9089f6b565d4999d45d8983",
     "erc777Converter": "0xc8149b1F15794D135Dfe2924955cb90709Ac7070",
     "host": "http://18.221.155.102:4444/",
     "fromBlock": 3398643

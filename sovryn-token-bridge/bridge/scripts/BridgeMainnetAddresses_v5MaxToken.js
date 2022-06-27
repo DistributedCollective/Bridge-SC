@@ -4,6 +4,11 @@ const rskBSCBridge = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet.
 const rskETHBridge = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet.json");
 const ethETHBridge = require("../../../federator-env/mainnet-ETH-RSK/mainnet.json");
 
+const bscBSCBridgeV5 = require("../../../federator-env/mainnet-BSC-RSK/bmainnet_v5.json");
+const rskBSCBridgeV5 = require("../../../federator-env/mainnet-BSC-RSK/rskmainnet_v5.json");
+const ethETHBridgeV5 = require("../../../federator-env/mainnet-ETH-RSK/mainnet_v5.json");
+const rskETHBridgeV5 = require("../../../federator-env/mainnet-ETH-RSK/rskmainnet_v5.json");
+
 // Bring all the addresses deployed in kovan
 //const kovanAddresses = require("../../../federator/config/kovan.json");
 
@@ -15,11 +20,22 @@ const allowTokensABI = require("../../abis/AllowTokens.json");
 const erc777ConverterABI = require("../../abis/Erc777Converter.json");
 const tokenABI = require("../build/contracts/AlternativeERC20Detailed.json").abi;
 
+const allowTokensV5ABI = require("./OldAbis/AllowTokensV5.json");
+
 const abisObject = {
   bridgeABI,
   federationABI,
   multiSigABI,
   allowTokensABI,
+  erc777ConverterABI,
+  tokenABI,
+};
+
+const abisObjectV5 = {
+  bridgeABI,
+  federationABI,
+  multiSigABI,
+  allowTokensV5ABI,
   erc777ConverterABI,
   tokenABI,
 };
@@ -39,6 +55,21 @@ const bscBSCConfig = {
   allowTokens: bscBSCBridge.allowTokens,
   erc777Converter: bscBSCBridge.erc777Converter,
 };
+
+const bscBSCV5Config = {
+  allowTokens: bscBSCBridgeV5.allowTokens,
+};
+const rskBSCV5Config = {
+  allowTokens: rskBSCBridgeV5.allowTokens,
+};
+const ethETHV5Config = {
+  allowTokens: ethETHBridgeV5.allowTokens,
+};
+const rskETHV5Config = {
+  allowTokens: rskETHBridgeV5.allowTokens,
+};
+
+
 const rskETHConfig = {
   bridge: rskETHBridge.bridge,
   federation: rskETHBridge.federation,
@@ -164,6 +195,18 @@ const SOV_Mainnet = {
     decimals: 18,
   },
 };
+
+// mainnet Weth
+const ETH_Mainnet = {
+  token: "WETH",
+  name: "WETH",
+  1: {
+    symbol: "WETH",
+    address: "0xd412acd34a832a09c80c8a4895ff46d733f09538",
+    decimals: 18,
+  },
+};
+
 
 // RSK mainnet Tokens
 const SOV_RskMainnet = {
@@ -335,6 +378,11 @@ const rskmainnetTokensETH = {
   ETH_RskMainnet
 };
 
+// mainnet ETH
+const mainnetETH = {
+  ETH_Mainnet
+};
+
 // mainnet sov
 const mainnetSOV = {
   SOV_Mainnet
@@ -376,8 +424,13 @@ const rskethmainnetStableCoins = {
 
 module.exports = {
   abisObject,
+  abisObjectV5,
   rskBSCConfig,
   bscBSCConfig,
+  bscBSCV5Config,
+  rskBSCV5Config,
+  ethETHV5Config,
+  rskETHV5Config,
   rskETHConfig,
   ethETHConfig,
   mainnetStableCoins,
@@ -393,5 +446,6 @@ module.exports = {
   rskbscmainnetBNB,
   bscbscbmainnetRBTC,
   mainnetSOV,
-  bmainnetSOV
+  bmainnetSOV,
+  mainnetETH,
 };
