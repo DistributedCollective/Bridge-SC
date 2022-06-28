@@ -392,6 +392,93 @@ describe('Federator module tests', () => {
         expect(result).toEqual(secondLogBlockNumber - 1);
     });
 
+    describe('_processLog', () => {
+        let federator;
+        let executeTransactionSpy;
+        const signatures = ['signature1', 'signature2'];
+        let log = {
+            logIndex: 2,
+            blockNumber: 10000,
+            blockHash: '0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a',
+            transactionHash:
+                '0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6',
+            transactionIndex: 0,
+            address: '0x1eD614cd3443EFd9c70F04b6d777aed947A4b0c4',
+            id: 'log_d745c814',
+            returnValues: {
+                _tokenAddress: '0x5159345aaB821172e795d56274D0f5FDFdC6aBD9',
+                _to: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                _amount: '50',
+                _symbol: 'MAIN',
+                _userData: '0x45787472612064617461',
+                _decimals: 18,
+                _granularity: 1,
+            },
+            event: 'Cross',
+            signature: '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+            raw: {
+                data: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000044d41494e00000000000000000000000000000000000000000000000000000000',
+                topics: [
+                    '0x958c783f2c825ef71ab3305ab602850535bb04833f5963c7a39a82a390642d47',
+                    '0x0000000000000000000000005159345aab821172e795d56274d0f5fdfdc6abd9',
+                    '0x000000000000000000000000cd2a3d9f938e13cd947ec05abc7fe734df8dd826',
+                ],
+            },
+        };
+
+        beforeEach(() => {
+            federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+            executeTransactionSpy = jest.spyOn(federator, '_executeTransaction');
+            disableEtherscanGasPrices(federator.transactionSender);
+        });
+
+        it('Should execute a transaction from _processLog', async () => {
+            await federator._processLog(log, signatures);
+            expect(executeTransactionSpy).toHaveBeenCalledTimes(1);
+            expect(executeTransactionSpy).toHaveBeenCalledWith(
+                "0x5159345aaB821172e795d56274D0f5FDFdC6aBD9",
+                "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+                "50",
+                "MAIN",
+                "0x5d3752d14223348e0df325ea0c3bd62f76195127762621314ff5788ccae87a7a",
+                "0x79fcac96ebe7642c3258143f91a94be443e0dfc214199372542df940670166a6",
+                2,
+                18,
+                1,
+                "0x45787472612064617461",
+                "0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d9",
+                "0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1",
+                ["signature1", "signature2"]
+            );
+        });
+
+        it('Should NOT execute a transaction from _processLog if already processed on bridge', async () => {
+            const bridgeTxId = await federator.sideBridgeContract.methods.getTransactionId(
+                log.blockHash,
+                log.transactionHash,
+                log.returnValues._to,
+                log.returnValues._amount,
+                log.logIndex,
+            ).call();
+            federator.sideBridgeContract.setProcessedTransaction(bridgeTxId, true);
+            await federator._processLog(log, signatures);
+            expect(executeTransactionSpy).toHaveBeenCalledTimes(0);
+        });
+
+        it('Should execute a transaction from _processLog even if a different one is already processed on bridge', async () => {
+            const bridgeTxId = await federator.sideBridgeContract.methods.getTransactionId(
+                log.blockHash,
+                log.transactionHash,
+                log.returnValues._to,
+                log.returnValues._amount,
+                log.logIndex + 1, // This makes it different
+            );
+            federator.sideBridgeContract.setProcessedTransaction(bridgeTxId, true);
+            await federator._processLog(log, signatures);
+            expect(executeTransactionSpy).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('Signatures', () => {
         const chainId = 1;
         const contractAddress = testConfig.sidechain.federation;
