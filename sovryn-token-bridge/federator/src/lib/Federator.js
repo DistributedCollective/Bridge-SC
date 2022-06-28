@@ -181,7 +181,10 @@ module.exports = class Federator {
             this.logger.info('Requesting other federators to sign event');
 
             const timer = setTimeout(
-                () => reject("Didn't get enough signatures after 10 minutes timeout"),
+                () => {
+                    this.logger.warn("Timeout: Didn't get enough signatures after waiting");
+                    reject("Didn't get enough signatures after 10 minutes timeout")
+                },
                 60000
             );
 
@@ -198,7 +201,15 @@ module.exports = class Federator {
                       };
 
             const signatures = new Set();
+            // TODO: this listener should be removed on timeout
             const listener = this.network.net.onMessage(async (msg) => {
+                // TODO: temporary logging, remove
+                this.logger.debug('got federator message');
+                console.log(msg.type)
+                console.log(msg.data)
+                console.log('msg.type === submissionType?', msg.type === submissionType)
+                console.log('msg.data.logId === log.id?', msg.data.logId === log.id, msg.data.logId, log.id);
+
                 if (msg.type === submissionType && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
 
