@@ -161,9 +161,16 @@ module.exports = class Federator {
                 const { _amount: amount, _symbol: symbol } = log.returnValues;
 
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
-                    const signatures = await this._requestSignatureFromFederators(log);
-                    this.logger.info('Collected enough signatures');
-                    await this._processLog(log, signatures);
+                    const alreadyProcessed = await this._isAlreadyProcessed(log);
+                    if (alreadyProcessed) {
+                        this.logger.debug(
+                            `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} is already processed (on Bridge) -- no need to get signatures`
+                        );
+                    } else {
+                        const signatures = await this._requestSignatureFromFederators(log);
+                        this.logger.info('Collected enough signatures');
+                        await this._processLog(log, signatures);
+                    }
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
                     allLogsConfirmed = false;
@@ -267,6 +274,21 @@ module.exports = class Federator {
         return ethers.utils.recoverAddress(digest, signature);
     }
 
+    async _isAlreadyProcessed(log) {
+        const {
+            _to: receiver,
+            _amount: amount,
+        } = log.returnValues;
+        let bridgeTransactionId = await this.sideBridgeContract.methods.getTransactionId(
+            log.blockHash,
+            log.transactionHash,
+            receiver,
+            amount,
+            log.logIndex,
+        ).call();
+        return await this.sideBridgeContract.methods.processed(bridgeTransactionId).call();
+    }
+
     async _processLog(log, signatures) {
         const {
             _to: receiver,
@@ -279,17 +301,11 @@ module.exports = class Federator {
         } = log.returnValues;
 
         // We check the status from the bridge first before bothering checking the Federation contract.
-        // Actually, a check from the bridge is all that we need (in principle)
-        let bridgeTransactionId = await this.sideBridgeContract.methods.getTransactionId(
-            log.blockHash,
-            log.transactionHash,
-            receiver,
-            amount,
-            log.logIndex,
-        ).call();
-        this.logger.info('Bridge transaction id:', bridgeTransactionId);
-        let wasProcessed = await this.sideBridgeContract.methods.processed(bridgeTransactionId).call();
-        this.logger.info('was processed (bridge):', wasProcessed);
+        // Actually, a check from the bridge is all that we need (in principle) -- but let's leave the other checks
+        // there too.
+        // Note that we don't really need to double-check here either, since we check this before requesting
+        // signatures from federators, but let's do it anyway for safety.
+        let wasProcessed = await this._isAlreadyProcessed(log);
         if (wasProcessed) {
             this.logger.debug(
                 `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed (on Bridge)`
