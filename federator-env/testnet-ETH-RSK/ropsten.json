@@ -5,5 +5,5 @@
     "allowTokens": "0x9bc4243880730a9bca69addb0f971700d39d1646",
     "erc777Converter": "0x8F3bbD7673485Cf4c43EF008e125575028fD43F1",
     "host": "https://ropsten.infura.io/v3/728946296ea64626941bb3d120d16333",
-    "fromBlock": 10281973
+    "fromBlock": 12190673
 }
