@@ -570,7 +570,11 @@ module.exports = class Federator {
             filter: { id },
         });
 
-        if (logs.length !== 1) throw new CustomError('Invalid return when searching for event');
+        if (logs.length !== 1) {
+            this.logger.error(`Got ${logs.length} logs when expecting 1. Block number: ${blockNumber}, Log id: ${id}, Logs:`);
+            this.logger.error(logs);
+            throw new CustomError('Invalid return when searching for event');
+        }
 
         const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
             logs[0].returnValues;
