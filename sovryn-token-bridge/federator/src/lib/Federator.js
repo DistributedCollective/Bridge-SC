@@ -145,12 +145,6 @@ module.exports = class Federator {
     // Loop around logs to process each of them
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(
-                this.sideWeb3,
-                this.logger,
-                this.config,
-                ''
-            );
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
