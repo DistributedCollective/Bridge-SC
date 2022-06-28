@@ -564,11 +564,12 @@ module.exports = class Federator {
     }
 
     async signTransaction({ blockNumber, id }) {
-        const logs = await this.mainBridgeContract.getPastEvents('Cross', {
+        const allLogs = await this.mainBridgeContract.getPastEvents('Cross', {
             fromBlock: blockNumber,
             toBlock: blockNumber,
-            filter: { id },
         });
+        // Passing filter: { id } to getPastEvents won't do any filtering, we need to filter like this
+        const logs = allLogs.filter(log => log.id === id);
 
         if (logs.length !== 1) {
             this.logger.error(`Got ${logs.length} logs when expecting 1. Block number: ${blockNumber}, Log id: ${id}, Logs:`);
