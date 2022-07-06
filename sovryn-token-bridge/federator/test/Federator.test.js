@@ -686,6 +686,48 @@ describe('Federator module tests', () => {
             expect(res[1]).toBe(signatures[2]);
         });
 
+        it("should not use signature if the deadline does not match", async () => {
+            const mockP2p = {
+                net: {
+                    onMessage: (func) => {
+                        this.callback = func;
+                        return { unsubscribe: () => {} };
+                    },
+                    broadcast: (_, { log }) => {
+                        this.callback({
+                            type: MAIN_SIGNATURE_SUBMISSION,
+                            source: { id: 'TEST-ID' },
+                            data: { signatureData: signatures[0], logId: log.id },
+                        });
+                        this.callback({
+                            type: MAIN_SIGNATURE_SUBMISSION,
+                            source: { id: 'TEST-ID' },
+                            data: {
+                                signatureData: {
+                                    ...signatures[1],
+                                    deadline: signatures[1].deadline + 1,
+                                },
+                                logId: log.id
+                            },
+                        });
+                        this.callback({
+                            type: MAIN_SIGNATURE_SUBMISSION,
+                            source: { id: 'TEST-ID' },
+                            data: { signatureData: signatures[2], logId: log.id },
+                        });
+                    },
+                },
+            };
+
+            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
+            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+
+            const res = await federator._requestSignatureFromFederators(logs[0]);
+            expect(res).toHaveLength(2);
+            expect(res[0]).toBe(signatures[0]);
+            expect(res[1]).toBe(signatures[2]);
+        });
+
         it('should not use signature if not from federator', async () => {
             const mockP2p = {
                 net: {
