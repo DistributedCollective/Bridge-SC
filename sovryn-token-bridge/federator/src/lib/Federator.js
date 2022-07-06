@@ -207,6 +207,7 @@ module.exports = class Federator {
                       };
 
             const signatures = new Set();
+            const signers = new Set();
             const listener = this.network.net.onMessage(async (msg) => {
                 if (msg.type === submissionType && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
@@ -220,6 +221,14 @@ module.exports = class Federator {
                         );
                         return;
                     }
+
+                    if (signers.has(signerAddress)) {
+                        this.logger.warn(
+                            `Signer ${signerAddress} has already submitted a signature`
+                        );
+                        return;
+                    }
+                    signers.add(signerAddress);
 
                     signatures.add(signatureData);
                     if (signatures.size >= this.config.minimumPeerAmount) {
