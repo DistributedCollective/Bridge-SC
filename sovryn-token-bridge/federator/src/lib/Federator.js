@@ -208,13 +208,6 @@ module.exports = class Federator {
 
             const signatures = new Set();
             const listener = this.network.net.onMessage(async (msg) => {
-                // TODO: temporary logging, remove
-                this.logger.debug('got federator message');
-                console.log(msg.type)
-                console.log(msg.data)
-                console.log('msg.type === submissionType?', msg.type === submissionType)
-                console.log('msg.data.logId === log.id?', msg.data.logId === log.id, msg.data.logId, log.id);
-
                 if (msg.type === submissionType && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
 
