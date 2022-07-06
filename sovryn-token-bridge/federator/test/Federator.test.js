@@ -36,8 +36,20 @@ const disableEtherscanGasPrices = (sender) => {
         .mockRejectedValue(new Error('expected etherscan error'));
 };
 
-function mockFederatorMethods(federator, methods) {
-    federator.mainWeb3.eth = federator.mainWeb3.eth.mockMethods(methods);
+function mockFederatorMethods(federator, mainWeb3Methods, sideWeb3Methods) {
+    // create copies to avoid mutating the original
+    if (mainWeb3Methods) {
+        federator.mainWeb3 = {
+            ...federator.mainWeb3,
+            eth: federator.mainWeb3.eth.mockMethods(mainWeb3Methods) // this creates a copy
+        };
+    }
+    if (sideWeb3Methods) {
+        federator.sideWeb3 = {
+            ...federator.sideWeb3,
+            eth: federator.sideWeb3.eth.mockMethods(sideWeb3Methods) // this creates a copy
+        };
+    }
     disableEtherscanGasPrices(federator.transactionSender);
 }
 
@@ -110,7 +122,9 @@ describe('Federator module tests', () => {
 
         mockFederatorMethods(federator, {
             getBlockNumber: () => Promise.resolve(currentBlock),
-            getId: () => Promise.resolve(1),
+            net: {
+                getId: () => Promise.resolve(1),
+            }
         });
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
 
@@ -132,10 +146,10 @@ describe('Federator module tests', () => {
         const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
         mockFederatorMethods(federator, {
             getBlockNumber: () => Promise.resolve(currentBlock),
-            getId: () => Promise.resolve(1),
+            net: {
+                getId: () => Promise.resolve(1),
+            }
         });
-        federator.mainWeb3.eth.getBlockNumber = () => Promise.resolve(currentBlock);
-        federator.mainWeb3.eth.net.getId = () => Promise.resolve(1);
         const _processLogsSpy = jest.spyOn(federator, '_processLogs');
 
         let result = await federator.run();
@@ -480,7 +494,8 @@ describe('Federator module tests', () => {
     });
 
     describe('Signatures', () => {
-        const chainId = 1;
+        const mainChainId = 1;
+        const sideChainId = 3;
         const contractAddress = testConfig.sidechain.federation;
         const txId = '0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1';
         const wallets = [
@@ -494,10 +509,33 @@ describe('Federator module tests', () => {
         ];
         const signatures = [];
 
+        // Use this to create the federator instead of using the constructor -- it handles method mocking correctly
+        const createFederator = (mockP2p = {}, members = undefined) => {
+            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
+            if (members) {
+                federator.members = members;
+            }
+
+            const expectedConfirmations = 5760;
+            const onePage = 1001;
+            const currentBlock = testConfig.mainchain.fromBlock + onePage + expectedConfirmations;
+            mockFederatorMethods(
+                federator,
+                undefined,
+                {
+                    getBlockNumber: () => Promise.resolve(currentBlock),
+                    net: {
+                        getId: () => Promise.resolve(sideChainId),
+                    }
+                }
+            );
+            return federator;
+        }
+
         const createSignature = async (wallet, deadline) => {
             const payload = ethers.utils.solidityPack(
                 ['bytes32', 'uint256', 'address', 'uint256'],
-                [txId, chainId, contractAddress, deadline]
+                [txId, sideChainId, contractAddress, deadline]
             );
             const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
             return {
@@ -604,8 +642,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[1].address, wallets[2].address]);
 
             const res = await federator._requestSignatureFromFederators(logs[0]);
             expect(res).toHaveLength(2);
@@ -640,8 +677,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[1].address, wallets[2].address]);
 
             const res = await federator._requestSignatureFromFederators(logs[0]);
             expect(res).toHaveLength(2);
@@ -671,8 +707,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[1].address, wallets[2].address]);
 
             await expect(federator._requestSignatureFromFederators(logs[0])).rejects.toEqual(
                 "Didn't get enough signatures before timeout"
@@ -706,8 +741,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[1].address, wallets[2].address]);
 
             const res = await federator._requestSignatureFromFederators(logs[0]);
             expect(res).toHaveLength(2);
@@ -748,8 +782,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[1].address, wallets[2].address]);
 
             const res = await federator._requestSignatureFromFederators(logs[0]);
             expect(res).toHaveLength(2);
@@ -784,8 +817,7 @@ describe('Federator module tests', () => {
                 },
             };
 
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
-            federator.members = [wallets[0].address, wallets[2].address];
+            const federator = createFederator(mockP2p, [wallets[0].address, wallets[2].address]);
 
             const res = await federator._requestSignatureFromFederators(logs[0]);
             expect(res).toHaveLength(2);
@@ -794,7 +826,7 @@ describe('Federator module tests', () => {
         });
 
         it('should sign message', async () => {
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+            const federator = createFederator();
             federator.mainBridgeContract.getPastEvents = () => [logs[0]];
 
             const { signatureData, logId } = await federator.signTransaction({
@@ -817,7 +849,7 @@ describe('Federator module tests', () => {
         });
 
         it('should not sign message if no matching event fetched', async () => {
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+            const federator = createFederator();
             federator.mainBridgeContract.getPastEvents = () => [];
 
             await expect(federator.signTransaction({ blockNumber: 4, id: 123 })).rejects.toThrow(
@@ -826,7 +858,7 @@ describe('Federator module tests', () => {
         });
 
         it('should not sign message if multiple matching events fetched', async () => {
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+            const federator = createFederator();
             federator.mainBridgeContract.getPastEvents = () => logs;
 
             await expect(federator.signTransaction({ blockNumber: 4, id: 123 })).rejects.toThrow(
@@ -835,7 +867,7 @@ describe('Federator module tests', () => {
         });
 
         it('should not sign message if blocknumber not confirmed', async () => {
-            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+            const federator = createFederator();
             federator.mainBridgeContract.getPastEvents = () => [logs[0]];
             const currentBlock = await federator._getCurrentBlockNumber();
 
