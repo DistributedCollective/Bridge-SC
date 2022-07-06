@@ -30,6 +30,7 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     signaturesTTL: 24 * 60 * 60, // In seconds
+    signatureRequestTimeoutMs: 2 * 60 * 1000, // In milliseconds
     storagePath: './db',
     federatorInstanceId: 'federatorInstanceId_replace_this',
     federatorAddress: 'federatorAddress_replace_this',
