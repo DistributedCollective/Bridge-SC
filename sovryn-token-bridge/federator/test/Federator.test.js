@@ -649,6 +649,36 @@ describe('Federator module tests', () => {
             expect(res[1]).toBe(signatures[1]);
         });
 
+        it('should not use same signature twice (with timeout)', async () => {
+            const mockP2p = {
+                net: {
+                    onMessage: (func) => {
+                        this.callback = func;
+                        return { unsubscribe: () => {} };
+                    },
+                    broadcast: (_, { log }) => {
+                        this.callback({
+                            type: MAIN_SIGNATURE_SUBMISSION,
+                            source: { id: 'TEST-ID' },
+                            data: { signatureData: signatures[0], logId: log.id },
+                        });
+                        this.callback({
+                            type: MAIN_SIGNATURE_SUBMISSION,
+                            source: { id: 'TEST-ID' },
+                            data: { signatureData: signatures[0], logId: log.id },
+                        });
+                    },
+                },
+            };
+
+            const federator = new Federator(MAIN_FEDERATOR, testConfig, logger, mockP2p, web3Mock);
+            federator.members = [wallets[0].address, wallets[1].address, wallets[2].address];
+
+            await expect(federator._requestSignatureFromFederators(logs[0])).rejects.toEqual(
+                "Didn't get enough signatures before timeout"
+            );
+        });
+
         it("should not use signature if doesn't match log id", async () => {
             const mockP2p = {
                 net: {

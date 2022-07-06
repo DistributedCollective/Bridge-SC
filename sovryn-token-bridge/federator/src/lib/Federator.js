@@ -189,9 +189,9 @@ module.exports = class Federator {
                     } catch(e) {
                         this.logger.error(`Error subscribing from listener on timeout: ${e}`);
                     }
-                    reject("Didn't get enough signatures after 10 minutes timeout")
+                    reject("Didn't get enough signatures before timeout")
                 },
-                60000
+                this.config.signatureRequestTimeoutMs || 60000
             );
 
             // Select correct message type depending on main on side federator
