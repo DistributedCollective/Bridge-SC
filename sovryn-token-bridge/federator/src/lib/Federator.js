@@ -184,6 +184,11 @@ module.exports = class Federator {
             const timer = setTimeout(
                 () => {
                     this.logger.warn("Timeout: Didn't get enough signatures after waiting");
+                    try {
+                        listener.unsubscribe();
+                    } catch(e) {
+                        this.logger.error(`Error subscribing from listener on timeout: ${e}`);
+                    }
                     reject("Didn't get enough signatures after 10 minutes timeout")
                 },
                 60000
@@ -202,7 +207,6 @@ module.exports = class Federator {
                       };
 
             const signatures = new Set();
-            // TODO: this listener should be removed on timeout
             const listener = this.network.net.onMessage(async (msg) => {
                 // TODO: temporary logging, remove
                 this.logger.debug('got federator message');
