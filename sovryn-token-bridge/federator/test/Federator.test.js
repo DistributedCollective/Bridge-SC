@@ -482,8 +482,29 @@ describe('Federator module tests', () => {
     describe('Signatures', () => {
         const chainId = 1;
         const contractAddress = testConfig.sidechain.federation;
-        const wallets = [];
+        const txId = '0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1';
+        const wallets = [
+            new ethers.Wallet(testConfig.privateKey),
+            new ethers.Wallet(
+                '0x20a3c8eb679bc7fe83e31754871c31a0cff0bf8d96edb8136f1b364753f720f1'
+            ),
+            new ethers.Wallet(
+                '0x6ff46791d809f5a588c1339dc065e38d2079eafa6ff32130a6d5686e0b6b60ea'
+            ),
+        ];
         const signatures = [];
+
+        const createSignature = async (wallet, deadline) => {
+            const payload = ethers.utils.solidityPack(
+                ['bytes32', 'uint256', 'address', 'uint256'],
+                [txId, chainId, contractAddress, deadline]
+            );
+            const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
+            return {
+                signature,
+                deadline,
+            }
+        }
 
         const logs = [
             {
@@ -555,31 +576,9 @@ describe('Federator module tests', () => {
         ];
 
         beforeAll(async () => {
-            wallets.push(new ethers.Wallet(testConfig.privateKey));
-            wallets.push(
-                new ethers.Wallet(
-                    '0x20a3c8eb679bc7fe83e31754871c31a0cff0bf8d96edb8136f1b364753f720f1'
-                )
-            );
-            wallets.push(
-                new ethers.Wallet(
-                    '0x6ff46791d809f5a588c1339dc065e38d2079eafa6ff32130a6d5686e0b6b60ea'
-                )
-            );
-
-            const txId = '0x7cfbaa6f05794922229e60c7c9695cc52cd13ed9ab1b88597626bd70bb8315d1';
-
             const deadline = Math.floor(Date.now() / 1000) + 120;
-            const payload = ethers.utils.solidityPack(
-                ['bytes32', 'uint256', 'address', 'uint256'],
-                [txId, chainId, contractAddress, deadline]
-            );
             for (let i = 0; i < wallets.length; i += 1) {
-                const signature = await wallets[i].signMessage(ethers.utils.arrayify(payload));
-                signatures.push({
-                    signature,
-                    deadline,
-                });
+                signatures.push(await createSignature(wallets[i], deadline));
             }
         });
 
