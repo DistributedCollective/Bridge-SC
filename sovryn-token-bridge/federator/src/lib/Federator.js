@@ -230,7 +230,14 @@ module.exports = class Federator {
                     }
                     signers.add(signerAddress);
 
-                    if (!utils.validateDeadline(signatureData.deadline)) {
+                    // Require 2 minutes or signaturesTTL/2 of buffer, whichever is smaller, to avoid sending the
+                    // transactions with signatures that might expire before the transaction gets mined in the blockchain.
+                    // 2 minutes might not be enough, but we need to start with something
+                    const deadlineBufferSeconds = Math.min(
+                        this.config.signaturesTTL / 2,
+                        120
+                    );
+                    if (!utils.validateDeadline(signatureData.deadline, deadlineBufferSeconds)) {
                         this.logger.warn(
                             `Deadline ${signatureData.deadline} has either passed or is too close`
                         );
