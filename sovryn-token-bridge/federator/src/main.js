@@ -195,6 +195,7 @@ async function run() {
     }
 
     if (p2pNode.isLeader()) {
+        console.log("This node is a leader -- handling iteration.")
         try {
             console.log('before mainfed');
             await mainFederator.run();
@@ -204,6 +205,8 @@ async function run() {
             logger.error('Unhandled Error on run()', err);
             process.exit();
         }
+    } else {
+        console.log("Not leader, just chilling.")
     }
 }
 

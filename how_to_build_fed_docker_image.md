@@ -5,7 +5,7 @@ with github actions
 
 * create tag: ```git tag 8.5```
 
-* push tags: ```git push tag 8.5```
+* push tag: ```git push origin 8.5```
 
 
 

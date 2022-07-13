@@ -145,12 +145,6 @@ module.exports = class Federator {
     // Loop around logs to process each of them
     async _processLogs(ctr, logs) {
         try {
-            const transactionSender = new TransactionSender(
-                this.sideWeb3,
-                this.logger,
-                this.config,
-                ''
-            );
             const currentBlock = await this._getCurrentBlockNumber();
 
             let newLastBlockNumber;
@@ -161,9 +155,16 @@ module.exports = class Federator {
                 const { _amount: amount, _symbol: symbol } = log.returnValues;
 
                 if (this._isConfirmed(ctr, symbol, amount, currentBlock, log.blockNumber)) {
-                    const signatures = await this._requestSignatureFromFederators(log);
-                    this.logger.info('Collected enough signatures');
-                    await this._processLog(log, signatures);
+                    const alreadyProcessed = await this._isAlreadyProcessed(log);
+                    if (alreadyProcessed) {
+                        this.logger.debug(
+                            `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} is already processed (on Bridge) -- no need to get signatures`
+                        );
+                    } else {
+                        const signatures = await this._requestSignatureFromFederators(log);
+                        this.logger.info('Collected enough signatures');
+                        await this._processLog(log, signatures);
+                    }
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
                     allLogsConfirmed = false;
@@ -181,8 +182,16 @@ module.exports = class Federator {
             this.logger.info('Requesting other federators to sign event');
 
             const timer = setTimeout(
-                () => reject("Didn't get enough signatures after 10 minutes timeout"),
-                60000
+                () => {
+                    this.logger.warn("Timeout: Didn't get enough signatures after waiting");
+                    try {
+                        listener.unsubscribe();
+                    } catch(e) {
+                        this.logger.error(`Error subscribing from listener on timeout: ${e}`);
+                    }
+                    reject("Didn't get enough signatures before timeout")
+                },
+                this.config.signatureRequestTimeoutMs || 60000
             );
 
             // Select correct message type depending on main on side federator
@@ -198,6 +207,7 @@ module.exports = class Federator {
                       };
 
             const signatures = new Set();
+            const signers = new Set();
             const listener = this.network.net.onMessage(async (msg) => {
                 if (msg.type === submissionType && msg.data.logId === log.id) {
                     this.logger.info(`Submission received from ${msg.source.id}`);
@@ -208,6 +218,28 @@ module.exports = class Federator {
                     if (!this.members.includes(signerAddress)) {
                         this.logger.warn(
                             `Submission from ${msg.source.id} has not been signed by a member of federation`
+                        );
+                        return;
+                    }
+
+                    if (signers.has(signerAddress)) {
+                        this.logger.warn(
+                            `Signer ${signerAddress} has already submitted a signature`
+                        );
+                        return;
+                    }
+                    signers.add(signerAddress);
+
+                    // Require 2 minutes or signaturesTTL/2 of buffer, whichever is smaller, to avoid sending the
+                    // transactions with signatures that might expire before the transaction gets mined in the blockchain.
+                    // 2 minutes might not be enough, but we need to start with something
+                    const deadlineBufferSeconds = Math.min(
+                        this.config.signaturesTTL / 2,
+                        120
+                    );
+                    if (!utils.validateDeadline(signatureData.deadline, deadlineBufferSeconds)) {
+                        this.logger.warn(
+                            `Deadline ${signatureData.deadline} has either passed or is too close`
                         );
                         return;
                     }
@@ -256,6 +288,21 @@ module.exports = class Federator {
         return ethers.utils.recoverAddress(digest, signature);
     }
 
+    async _isAlreadyProcessed(log) {
+        const {
+            _to: receiver,
+            _amount: amount,
+        } = log.returnValues;
+        let bridgeTransactionId = await this.sideBridgeContract.methods.getTransactionId(
+            log.blockHash,
+            log.transactionHash,
+            receiver,
+            amount,
+            log.logIndex,
+        ).call();
+        return await this.sideBridgeContract.methods.processed(bridgeTransactionId).call();
+    }
+
     async _processLog(log, signatures) {
         const {
             _to: receiver,
@@ -268,17 +315,11 @@ module.exports = class Federator {
         } = log.returnValues;
 
         // We check the status from the bridge first before bothering checking the Federation contract.
-        // Actually, a check from the bridge is all that we need (in principle)
-        let bridgeTransactionId = await this.sideBridgeContract.methods.getTransactionId(
-            log.blockHash,
-            log.transactionHash,
-            receiver,
-            amount,
-            log.logIndex,
-        ).call();
-        this.logger.info('Bridge transaction id:', bridgeTransactionId);
-        let wasProcessed = await this.sideBridgeContract.methods.processed(bridgeTransactionId).call();
-        this.logger.info('was processed (bridge):', wasProcessed);
+        // Actually, a check from the bridge is all that we need (in principle) -- but let's leave the other checks
+        // there too.
+        // Note that we don't really need to double-check here either, since we check this before requesting
+        // signatures from federators, but let's do it anyway for safety.
+        let wasProcessed = await this._isAlreadyProcessed(log);
         if (wasProcessed) {
             this.logger.debug(
                 `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} was already processed (on Bridge)`
@@ -543,13 +584,18 @@ module.exports = class Federator {
     }
 
     async signTransaction({ blockNumber, id }) {
-        const logs = await this.mainBridgeContract.getPastEvents('Cross', {
+        const allLogs = await this.mainBridgeContract.getPastEvents('Cross', {
             fromBlock: blockNumber,
             toBlock: blockNumber,
-            filter: { id },
         });
+        // Passing filter: { id } to getPastEvents won't do any filtering, we need to filter like this
+        const logs = allLogs.filter(log => log.id === id);
 
-        if (logs.length !== 1) throw new CustomError('Invalid return when searching for event');
+        if (logs.length !== 1) {
+            this.logger.error(`Got ${logs.length} logs when expecting 1. Block number: ${blockNumber}, Log id: ${id}, Logs:`);
+            this.logger.error(logs);
+            throw new CustomError('Invalid return when searching for event');
+        }
 
         const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
             logs[0].returnValues;
