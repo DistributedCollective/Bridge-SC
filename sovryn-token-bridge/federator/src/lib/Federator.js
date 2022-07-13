@@ -230,6 +230,13 @@ module.exports = class Federator {
                     }
                     signers.add(signerAddress);
 
+                    if (!utils.validateDeadline(signatureData.deadline)) {
+                        this.logger.warn(
+                            `Deadline ${signatureData.deadline} has either passed or is too close`
+                        );
+                        return;
+                    }
+
                     signatures.add(signatureData);
                     if (signatures.size >= this.config.minimumPeerAmount) {
                         clearTimeout(timer);
