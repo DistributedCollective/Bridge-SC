@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: sovryn/fed-tokenbridge:9.12
+    image: sovryn/fed-tokenbridge:9.13
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config
       - ./federator-env/${FED_ENV}/db:/app/federator/db
