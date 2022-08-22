@@ -5,5 +5,5 @@
     "allowTokens": "0xa2f50a2c699c1aa3b9089f6b565d4999d45d8983",
     "erc777Converter": "0xc8149b1F15794D135Dfe2924955cb90709Ac7070",
     "host": "http://18.221.155.102:4444/",
-    "fromBlock": 4466807
+    "fromBlock": 4573685
 }
