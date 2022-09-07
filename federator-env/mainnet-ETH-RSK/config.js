@@ -26,6 +26,8 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
+    minimumPeerAmount: 3,
+    port: 30303,
     federatorInstanceId: 'federatorInstanceId_replace_this',
     etherscanApiKey: etherscanApiKey,
 	telegramBot: {
