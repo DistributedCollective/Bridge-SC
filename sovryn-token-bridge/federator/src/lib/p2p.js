@@ -86,7 +86,7 @@ class P2p {
     }
 
     getPeerAmount() {
-        return this.net.nodes.length;
+        return this.getNodeIds().length;
     }
 
     isLeader() {
