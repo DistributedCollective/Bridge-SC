@@ -86,7 +86,8 @@ class P2p {
     }
 
     getPeerAmount() {
-        return this.getNodeIds().length;
+        // This returns the peer amount without this node
+        return this.getNodeIds().length - 1;
     }
 
     isLeader() {
