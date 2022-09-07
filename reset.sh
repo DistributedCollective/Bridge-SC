@@ -5,4 +5,6 @@ find federator-env/testnet-ETH-RSK/db/. -type f -not -name 'failingTxIds.txt' -d
 find federator-env/rinkeby-ETH-RSK/db/. -type f -not -name 'failingTxIds.txt' -delete
 rm -rf federator.log
 git fetch
-git reset --hard origin/signatures
+git reset --hard origin/master
+git checkout signatures
+git pull
