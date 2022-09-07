@@ -1,9 +1,9 @@
 {
     "bridge": "0xdfc7127593c8af1a17146893f10e08528f4c2aa7",
-    "federation": "0x33f8743d5AFa519Dd373a75E7AA5C255e2c82468",
+    "federation": "0x502fBCe27973d4bE1E69a4099046762251D005B4",
     "multiSig": "0xec3fabc3517e64e07669dd1d2d673f466f93a328",
     "allowTokens": "0x05b68e70168e876b2025f837bc8e0b2312d5327d",
     "erc777Converter": "0x9D46B33171eA7124aEE472bFe61B5B7084B55069",
     "host": "https://bsc.sovryn.app/mainnet",
-    "fromBlock": 20666968
+    "fromBlock": 21118895
 }
