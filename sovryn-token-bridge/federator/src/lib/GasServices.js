@@ -77,8 +77,11 @@ module.exports = class GasServices {
         this.logger.info(
             `Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`
         );
-        this.logger.debug('Process is waiting to calculate average gas of ', avgGasPeriodInterval);
-        await utils.sleep(avgGasPeriodInterval, { logger: this.logger });
+        // Temporarily only sleep for 5 min while waiting for gas prices
+        // this.logger.debug('Process is waiting to calculate average gas of ', avgGasPeriodInterval);
+        // await utils.sleep(avgGasPeriodInterval, { logger: this.logger });
+        this.logger.debug('Process is waiting to calculate average gas for 5min');
+        await utils.sleep(5 * 60 * 1000, { logger: this.logger });
     }
 
     async runGasPriceService() {
