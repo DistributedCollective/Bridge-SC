@@ -193,13 +193,14 @@ async function startServices() {
 }
 
 async function run() {
-    if (p2pNode.getPeerAmount() < config.minimumPeerAmount) {
-        logger.info('Waiting for enough peers');
+    const numPeers = p2pNode.getPeerAmount();
+    if (numPeers < config.minimumPeerAmount) {
+        logger.info(`Waiting for enough peers (now ${numPeers})`);
         return;
     }
 
     if (p2pNode.isLeader()) {
-        console.log("This node is a leader -- handling iteration.")
+        console.log(`This node is a leader -- handling iteration. (${numPeers} peers)`);
         try {
             console.log('before mainfed');
             await mainFederator.run();
@@ -210,7 +211,7 @@ async function run() {
             process.exit();
         }
     } else {
-        console.log("Not leader, just chilling.")
+        console.log(`Not leader, just chilling. (${numPeers} peers)`)
     }
 }
 
