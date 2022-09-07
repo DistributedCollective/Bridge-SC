@@ -126,8 +126,13 @@ function eliminateDuplicates(arrays) {
     return Array.from(set);
 }
 
-function createTimestamp(secondesOffset) {
-    return Math.floor(Date.now() / 1000) + secondesOffset;
+function createTimestamp(secondsOffset) {
+    return Math.floor(Date.now() / 1000) + secondsOffset;
+}
+
+function validateDeadline(deadline, bufferSeconds = 0) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    return deadline >= currentTimestamp + bufferSeconds;
 }
 
 module.exports = {
@@ -143,5 +148,6 @@ module.exports = {
     zeroHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
     waitForReceipt: waitForReceipt,
     eliminateDuplicates: eliminateDuplicates,
-    createTimestamp: createTimestamp,
+    createTimestamp,
+    validateDeadline,
 };

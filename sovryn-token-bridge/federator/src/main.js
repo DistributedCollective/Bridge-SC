@@ -156,7 +156,11 @@ async function startServices() {
 
     let fedAddress = config.federatorAddress;
     let peers = peersConfig.peers
-    let peersFiltered = peers.filter(peer => peer.address !== fedAddress);
+    let peersFiltered = peers.filter(
+        peer => (
+            (peer.address || '').toLowerCase() !== (fedAddress || '').toLowerCase()
+        )
+    );
     console.log(peersFiltered);
 
     try {
@@ -189,12 +193,22 @@ async function startServices() {
 }
 
 async function run() {
-    if (p2pNode.getPeerAmount() < config.minimumPeerAmount) {
-        logger.info('Waiting for enough peers');
+    const numOtherPeers = p2pNode.getPeerAmount();
+    let nodeId = '';
+    let leaderId = '';
+    try {
+        nodeId = p2pNode.net.networkId;
+        leaderId = p2pNode.getLeaderId();
+    } catch (e) {
+        // just ignore now, this is only for debugging
+    }
+    if (numOtherPeers < config.minimumPeerAmount) {
+        logger.info(`Waiting for enough peers (now ${numOtherPeers}. node ${nodeId}, leader ${leaderId})`);
         return;
     }
 
     if (p2pNode.isLeader()) {
+        console.log(`This node is a leader -- handling iteration. (${numOtherPeers} other peers, node ${nodeId}, leader ${leaderId})`);
         try {
             console.log('before mainfed');
             await mainFederator.run();
@@ -204,6 +218,8 @@ async function run() {
             logger.error('Unhandled Error on run()', err);
             process.exit();
         }
+    } else {
+        console.log(`Not leader, just chilling. (${numOtherPeers} other peers, node ${nodeId}, leader ${leaderId})`)
     }
 }
 

@@ -2,7 +2,7 @@ version: "3"
 services:
   federation:
     image: sovryn/fed-tokenbridge:10.9
-        ports:
+    ports:
       - 30303:30303
     volumes:
       - ./federator-env/${FED_ENV}/:/app/federator/config

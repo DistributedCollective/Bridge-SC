@@ -60,8 +60,12 @@ if [ "$FED_ENV" = "rinkeby-ETH-RSK" ]; then
      echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json
 fi
 
+echo "Enter Federator public address:"
+read FED_ADDRESS
 
-echo "starting federator on $ED_ENV.. this should take 30 sec, please wait"
+sed -i 's/federatorAddress_replace_this/'"$FED_ADDRESS"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
+
+echo "starting federator on $FED_ENV.. this should take 90 sec, please wait"
 mkdir -p /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/db
 echo "createing db folder.."
 echo "getting fed secret:"
@@ -72,9 +76,9 @@ echo using key named: $FED_KEY_NAME
 cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
-echo "starting federator please wait..."
+echo "starting federator please wait... this takes"
 nohup 2>&1 docker-compose -f docker-compose-prod.yml up > federator.log  &
-sleep 30
+sleep 90
 echo "federator logs: /home/ubuntu/Bridge-SC/federator.log"
 rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 tail -f /home/ubuntu/Bridge-SC/federator.log
