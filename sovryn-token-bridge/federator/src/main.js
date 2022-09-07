@@ -156,7 +156,11 @@ async function startServices() {
 
     let fedAddress = config.federatorAddress;
     let peers = peersConfig.peers
-    let peersFiltered = peers.filter(peer => peer.address !== fedAddress);
+    let peersFiltered = peers.filter(
+        peer => (
+            (peer.address || '').toLowerCase() !== (fedAddress || '').toLowerCase()
+        )
+    );
     console.log(peersFiltered);
 
     try {
