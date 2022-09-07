@@ -6,4 +6,4 @@ find federator-env/rinkeby-ETH-RSK/db/. -type f -not -name 'failingTxIds.txt' -d
 rm -rf federator.log
 git fetch
 git reset --hard head
-git checkout origin/signatures
+git checkout origin/signatures  # test
