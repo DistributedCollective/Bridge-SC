@@ -1,8 +1,7 @@
 version: "3"
 services:
   federation:
-    image: sovryn/fed-tokenbridge:10.14
-    command: --name ${FED_ID}
+    image: sovryn/fed-tokenbridge:10.15
     ports:
       - 4444:30303
     volumes:
