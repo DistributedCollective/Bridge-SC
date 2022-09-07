@@ -1,9 +1,9 @@
 {
     "bridge": "0x33c0d33a0d4312562ad622f91d12b0ac47366ee1",
-    "federation": "0xa38E6a92495A58A05969846a21d5cbb41Dc4dF24",
+    "federation": "0xD77b76A65a19715BDcB5eE223928af2919836A3E",
     "multiSig": "0x062c74f9d27b1178bb76186c1756128ccb3ccd2e",
     "allowTokens": "0xf9A59a649859A27d664C8bDb51fA53bCb268545C",
     "erc777Converter": "0xC0b2A9E31f69e4F0bC24584C678C582714a4fA1b",
     "host": "https://mainnet.infura.io/v3/f02caaf003d14ad7bee83f33eeda2f5a",
-    "fromBlock": 15384029
+    "fromBlock": 15483239
 }

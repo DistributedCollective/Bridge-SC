@@ -1,9 +1,9 @@
 {
     "bridge": "0x971b97c8cc82e7d27bc467c2dc3f219c6ee2e350",
-    "federation": "0xAb8F212eA333626a96999A865072095aDE95Eb5a",
+    "federation": "0xD1E45f51C8f09b139218fc75d26409096316971C",
     "multiSig": "0xee9ea57555d9533d71f6f77e0e480961f068a6c5",
     "allowTokens": "0x200FD7a1cCEa4651F15008cC99bF82d7461EFd3F",
     "erc777Converter": "0xc8149b1F15794D135Dfe2924955cb90709Ac7070",
-    "host": "http://18.221.155.102:4444/",
-    "fromBlock": 4573685
+    "host": "https://mainnet.sovryn.app/rpc",
+    "fromBlock": 4614985
 }
