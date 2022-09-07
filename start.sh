@@ -72,9 +72,9 @@ echo using key named: $FED_KEY_NAME
 cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
-echo "starting federator please wait..."
+echo "starting federator please wait... this takes 60"
 nohup 2>&1 docker-compose -f docker-compose-prod.yml up > federator.log  &
-sleep 30
+sleep 60
 echo "federator logs: /home/ubuntu/Bridge-SC/federator.log"
 rm -rf /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 tail -f /home/ubuntu/Bridge-SC/federator.log

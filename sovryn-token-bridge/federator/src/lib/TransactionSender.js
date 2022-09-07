@@ -110,7 +110,7 @@ module.exports = class TransactionSender {
 
     async createETHRawTransaction(from, to, data, value, chainId) {
         const nonce = await this.getNonce(from);
-        const gwei = 1_000_000_000;
+        const gwei = 1000000000;
         const priorityFee = 2;
         const sleepOnGas = this.config.sleepOnGas * 1000; //10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = this.config.maxSleepOnGas; //12

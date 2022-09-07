@@ -4,6 +4,6 @@
     "multiSig": "0x1d8cb60d35fcd42a8bd18d027386be9c0f9c509b",
     "allowTokens": "0xeb23e848ceca88b7d0c019c7186bb86cefadd0bd",
     "erc777Converter": "0x573CAF2cA648e22fE9721EDB5DdfBdF5645ffd18",
-    "host": "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    "host": "https://bsc.sovryn.app/testnet",
     "fromBlock": 16600000
 }

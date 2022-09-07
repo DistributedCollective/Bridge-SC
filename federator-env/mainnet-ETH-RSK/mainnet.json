@@ -5,5 +5,5 @@
     "allowTokens": "0xf9A59a649859A27d664C8bDb51fA53bCb268545C",
     "erc777Converter": "0xC0b2A9E31f69e4F0bC24584C678C582714a4fA1b",
     "host": "https://mainnet.infura.io/v3/f02caaf003d14ad7bee83f33eeda2f5a",
-    "fromBlock": 12110034
+    "fromBlock": 15384029
 }
