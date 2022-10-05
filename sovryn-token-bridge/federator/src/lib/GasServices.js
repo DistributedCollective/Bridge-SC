@@ -74,6 +74,8 @@ module.exports = class GasServices {
             this.logger.error('Unhandled Error on gasPriceAvg start()', err);
         });
 
+        console.log("Blacklist test neabled, not waiting for average gas.");
+        return;
         this.logger.info(
             `Process is waiting to calculate average gas of ${avgGasPeriodInterval} ms.`
         );

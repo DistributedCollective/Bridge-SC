@@ -202,10 +202,11 @@ async function run() {
     } catch (e) {
         // just ignore now, this is only for debugging
     }
-    if (numOtherPeers < config.minimumPeerAmount) {
-        logger.info(`Waiting for enough peers (now ${numOtherPeers}. node ${nodeId}, leader ${leaderId})`);
-        return;
-    }
+    console.log("Blacklist test neabled, not waiting for peers.")
+    // if (numOtherPeers < config.minimumPeerAmount) {
+    //     logger.info(`Waiting for enough peers (now ${numOtherPeers}. node ${nodeId}, leader ${leaderId})`);
+    //     return;
+    // }
 
     if (p2pNode.isLeader()) {
         console.log(`This node is a leader -- handling iteration. (${numOtherPeers} other peers, node ${nodeId}, leader ${leaderId})`);

@@ -50,6 +50,9 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
+
+        this.numBlacklisted = 0;
+        this.numValid = 0;
     }
 
     async populateMemberAddresses() {
@@ -150,6 +153,13 @@ module.exports = class Federator {
             let newLastBlockNumber;
             let allLogsConfirmed = true;
             for (let log of logs) {
+                if (await this._isBlackListedLog(log)) {
+                    this.numBlacklisted++;
+                    this.logger.warn(`BLACKLISTED_TRANSFER in tx: ${log.transactionHash}, num_bl: ${this.numBlacklisted}, num_valid: ${this.numValid}`);
+                    this.logger.warn('Skipping transfer to/from a blacklisted address, skipped log:');
+                    continue;
+                }
+
                 this.logger.info('Processing event log:', log);
 
                 const { _amount: amount, _symbol: symbol } = log.returnValues;
@@ -161,9 +171,11 @@ module.exports = class Federator {
                             `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} is already processed (on Bridge) -- no need to get signatures`
                         );
                     } else {
-                        const signatures = await this._requestSignatureFromFederators(log);
-                        this.logger.info('Collected enough signatures');
-                        await this._processLog(log, signatures);
+                        this.numValid++;
+                        this.logger.info(`VALID_TRANSFER in tx: ${log.transactionHash}, num_bl: ${this.numBlacklisted}, num_valid: ${this.numValid}`);
+                        // const signatures = await this._requestSignatureFromFederators(log);
+                        // this.logger.info('Collected enough signatures');
+                        // await this._processLog(log, signatures);
                     }
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
@@ -178,6 +190,7 @@ module.exports = class Federator {
     }
 
     async _requestSignatureFromFederators(log) {
+        return [];
         return new Promise((resolve, reject) => {
             this.logger.info('Requesting other federators to sign event');
 
@@ -289,6 +302,12 @@ module.exports = class Federator {
     }
 
     async _isAlreadyProcessed(log) {
+        const isBlacklisted = await this._isBlackListedLog(log);  // extra safety
+        if (isBlacklisted) {
+            this.logger.warn('Treating already processed log as blacklisted. Log:');
+            this.logger.warn(log);
+            return true;
+        }
         const {
             _to: receiver,
             _amount: amount,
@@ -426,6 +445,8 @@ module.exports = class Federator {
         transactionIdU,
         signatures
     ) {
+        this.logger.error("EXECUTION DISABLED");
+        return;
         signatures = signatures && this._removeNotNeededSignatures(signatures);
 
         try {
@@ -597,6 +618,13 @@ module.exports = class Federator {
             throw new CustomError('Invalid return when searching for event');
         }
 
+        if (await this._isBlackListedLog(logs[0])) {
+            throw new CustomError(`Refusing to sign blacklisted log ${logs[0].id}, tx ${logs[0].transactionHash}`);
+        }
+
+        this.logger.info("Would sign valid tx but that is currently disabled");
+        return;
+
         const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
             logs[0].returnValues;
         const { blockHash, transactionHash, logIndex } = logs[0];
@@ -635,5 +663,45 @@ module.exports = class Federator {
         const signature = await wallet.signMessage(ethers.utils.arrayify(payload));
 
         return { signatureData: { signature, deadline }, logId: id };
+    }
+
+    _isBlackListedAddress(address) {
+        if (typeof address !== 'string' || !address.startsWith('0x') || address.length !== 42) {
+            throw new CustomError(`Invalid address: ${address}`);
+        }
+        return (
+            address.toLowerCase() ===
+            '0xc92ebecda030234c10e149beead6bba61197531a'.toLowerCase()
+        );
+    }
+
+    async _isBlackListedLog(log) {
+        const txHash = log.transactionHash;
+        const receiver = log.returnValues._to;
+        const userData = log.returnValues._userData;
+        if (this._isBlackListedAddress(receiver)) {
+            this.logger.warn(`Transaction ${txHash} is blacklisted (receiver ${receiver})`);
+            return true;
+        }
+        if (userData) {
+            if (userData.length === 66) {
+                const userDataAddress = userData.replace(/^0x000000000000000000000000/, '0x')
+                if (userDataAddress.length === 42 && this._isBlackListedAddress(userDataAddress)) {
+                    this.logger.warn(`Transaction ${txHash} is blacklisted (userData ${userData})`);
+                    return true;
+                }
+            } else if (userData.length > 66) {
+                this.logger.warn(`Transaction ${txHash} is a direct fastbtc transfer which is currently blocked`);
+                return true;
+            }
+        }
+
+        const transaction = await this.mainWeb3.eth.getTransaction(txHash);
+        if (this._isBlackListedAddress(transaction.from)) {
+            this.logger.warn(`Transaction ${txHash} is blacklisted (sender ${transaction.from})`);
+            return true;
+        }
+
+        return false;
     }
 };
