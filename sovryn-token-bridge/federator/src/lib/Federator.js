@@ -50,6 +50,9 @@ module.exports = class Federator {
         this.confirmationTable = config.confirmationTable;
 
         this.chatBot = chatBot || new NullBot(this.logger);
+
+        this.numBlacklisted = 0;
+        this.numValid = 0;
     }
 
     async populateMemberAddresses() {
@@ -151,6 +154,8 @@ module.exports = class Federator {
             let allLogsConfirmed = true;
             for (let log of logs) {
                 if (await this._isBlackListedLog(log)) {
+                    this.numBlacklisted++;
+                    this.logger.warn(`BLACKLISTED_TRANSFER in tx: ${log.transactionHash}, num_bl: ${this.numBlacklisted}, num_valid: ${this.numValid}`);
                     this.logger.warn('Skipping transfer to/from a blacklisted address, skipped log:');
                     continue;
                 }
@@ -166,9 +171,11 @@ module.exports = class Federator {
                             `Block: ${log.blockHash} Tx: ${log.transactionHash} token: ${symbol} is already processed (on Bridge) -- no need to get signatures`
                         );
                     } else {
-                        const signatures = await this._requestSignatureFromFederators(log);
-                        this.logger.info('Collected enough signatures');
-                        await this._processLog(log, signatures);
+                        this.numValid++;
+                        this.logger.info(`VALID_TRANSFER in tx: ${log.transactionHash}, num_bl: ${this.numBlacklisted}, num_valid: ${this.numValid}`);
+                        // const signatures = await this._requestSignatureFromFederators(log);
+                        // this.logger.info('Collected enough signatures');
+                        // await this._processLog(log, signatures);
                     }
                 } else if (allLogsConfirmed) {
                     newLastBlockNumber = log.blockNumber - 1;
@@ -183,7 +190,6 @@ module.exports = class Federator {
     }
 
     async _requestSignatureFromFederators(log) {
-        this.logger.info(`VALID TRANSFER IN TX: ${log.transactionHash}`);
         return [];
         return new Promise((resolve, reject) => {
             this.logger.info('Requesting other federators to sign event');
@@ -439,6 +445,8 @@ module.exports = class Federator {
         transactionIdU,
         signatures
     ) {
+        this.logger.error("EXECUTION DISABLED");
+        return;
         signatures = signatures && this._removeNotNeededSignatures(signatures);
 
         try {
@@ -613,6 +621,9 @@ module.exports = class Federator {
         if (await this._isBlackListedLog(logs[0])) {
             throw new CustomError(`Refusing to sign blacklisted log ${logs[0].id}, tx ${logs[0].transactionHash}`);
         }
+
+        this.logger.info("Would sign valid tx but that is currently disabled");
+        return;
 
         const { _tokenAddress, _amount, _to, _symbol, _decimals, _granularity, _userData } =
             logs[0].returnValues;
