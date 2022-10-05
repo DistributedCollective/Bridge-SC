@@ -183,6 +183,8 @@ module.exports = class Federator {
     }
 
     async _requestSignatureFromFederators(log) {
+        this.logger.info(`VALID TRANSFER IN TX: ${log.transactionHash}`);
+        return [];
         return new Promise((resolve, reject) => {
             this.logger.info('Requesting other federators to sign event');
 
