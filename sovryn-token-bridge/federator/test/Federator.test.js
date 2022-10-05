@@ -1108,4 +1108,178 @@ describe('Federator module tests', () => {
             expect(sendTransactionSpy).toHaveBeenCalledTimes(2);
         });
     });
+
+    describe('blacklist', () => {
+        const exampleBlacklistedLog = {
+            address: '0xdfc7127593c8Af1a17146893F10e08528F4C2AA7',
+            blockNumber: 21892325,
+            transactionHash: '0xecb840d31f006d39b5fd5ff3cee63b8dcf9cbe4c6c42b38ad110eb4c61de865a',
+            transactionIndex: 102,
+            blockHash: '0xdca05d2e51690a481001ec0b2494c973a5293eb4ae480af8fb4103af0a080e0c',
+            logIndex: 287,
+            removed: false,
+            id: 'log_5db89b85',
+            returnValues: {
+                '0': '0xa233108b33dc77F1Eee9d183eE1DC9725E76d475',
+                '1': '0xc92EBeCDa030234C10e149bEEAD6bba61197531a',
+                '2': '99900000000000000',
+                '3': 'bRBTC',
+                '4': '0x00',
+                '5': '18',
+                '6': '1',
+                _tokenAddress: '0xa233108b33dc77F1Eee9d183eE1DC9725E76d475',
+                _to: '0xc92EBeCDa030234C10e149bEEAD6bba61197531a',
+                _amount: '99900000000000000',
+                _symbol: 'bRBTC',
+                _userData: '0x00',
+                _decimals: '18',
+                _granularity: '1'
+            },
+            event: 'Cross',
+            signature: '0x33409cca56f705a7bbed38b7db57cf3a63317f3c1b9a747bbfb3d3ecffa84f6f',
+            raw: {
+                data: '0x0000000000000000000000000000000000000000000000000162ea854d0fc00000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000005625242544300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000',
+                topics: [
+                    '0x33409cca56f705a7bbed38b7db57cf3a63317f3c1b9a747bbfb3d3ecffa84f6f',
+                    '0x000000000000000000000000a233108b33dc77f1eee9d183ee1dc9725e76d475',
+                    '0x000000000000000000000000c92ebecda030234c10e149beead6bba61197531a'
+                ]
+            }
+        };
+        const exampleBlacklistedTx = {
+            "blockHash": "0xdca05d2e51690a481001ec0b2494c973a5293eb4ae480af8fb4103af0a080e0c",
+            "blockNumber": 21892325,
+            "from": "0xc92EBeCDa030234C10e149bEEAD6bba61197531a",
+            "gas": 255550,
+            "gasPrice": "5000000000",
+            "hash": "0xecb840d31f006d39b5fd5ff3cee63b8dcf9cbe4c6c42b38ad110eb4c61de865a",
+            "input": "0x8d8773ae00000000000000000000000068e75416a99f61a8ef3186b3bee41dbf2a3fd4e8000000000000000000000000000000000000000000000000016345785d8a0000000000000000000000000000c92ebecda030234c10e149beead6bba61197531a000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+            "nonce": 98,
+            "to": "0x1dA3D286a3aBeaDb2b7677c99730D725aF58e39D",
+            "transactionIndex": 102,
+            "value": "0",
+            "type": 0,
+            "v": "0x94",
+            "r": "0x34b8c865bc317e94911f52331cea759e3e8e04d8b1ac5bde83c72cb1d06bf5ba",
+            "s": "0x65ce4779aca0f6f78ad6e5bf7659b93270c4ddc990f881bc6faf7140940f95b1"
+        }
+        const blacklistedAddress = exampleBlacklistedLog.returnValues._to;
+        const nonBlacklistedAddress = '0x1234567890123456789012345678901234567890'
+        const currentBlock = 30000000;
+        const chainId = 1;
+
+        let federator;
+        beforeEach(() => {
+            federator = new Federator(MAIN_FEDERATOR, testConfig, logger, {}, web3Mock);
+        })
+
+        function copyBlacklistedLogAndTx() {
+            return {
+                log: JSON.parse(JSON.stringify(exampleBlacklistedLog)),
+                tx: JSON.parse(JSON.stringify(exampleBlacklistedTx))
+            }
+        }
+
+        function mockMethods(log, tx) {
+            federator.mainBridgeContract.getPastEvents = (event, { fromBlock, toBlock}) => {
+                if(event !== 'Cross') {
+                    throw new Error('Invalid event');
+                }
+                if(fromBlock !== log.blockNumber || toBlock !== log.blockNumber) {
+                    throw new Error('Invalid block range');
+                }
+                return [log];
+            }
+            mockFederatorMethods(federator, {
+                async getTransaction(txid) {
+                    if (txid !== log.transactionHash) {
+                        throw new Error("unknown tx")
+                    }
+                    return tx;
+                },
+                async getBlockNumber() {
+                    return currentBlock
+                },
+                net: {
+                    getId: () => Promise.resolve(chainId),
+                }
+            });
+        }
+
+        it('_isBlacklistedLog/_isBlacklistedAddress/_alreadyProcessed', async () => {
+            const { log, tx } = copyBlacklistedLogAndTx();
+            mockMethods(log, tx);
+
+            expect(federator._isBlackListedAddress(blacklistedAddress)).toBeTruthy();
+            expect(federator._isBlackListedAddress(nonBlacklistedAddress)).toBeFalsy();
+
+            expect(await federator._isBlackListedLog(log)).toBeTruthy();
+            expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
+
+            log.returnValues._to = nonBlacklistedAddress;
+            expect(await federator._isBlackListedLog(log)).toBeTruthy();
+            expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
+
+            tx.from = nonBlacklistedAddress;
+            expect(await federator._isBlackListedLog(log)).toBeFalsy();
+            expect(await federator._isAlreadyProcessed(log)).toBeFalsy();
+
+            log.returnValues._userData = '0x000000000000000000000000c92ebecda030234c10e149beead6bba61197531a'
+            expect(await federator._isBlackListedLog(log)).toBeTruthy();
+            expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
+
+            log.returnValues._to = blacklistedAddress;
+            log.returnValues._userData = '0x00';
+            tx.from = nonBlacklistedAddress;
+            expect(await federator._isBlackListedLog(log)).toBeTruthy();
+            expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
+
+            log.returnValues._to = nonBlacklistedAddress;
+            expect(await federator._isBlackListedLog(log)).toBeFalsy();
+            expect(await federator._isAlreadyProcessed(log)).toBeFalsy();
+        });
+
+        it('signTransaction', async () => {
+            const { log, tx } = copyBlacklistedLogAndTx();
+            mockMethods(log, tx);
+            const expectedMsg = `Refusing to sign blacklisted log ${log.id}, tx ${log.transactionHash}`
+            const signData = {
+                blockNumber: log.blockNumber,
+                id: log.id,
+            }
+            let signed = false;
+            try {
+                await federator.signTransaction(signData)
+                signed = true;
+            } catch (e) {
+                expect(e.message).toEqual(expectedMsg)
+            }
+            expect(signed).toBeFalsy();
+
+            log.returnValues._to = nonBlacklistedAddress;
+            tx.from = nonBlacklistedAddress;
+            const ret = await federator.signTransaction(signData)
+            expect(ret).toBeTruthy();
+        });
+
+        it('_processLogs', async () => {
+            const { log, tx } = copyBlacklistedLogAndTx();
+            mockMethods(log, tx);
+            const signatures = ['signature1', 'signature2']
+            federator._requestSignatureFromFederators = () => signatures;
+            const processLogSpy = jest.spyOn(federator, '_processLog');
+            const executeTransactionSpy = jest.spyOn(federator, '_executeTransaction');
+
+            const ctr = new ConfirmationTableReader(1, federator.confirmationTable);
+            await federator._processLogs(ctr, [log]);
+            expect(processLogSpy).toHaveBeenCalledTimes(0);
+
+            log.returnValues._to = nonBlacklistedAddress;
+            tx.from = nonBlacklistedAddress;
+            await federator._processLogs(ctr, [log]);
+            expect(processLogSpy).toHaveBeenCalledTimes(1);
+            expect(processLogSpy).toHaveBeenCalledWith(log, signatures);
+            expect(executeTransactionSpy).toHaveBeenCalledTimes(1);
+        });
+    })
 });

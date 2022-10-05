@@ -10,6 +10,7 @@ eth.getTransactionCount = () => defaults.data.ethTransactionCount;
 eth.getGasPrice = () => defaults.data.gasPrice;
 eth.estimateGas = () => defaults.data.estimatedGas;
 eth.getNonce = () => defaults.data.ethTransactionCount;
+eth.getTransaction = () => defaults.data.receipt; // not the same return type but close
 
 let promiseSend = function () {
     var promiEvent = Web3PromiEvent();
