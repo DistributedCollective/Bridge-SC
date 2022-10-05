@@ -1228,6 +1228,10 @@ describe('Federator module tests', () => {
             expect(await federator._isBlackListedLog(log)).toBeTruthy();
             expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
 
+            log.returnValues._userData = "0x000000000000000000000000c92ebecda030234c10e149beead6bba61197531a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+            expect(await federator._isBlackListedLog(log)).toBeTruthy();
+            expect(await federator._isAlreadyProcessed(log)).toBeTruthy();
+
             log.returnValues._to = blacklistedAddress;
             log.returnValues._userData = '0x00';
             tx.from = nonBlacklistedAddress;

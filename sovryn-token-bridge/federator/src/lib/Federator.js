@@ -670,10 +670,15 @@ module.exports = class Federator {
             this.logger.warn(`Transaction ${txHash} is blacklisted (receiver ${receiver})`);
             return true;
         }
-        if (userData && userData.length === 66) {
-            const userDataAddress = userData.replace(/^0x000000000000000000000000/, '0x')
-            if (userDataAddress.length === 42 && this._isBlackListedAddress(userDataAddress)) {
-                this.logger.warn(`Transaction ${txHash} is blacklisted (userData ${userData})`);
+        if (userData) {
+            if (userData.length === 66) {
+                const userDataAddress = userData.replace(/^0x000000000000000000000000/, '0x')
+                if (userDataAddress.length === 42 && this._isBlackListedAddress(userDataAddress)) {
+                    this.logger.warn(`Transaction ${txHash} is blacklisted (userData ${userData})`);
+                    return true;
+                }
+            } else if (userData.length > 66) {
+                this.logger.warn(`Transaction ${txHash} is a direct fastbtc transfer which is currently blocked`);
                 return true;
             }
         }
