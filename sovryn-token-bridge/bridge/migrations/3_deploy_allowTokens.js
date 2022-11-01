@@ -1,5 +1,5 @@
 const MultiSigWallet = artifacts.require("MultiSigWallet");
-const AllowTokens = artifacts.require("AllowTokens_v0");
+const AllowTokens = artifacts.require("AllowTokens");
 
 module.exports = function(deployer, networkName, accounts) {
     deployer

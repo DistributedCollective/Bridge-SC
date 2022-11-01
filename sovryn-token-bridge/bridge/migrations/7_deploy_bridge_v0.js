@@ -1,13 +1,13 @@
 const { scripts, ConfigManager } = require('@openzeppelin/cli');
 const MultiSigWallet = artifacts.require("MultiSigWallet");
-const Federation = artifacts.require("Federation_v0");
-const AllowTokens = artifacts.require('AllowTokens_v0');
-const SideTokenFactory = artifacts.require('SideTokenFactory_v0');
+const Federation = artifacts.require("Federation");
+const AllowTokens = artifacts.require('AllowTokens');
+const SideTokenFactory = artifacts.require('SideTokenFactory');
 const Bridge_v0 = artifacts.require('Bridge_v0');
 
 //example https://github.com/OpenZeppelin/openzeppelin-sdk/tree/master/examples/truffle-migrate/migrations
 async function ozDeploy(options, name, alias, initArgs) {
-    try {
+    // try {
         // Register v0 of MyContract in the zos project
         scripts.add({ contractsData: [{ name: name, alias: alias }] });
 console.log("oz add done");
@@ -18,19 +18,20 @@ console.log("oz push done");
         // Create an instance of MyContract, setting initial values
         await scripts.create(Object.assign({ contractAlias: alias, methodName: 'initialize', methodArgs: initArgs }, options));
         console.log("oz create done");
-    } catch (err) {
-        throw new Error(`Error on oz deployment ${err.stack}`);
-    }
+    // } catch (err) {
+    //     throw new Error(`Error on oz deployment ${err.stack}`);
+    // }
 }
 
 module.exports = function(deployer, networkName, accounts) {
-    let symbol = 'e';
-
-    if(networkName == 'btestnet' || networkName == 'bmainnet')
-        symbol = 'b';
-
-    if(networkName == 'rskregtest' || networkName == 'rsktestnet' || networkName == 'rskmainnet')
-        symbol = 'bs';
+    let symbol;
+    if (networkName === 'sepolia') {
+        symbol = 'e';
+    } else if(networkName === 'rsktestnet') {
+        symbol = 'es';
+    } else {
+        throw new Error(`Unknown network ${networkName}`);
+    }
 
     deployer.then(async () => {
         const multiSig = await MultiSigWallet.deployed();
@@ -50,8 +51,10 @@ console.log(initArgs);
 
         try{
             //running truffle test re runs migrations and OZ exploits if aleready upgraded the contract, check if we already have run a migration
-            await Bridge_v0.deployed();
+            //await Bridge_v0.deployed();
+            throw new Error("blah blah, we don't care if it's deployed already!");
         } catch(err) {
+            console.log("Bridge_v0 not deployed yet");
             //If we haven't deployed it then re deploy.
             await ozDeploy({ network, txParams}, 'Bridge_v0', 'Bridge_v0', initArgs);
 
