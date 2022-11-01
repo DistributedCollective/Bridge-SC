@@ -307,6 +307,20 @@ module.exports = {
         "31": {
             "default": 5,
             "minConfirmation": 5,
+            "SEPUSDes": [
+                {
+                    "amount": 0,
+                    "confirmations": 5
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 5
+                },
+                {
+                    "amount": 2500,
+                    "confirmations": 5
+                }
+            ],
             "DAIes": [
                 {
                     "amount": 0,
@@ -613,6 +627,24 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
+        },
+        "11155111": {
+            "default": 5,
+            "minConfirmation": 5,
+            "SEPUSD": [
+                {
+                    "amount": 0,
+                    "confirmations": 5
+                },
+                {
+                    "amount": 500,
+                    "confirmations": 5
+                },
+                {
+                    "amount": 2500,
+                    "confirmations": 5
+                }
+            ]
         }
     }
 }
