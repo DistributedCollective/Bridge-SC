@@ -18,7 +18,7 @@ try {
 
 module.exports = {
     mainchain: require('./rsktestnet.json'), //the json containing the smart contract addresses in rsk
-    sidechain: require('./ropsten.json'), //the json containing the smart contract addresses in eth
+    sidechain: require('./sepolia.json'), //the json containing the smart contract addresses in eth
     gasApiRunEvery: 5, // In Seconds,
     avgGasRunEvery: 10, // In Seconds,
     periodAvgGas: 4, // In minutes,

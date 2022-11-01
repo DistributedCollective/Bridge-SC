@@ -16,10 +16,10 @@ const fs = require('fs');
 const Web3 = require('web3');
 
 let MNEMONIC = fs.existsSync('../../../../bridgeKey/mnemonic.key')
-    ? fs.readFileSync('../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' })
+    ? fs.readFileSync('../../../../bridgeKey/mnemonic.key', { encoding: 'utf8' }).trim()
     : ''; // Your metamask's recovery words
 const INFURA_API_KEY = fs.existsSync('../../../../bridgeKey/infura.key')
-    ? fs.readFileSync('../../../../bridgeKey/infura.key', { encoding: 'utf8' })
+    ? fs.readFileSync('../../../../bridgeKey/infura.key', { encoding: 'utf8' }).trim()
     : ''; // Your Infura API Key after its registration
 const secrets = fs.existsSync('../../../../bridgeKeyMain/.secrets')
     ? JSON.parse(
@@ -80,6 +80,18 @@ module.exports = {
             skipDryRun: true
           },
               //Ethereum
+        sepolia: {
+            provider: () =>
+                new HDWalletProvider(MNEMONIC, 'wss://sepolia.infura.io/ws/v3/' + INFURA_API_KEY),
+            //provider: () => new HDWalletProvider(MNEMONIC, "wss://ropsten.infura.io/ws/v3/" + INFURA_API_KEY),
+            network_id: 11155111,
+            networkCheckTimeout: 1e9,
+            timeoutBlocks: 500000,
+            gas: 6300000,
+            //gasPrice: 10000000000,
+            gasPrice: 70,
+            skipDryRun: true,
+        },
         ropsten: {
             provider: () =>
                 new HDWalletProvider(MNEMONIC, 'wss://ropsten.infura.io/ws/v3/' + INFURA_API_KEY),

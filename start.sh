@@ -51,7 +51,7 @@ fi
 if [ "$FED_ENV" = "testnet-ETH-RSK" ]; then
      echo "Enter etherium testnet RPC url:"
      read ETHER_RPC
-     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json
+     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/ropsten.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/sepolia.json
 fi
 
 if [ "$FED_ENV" = "rinkeby-ETH-RSK" ]; then
