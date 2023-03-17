@@ -1,7 +1,7 @@
 version: "3"
 services:
   federation:
-    image: sovryn/fed-tokenbridge:10.21
+    image: sovryn/fed-tokenbridge:10.22
     ports:
       - 30303:30303
     volumes:
