@@ -5,5 +5,5 @@
     "allowTokens": "0x200FD7a1cCEa4651F15008cC99bF82d7461EFd3F",
     "erc777Converter": "0xc8149b1F15794D135Dfe2924955cb90709Ac7070",
     "host": "https://rsk-internal.sovryn.app/rpc",
-    "fromBlock": 5137811
+    "fromBlock": 5917710
 }
