@@ -42,24 +42,6 @@ echo "$TELEGRAM_KEY" > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/telegram.ke
 
 sed -i 's/federatorInstanceId_replace_this/'"$FED_ID-$FED_ENV"'/g' /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/config.js
 
-if [ "$FED_ENV" = "mainnet-ETH-RSK" ]; then
-     echo "Enter etherium mainnet RPC url:"
-     read ETHER_RPC
-     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/mainnet.json
-fi
-
-if [ "$FED_ENV" = "testnet-ETH-RSK" ]; then
-     echo "Enter etherium testnet RPC url:"
-     read ETHER_RPC
-     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/sepolia.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/sepolia.json
-fi
-
-if [ "$FED_ENV" = "rinkeby-ETH-RSK" ]; then
-     echo "Enter etherium testnet RPC url:"
-     read ETHER_RPC
-     echo $(cat /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json | jq --arg args "$ETHER_RPC" '."host"=$args') > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/rinkeby.json
-fi
-
 echo "Enter Federator public address:"
 read FED_ADDRESS
 
