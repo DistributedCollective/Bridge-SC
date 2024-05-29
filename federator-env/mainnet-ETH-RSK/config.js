@@ -97,7 +97,35 @@ module.exports = {
                     "confirmations": 50
                 }
             ],
-	        "USDT": [
+            "USDT": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 2000000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 10000000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "eDLLR": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 2000000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 10000000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "DLLR": [
                 {
                     "amount": 0,
                     "confirmations": 10
@@ -366,6 +394,34 @@ module.exports = {
                 }
             ],
 	        "USDT": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 2000000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 10000000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "eDLLR": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 2000000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 10000000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "DLLR": [
                 {
                     "amount": 0,
                     "confirmations": 10
