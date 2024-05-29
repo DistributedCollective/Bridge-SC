@@ -51,9 +51,14 @@ module.exports = class TransactionSender {
 
         // Vote: ~70k
         // Vote+execute: A little over 250k
+        // Vote+execute with signatures: Can get to over 300k, 500k+ with aggregators involved
         // First side token deployment: ~3.15M
-        const minimum = 300000;
-        const gasLimit = estimatedGas < minimum ? minimum : 3500000;
+        const multiplier = 1.5;
+        const minimum = 400000;
+        let gasLimit = Math.ceil(estimatedGas * multiplier);
+        if (gasLimit < minimum) {
+            gasLimit = minimum;
+        }
 
         return gasLimit;
     }
