@@ -3,6 +3,6 @@
     "federation": "0x71a4df7326925ca068ade61ea85ba9997c11102b",
     "multiSig": "0x0f73c31b831e644699744972d10b173610b742dc",
     "allowTokens": "0x66717faab22639f21ea5a726a40c287f616346c2",
-    "host": "https://sepolia.infura.io/v3/728946296ea64626941bb3d120d16333",
+    "host": "https://eth.sovryn.app/testnet",
     "fromBlock": 2206447
 }
