@@ -4,5 +4,5 @@
     "multiSig": "0x0f73c31b831e644699744972d10b173610b742dc",
     "allowTokens": "0x66717faab22639f21ea5a726a40c287f616346c2",
     "host": "https://eth.sovryn.app/testnet",
-    "fromBlock": 2206447
+    "fromBlock": 3911708
 }
