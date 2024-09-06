@@ -18,6 +18,7 @@ module.exports = class TransactionSender {
         this.chainId = chainId;
         this.config = config;
         this.manuallyCheck = `${config.storagePath || __dirname}/manuallyCheck.txt`;
+        this.ethGasPriceThresholdGwei = config.ethGasPriceThresholdGwei ?? 10;
 
         this.gasPriceEstimator = new GasPriceEstimator({
             web3: this.client,
@@ -120,8 +121,8 @@ module.exports = class TransactionSender {
         const sleepOnGas = this.config.sleepOnGas * 1000; //10 * 1000 ; // 10 Seconds
         const maxSleepOnGas = this.config.maxSleepOnGas; //12
         let sleepOnGasCounter = 0;
-
-        while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg) {
+        while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg &&
+          globals.currentEthGasBasePrice > this.ethGasPriceThresholdGwei) {
             await utils.sleep(sleepOnGas, { logger: this.logger });
             sleepOnGasCounter++;
             if (sleepOnGasCounter > maxSleepOnGas) {

@@ -18,6 +18,7 @@ module.exports = {
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
     storagePath: './db',
+    ethGasPriceThresholdGwei: 10,
     federatorInstanceId: 'federatorInstanceId_replace_this',
     federatorAddress: 'federatorAddress_replace_this',
 	telegramBot: {

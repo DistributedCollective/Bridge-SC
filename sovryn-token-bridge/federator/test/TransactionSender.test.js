@@ -64,6 +64,20 @@ describe('TransactionSender module tests', () => {
         );
     });
 
+    it('should send ethereum transaction if the current gas price is low enough, even if it is higher than the average', async () => {
+        globals.currentEthGasBasePrice = 100;
+        globals.currentEthGasPriceAvg = 98;
+        web3Mock.eth.getTransactionCount = jest.fn().mockReturnValue(Promise.resolve('213'));
+        web3Mock.eth.estimateGas = jest.fn().mockReturnValue(Promise.resolve('70000'));
+
+        const alteredConfig = { ...config, sleepOnGas: 0, ethGasPriceThresholdGwei: 150 };
+
+        const sender = new TransactionSender(web3Mock, logger, alteredConfig, '4');
+        const rawTx = await sender.createRawTransaction(from, to, data, value);
+        expect(rawTx).not.toBeNull();
+        expect(rawTx).toBeDefined();
+    });
+
     it('should getGasPrice Rsk', async () => {
         const gasPrice = 111;
         web3Mock.eth.getBlock = jest

@@ -32,6 +32,7 @@ module.exports = {
     signaturesTTL: 24 * 60 * 60, // In seconds
     signatureRequestTimeoutMs: 2 * 60 * 1000, // In milliseconds
     storagePath: './db',
+    ethGasPriceThresholdGwei: 10,
     federatorInstanceId: 'federatorInstanceId_replace_this',
     federatorAddress: 'federatorAddress_replace_this',
     etherscanApiKey: etherscanApiKey,
