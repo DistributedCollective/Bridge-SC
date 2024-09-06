@@ -27,7 +27,7 @@ module.exports = {
     signaturesTTL: 24 * 60 * 60, // In seconds
     storagePath: './db',
     federatorInstanceId: '',
-    ethGasPriceThresholdGwei: 100,
+    ethGasPriceThresholdGwei: 10,
     etherscanApiKey: etherscanApiKey,
     telegramBot: {
         token: telegramToken,
