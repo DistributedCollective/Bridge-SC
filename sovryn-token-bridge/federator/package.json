@@ -30,7 +30,8 @@
         "ethers": "^5.5.4",
         "log4js": "^5.0.0",
         "telegraf": "^4.3.0",
-        "web3": "^1.6.1"
+        "web3": "^1.6.1",
+        "sodium-secretstream": "1.1.0"
     },
     "devDependencies": {
         "eslint": "^8.9.0",
