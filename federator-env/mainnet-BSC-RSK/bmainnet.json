@@ -5,5 +5,5 @@
     "allowTokens": "0xc4b5178Cc086E764568AdfB2dacCBB0d973e8132",
     "erc777Converter": "0x9D46B33171eA7124aEE472bFe61B5B7084B55069",
     "host": "https://bsc.sovryn.app/mainnet",
-    "fromBlock": 42014820
+    "fromBlock": 52652645
 }
