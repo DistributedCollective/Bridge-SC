@@ -8,3 +8,7 @@ aws-deployment/environments/federator/terraform.tfstate.backup
 aws-deployment/environments/federator/.terraform.tfstate.lock.info
 federator-env/testnet-BSC-RSK/federator.key
 .vscode
+## foundry folders:
+sovryn-token-bridge/bridge/lib/
+sovryn-token-bridge/bridge/out/
+sovryn-token-bridge/bridge/cache_foundry/
