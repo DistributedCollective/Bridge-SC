@@ -217,7 +217,43 @@ module.exports = {
                     "amount": 100000000000000000000,
                     "confirmations": 50
                 }
-            ],	
+            ],
+            "BOS": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 100000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "BOSes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 100000000000000000000,
+                    "confirmations": 50
+                }
+            ],
         },
         "3": {
             "default": 4,
@@ -497,6 +533,42 @@ module.exports = {
                 }
             ],
             "ETHes": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 100000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "BOS": [
+                {
+                    "amount": 0,
+                    "confirmations": 10
+                },
+                {
+                    "amount": 1000000000000000000,
+                    "confirmations": 20
+                },
+                {
+                    "amount": 10000000000000000000,
+                    "confirmations": 30
+                },
+                {
+                    "amount": 100000000000000000000,
+                    "confirmations": 50
+                }
+            ],
+            "BOSes": [
                 {
                     "amount": 0,
                     "confirmations": 10
