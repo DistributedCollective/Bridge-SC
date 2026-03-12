@@ -7,7 +7,7 @@ module.exports = {
         },
         {
             "address": "0xcD1b561207E20A7ccbcf004bb0a4bc897BA8F2eE",
-            "ip": "3.129.188.13",
+            "ip": "13.59.232.64",
             "port": 4444
         },
         {
