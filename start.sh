@@ -7,6 +7,29 @@ export FED_ID=$2
 # Otherwise the errors can get uncaught and this wastes development time.
 set -e
 
+load_aws_secret_if_unset() {
+        ENV_NAME="$1"
+        DEFAULT_SECRET_ID="$2"
+        eval CURRENT_VALUE="\${$ENV_NAME:-}"
+        if [ -n "$CURRENT_VALUE" ]
+        then
+                return
+        fi
+
+        eval SECRET_ID_OVERRIDE="\${${ENV_NAME}_SECRET_ID:-}"
+        SECRET_ID="${SECRET_ID_OVERRIDE:-$DEFAULT_SECRET_ID}"
+
+        echo "loading $ENV_NAME from AWS Secrets Manager secret: $SECRET_ID"
+        SECRET_STRING=`aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --region us-east-2 | jq -r .SecretString`
+        SECRET_VALUE=`printf '%s' "$SECRET_STRING" | jq -r --arg key "$ENV_NAME" 'try (fromjson | .[$key] // empty) catch empty'`
+        if [ -z "$SECRET_VALUE" ]
+        then
+                SECRET_VALUE="$SECRET_STRING"
+        fi
+
+        export "$ENV_NAME=$SECRET_VALUE"
+}
+
 if [ -z "$FED_ENV" ]
 then
         echo "ERROR: please choose the federator env config as first cmd arg."
@@ -58,6 +81,17 @@ echo using key named: $FED_KEY_NAME
 cat << EOF > /home/ubuntu/Bridge-SC/federator-env/$FED_ENV/federator.key
 $FED_KEY
 EOF
+
+if [ "$FED_ENV" = "mainnet-BSC-RSK" ]
+then
+        load_aws_secret_if_unset NODEREAL_BSC_FEDERATOR_API NODEREAL_BSC_FEDERATOR_API
+fi
+
+if [ "$FED_ENV" = "mainnet-ETH-RSK" ]
+then
+        load_aws_secret_if_unset NODEREAL_ETH_FEDERATOR_API NODEREAL_ETH_FEDERATOR_API
+fi
+
 echo "starting federator please wait... this takes"
 nohup 2>&1 docker-compose -f docker-compose-prod.yml up > federator.log  &
 sleep 90
