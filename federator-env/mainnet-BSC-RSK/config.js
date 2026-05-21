@@ -1,4 +1,21 @@
 const fs = require('fs');
+
+function expandEnv(value) {
+    return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, name) => {
+        const envValue = process.env[name];
+        if (!envValue) throw new Error(`Missing required environment variable ${name}`);
+        return envValue;
+    });
+}
+
+function loadChainConfig(path) {
+    const chainConfig = require(path);
+    return {
+        ...chainConfig,
+        host: expandEnv(chainConfig.host),
+    };
+}
+
 let telegramToken;
 try {
     telegramToken = fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim();
@@ -7,8 +24,8 @@ try {
     telegramToken = '';
 }
 module.exports = {
-    mainchain: require('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
-    sidechain: require('./bmainnet.json'), //the json containing the smart contract addresses in eth
+    mainchain: loadChainConfig('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
+    sidechain: loadChainConfig('./bmainnet.json'), //the json containing the smart contract addresses in bsc
     runEvery: 2, // In minutes,
     confirmations: 120, // Number of blocks before processing it, if working with ganache set as 0
     privateKey: fs.readFileSync(`${__dirname}/federator.key`, 'utf8').trim(),
@@ -1235,4 +1252,3 @@ module.exports = {
         }
     }
 }
-

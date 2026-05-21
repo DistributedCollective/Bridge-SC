@@ -1,4 +1,21 @@
 const fs = require('fs');
+
+function expandEnv(value) {
+    return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, name) => {
+        const envValue = process.env[name];
+        if (!envValue) throw new Error(`Missing required environment variable ${name}`);
+        return envValue;
+    });
+}
+
+function loadChainConfig(path) {
+    const chainConfig = require(path);
+    return {
+        ...chainConfig,
+        host: expandEnv(chainConfig.host),
+    };
+}
+
 let telegramToken;
 try {
     telegramToken = fs.readFileSync(`${__dirname}/telegram.key`, 'utf8').trim();
@@ -15,8 +32,8 @@ try {
 }
 
 module.exports = {
-    mainchain: require('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
-    sidechain: require('./mainnet.json'), //the json containing the smart contract addresses in eth
+    mainchain: loadChainConfig('./rskmainnet.json'), //the json containing the smart contract addresses in rsk
+    sidechain: loadChainConfig('./mainnet.json'), //the json containing the smart contract addresses in eth
     runEvery: 2, // In minutes,
     gasApiRunEvery: 5, // In Seconds,
     avgGasRunEvery: 10, // In Seconds,
@@ -753,4 +770,3 @@ module.exports = {
         }
     }
 }
-
