@@ -3,7 +3,9 @@
 `federator_recovery.py` uses Python 3.8+ and its standard library. It inspects an
 existing ETH–RSK or BSC–RSK mainnet federator through the local Docker Unix socket.
 Diagnosis is the default. The selected repository, profile, container identity,
-image and config/database mounts are checked before recovery.
+image and config/database mounts are checked before recovery. Duplicate mount
+destinations and mounts beneath the protected config/database directories are
+refused because they can override the inspected host files.
 
 Run on the operator's own federator host. Local diagnosis needs Python and Docker
 access. Recovery requires an interactive terminal as Ubuntu UID 1000, without
@@ -111,9 +113,11 @@ normal progress and may update or create cursors. Log export failure does not pr
 starting a valid stopped container. The subsequent watch uses fresh local logs
 and the static configured other-peer gate; it does not verify chain membership
 or settlement. Default watch is 600 seconds (`--watch-seconds 0..3600`). It
-requires two distinct fresh role/peer polls. A fresh scan line cannot refresh old
-peer evidence. The helper performs no additional restart or cursor change when
-the watch times out.
+requires two distinct fresh role polls from the same current process run, with
+fresh peer evidence at the configured threshold. Peer joins and scan lines do
+not count as new role polls; a process restart resets accumulated readiness.
+The helper performs no additional restart or cursor change when the watch times
+out.
 
 ## Check transfers or use guarded replay separately
 

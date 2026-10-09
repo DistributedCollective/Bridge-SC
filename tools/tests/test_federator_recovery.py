@@ -1057,5 +1057,164 @@ class CompatibilityTests(unittest.TestCase):
         self.assertNotIn('provider-private-credential', str(err.exception))
 
 
+class ReviewRedactionTests(unittest.TestCase):
+    setUp = RecoveryTests.setUp
+    tearDown = RecoveryTests.tearDown
+    public_config = LocalRecoveryTests.public_config
+    cli = LocalRecoveryTests.cli
+
+    def test_capture_redacts_whole_credentials_before_retained_size_cut(self):
+        cases = [('1' * 64, 64, '1' * 32),
+                 ('0x' + '2' * 64, 66, '2' * 32),
+                 ('PRIVATE_KEY=' + '3' * 64, 76, '3' * 32),
+                 ('Authorization: Bearer ' + 'opaque-' * 20, 50, 'opaque-' * 3)]
+        for value, remaining, sensitive in cases:
+            with self.subTest(kind=value.split('=')[0][:16]):
+                self.runner.logs_text = 'x' * (fr.MAX_LOG_CHARS - remaining) + ' ' + value
+                capture = fr.capture_logs(self.node)
+                self.assertEqual(capture['status'], 'captured')
+                self.assertFalse(sensitive in capture['text'], 'partial credential survived retained-size cut')
+                self.assertLessEqual(len(capture['text']), fr.MAX_LOG_CHARS)
+
+    def test_partial_key_at_capture_boundary_never_reaches_report_or_console(self):
+        for index, prefix in enumerate(('', '0x', 'PRIVATE_KEY=')):
+            self.runner.logs_text = 'x' * (fr.MAX_LOG_CHARS - 64 - len(prefix)) + ' ' + prefix + '4' * 64
+            destination = self.repo / ('boundary-report-' + str(index) + '.json')
+            result, output = self.cli(['--local-only', '--report', str(destination)])
+            self.assertEqual(result, 0)
+            self.assertFalse('4' * 32 in output, 'partial key exposed in console output')
+            self.assertFalse('4' * 32 in destination.read_text(), 'partial key exposed in report')
+            json.loads(destination.read_text())
+
+
+class ReviewMountTests(unittest.TestCase):
+    setUp = RecoveryTests.setUp
+    tearDown = RecoveryTests.tearDown
+
+    def with_mounts(self, mounts):
+        original_run = self.runner.run
+        def run(args, timeout=15):
+            output = original_run(args, timeout)
+            if args[:2] == ['docker', 'inspect']:
+                snap = json.loads(output)
+                snap['mounts'].extend(mounts)
+                return json.dumps(snap)
+            return output
+        return patch.object(self.runner, 'run', side_effect=run)
+
+    def test_descendant_overlays_and_duplicate_roots_prevent_secret_fetch_or_start(self):
+        (self.cfg / 'federator.key').unlink()
+        destinations = ['/app/federator/config/federator.key', '/app/federator/config/config.js',
+                        '/app/federator/config/rskmainnet.json', '/app/federator/config/bmainnet.json',
+                        '/app/federator/db/lastBlock.txt', '/app/federator/db/side-fed',
+                        '/app/federator/db/side-fed/lastBlock.txt']
+        overlays = [[{'Source': '/unreviewed/other-node', 'Destination': dest}] for dest in destinations]
+        overlays += [[{'Source': str(self.cfg), 'Destination': '/app/federator/config'}],
+                     [{'Source': str(self.cfg / 'db'), 'Destination': '/app/federator/db'}]]
+        for mounts in overlays:
+            with self.subTest(destination=mounts[0]['Destination']), self.with_mounts(mounts), \
+                 patch('federator_recovery.restore_original_key', side_effect=AssertionError('secret fetch attempted')):
+                with self.assertRaises(fr.RecoveryError):
+                    fr.restart_only(self.node, lambda _: True)
+                self.assertFalse(self.runner.started)
+                self.assertFalse((self.cfg / 'federator.key').exists())
+                self.assertEqual(self.cursor.read_bytes(), b'100\n')
+
+    def test_new_overlay_after_start_prompt_is_rejected_before_start(self):
+        mounts = []
+        def approve(_):
+            mounts.append({'Source': '/unreviewed/other-key',
+                           'Destination': '/app/federator/config/federator.key'})
+            return True
+        with self.with_mounts(mounts), self.assertRaises(fr.RecoveryError):
+            fr.restart_only(self.node, approve)
+        self.assertFalse(self.runner.started)
+
+    def test_ambiguous_mount_paths_cannot_bypass_protected_root_checks(self):
+        paths = ['//app/federator/config/federator.key',
+                 '/app/federator/config//federator.key',
+                 '/app/federator/config/../config/federator.key']
+        for destination in paths:
+            self.runner.started = False
+            self.runner.running = False
+            with self.subTest(destination=destination), self.with_mounts([
+                    {'Source': '/unreviewed/other-key', 'Destination': destination}]):
+                with self.assertRaises(fr.RecoveryError):
+                    fr.restart_only(self.node, lambda _: True)
+                self.assertFalse(self.runner.started)
+
+    def test_normal_mounts_and_unrelated_neighbors_still_allow_start(self):
+        mounts = [{'Source': '/unrelated/logs', 'Destination': '/app/logs'},
+                  {'Source': '/unrelated/old-config', 'Destination': '/app/federator/config-old'}]
+        with self.with_mounts(mounts), contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(fr.restart_only(self.node, lambda _: True))
+        self.assertTrue(self.runner.started)
+        self.assertEqual(self.cursor.read_bytes(), b'100\n')
+
+
+class ReviewWatchTests(unittest.TestCase):
+    setUp = RecoveryTests.setUp
+    tearDown = RecoveryTests.tearDown
+
+    def run_samples(self, samples):
+        self.runner.running = True
+        samples = iter(samples)
+        original_run = self.runner.run
+        def run(args, timeout=15):
+            output = original_run(args, timeout)
+            if args[:2] == ['docker', 'inspect']:
+                started, logs = next(samples)
+                self.runner.logs_text = logs
+                snap = json.loads(output)
+                snap['started'] = started
+                return json.dumps(snap)
+            return output
+        class Clock:
+            fromisoformat = staticmethod(datetime.fromisoformat)
+            @classmethod
+            def now(cls, tz):
+                return datetime(2026, 1, 1, 12, 0, 4, tzinfo=timezone.utc)
+        evidence = {}
+        with patch.object(self.runner, 'run', side_effect=run), \
+             patch('federator_recovery.datetime', Clock), \
+             patch('federator_recovery.time.monotonic', side_effect=[0, 0.1, 1.1]), \
+             patch('federator_recovery.time.sleep'), contextlib.redirect_stdout(io.StringIO()) as output:
+            result = fr.watch(self.node, {'minimumPeerAmount': 2, 'runEvery': 2}, [], {}, 1, evidence)
+        return result, evidence, output.getvalue()
+
+    def test_peer_join_after_one_role_poll_does_not_verify_participation(self):
+        start = '2026-01-01T12:00:00Z'
+        role = '2026-01-01T12:00:01Z Not leader (2 other peers, node N, leader L)\n'
+        join = '2026-01-01T12:00:02Z 3 total peer(s), Leader: L\n'
+        result, evidence, output = self.run_samples([(start, role), (start, role + join)])
+        self.assertFalse(result)
+        self.assertEqual(evidence['node_participation'], 'unverified')
+        self.assertEqual(evidence['transfer_completion'], 'not_checked')
+        self.assertNotIn('Node participation verified', output)
+
+    def test_one_role_poll_from_each_of_two_process_runs_does_not_verify_participation(self):
+        first_start = '2026-01-01T12:00:00Z'
+        second_start = '2026-01-01T12:00:02Z'
+        first_role = '2026-01-01T12:00:01Z Not leader (2 other peers, node N, leader L)\n'
+        second_role = '2026-01-01T12:00:03Z Not leader (2 other peers, node N, leader L)\n'
+        result, evidence, output = self.run_samples([(first_start, first_role),
+                                                   (second_start, first_role + second_role)])
+        self.assertFalse(result)
+        self.assertEqual(evidence['node_participation'], 'unverified')
+        self.assertEqual(evidence['container_after']['started'], second_start)
+        self.assertNotIn('Node participation verified', output)
+
+    def test_two_distinct_current_run_role_polls_verify_participation(self):
+        start = '2026-01-01T12:00:00Z'
+        first = '2026-01-01T12:00:01Z Not leader (2 other peers, node N, leader L)\n'
+        second = '2026-01-01T12:00:03Z Not leader (2 other peers, node N, leader L)\n'
+        result, evidence, output = self.run_samples([(start, first), (start, first + second)])
+        self.assertTrue(result)
+        self.assertEqual(evidence['node_participation'], 'verified')
+        self.assertEqual(evidence['transfer_completion'], 'not_checked')
+        self.assertIn('Node participation verified', output)
+        self.assertNotIn('transfers processed', output)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import secrets
 import shutil
@@ -533,7 +533,20 @@ class Node:
                 raise RecoveryError('Invalid container identity')
             if self.container_id is not None and self.container_id != snap['id']:
                 raise RecoveryError('Container was replaced during recovery')
-            mounts = {m['Destination']: Path(m['Source']).resolve() for m in snap['mounts']}
+            protected = ('/app/federator/config', '/app/federator/db')
+            mounts = {}
+            for mount in snap['mounts']:
+                destination = mount['Destination']
+                # Docker reports canonical absolute paths; reject ambiguous/special overlays.
+                if (not isinstance(destination, str) or not destination.startswith('/') or
+                        destination.startswith('//') or str(PurePosixPath(destination)) != destination or
+                        '..' in PurePosixPath(destination).parts):
+                    raise RecoveryError('Noncanonical container mount destination; no changes made')
+                if destination in mounts:
+                    raise RecoveryError('Duplicate container mount destination; no changes made')
+                if any(destination.startswith(root + '/') for root in protected):
+                    raise RecoveryError('Container mount overrides protected config/database contents')
+                mounts[destination] = Path(mount['Source']).resolve()
             safe_path(self.cfg, self.repo)
             safe_path(self.cfg / 'db', self.cfg)
             if (mounts.get('/app/federator/config') != self.cfg.resolve() or
@@ -638,8 +651,10 @@ def capture_logs(node, since=None, until=None):
                'timeout_seconds': LOG_TIMEOUT}
     try:
         text = node.logs(since=since, until=until)
-        capture.update(status='captured', text=redact_logs(text[:MAX_LOG_CHARS]),
-                       truncated=len(text) > MAX_LOG_CHARS)
+        # Redact complete tokens before a size cut can turn them into unrecognized fragments.
+        cleaned = redact_logs(text)
+        capture.update(status='captured', text=cleaned[:MAX_LOG_CHARS],
+                       truncated=len(cleaned) > MAX_LOG_CHARS)
     except RecoveryError as exc:
         capture.update(status='unavailable', failure=redact_logs(str(exc)))
     capture['duration_seconds'] = round(time.perf_counter() - started, 3)
@@ -1245,13 +1260,17 @@ def inspect_node(node, evidence=None, since=None, until=None):
 
 
 def watch(node, config, entries, targets_by_name, seconds, evidence=None):
-    deadline, ready_activities = time.monotonic() + seconds, set()
+    deadline, ready_polls = time.monotonic() + seconds, set()
+    current_run = None
     evidence = evidence if evidence is not None else {}
     evidence.update(node_participation='unverified', transfer_completion='not_checked')
     while True:
         snap = node.inspect()
         if not snap['running']:
             raise RecoveryError('Federator exited; retain restored key/backups and inspect fresh logs')
+        if snap['started'] != current_run:
+            ready_polls.clear()
+            current_run = snap['started']
         evidence['container_after'] = snap
         capture = capture_logs(node)
         evidence['watch_logs'] = capture
@@ -1260,9 +1279,10 @@ def watch(node, config, entries, targets_by_name, seconds, evidence=None):
         transport_ready = role_ready(role, config['minimumPeerAmount'], config['runEvery'],
                                      datetime.now(timezone.utc))
         if transport_ready:
-            ready_activities.add((role.get('peer_time'), role.get('role_time')))
+            # A peer-join or scan message cannot count as a second role poll.
+            ready_polls.add(role.get('role_time'))
         else:
-            ready_activities.clear()
+            ready_polls.clear()
         print(f'{utc_now()} | role={role["role"]}, other peers={role["peers"]}', flush=True)
         evidence['watch_role'] = role
         checked_targets, all_processed, failed_read = 0, True, False
@@ -1280,11 +1300,11 @@ def watch(node, config, entries, targets_by_name, seconds, evidence=None):
             except RecoveryError as exc:
                 failed_read = True
                 print('Fresh destination read unavailable:', exc)
-        evidence['node_participation'] = 'verified' if len(ready_activities) >= 2 else 'unverified'
+        evidence['node_participation'] = 'verified' if len(ready_polls) >= 2 else 'unverified'
         if checked_targets or failed_read:
             evidence['transfer_completion'] = ('unavailable' if failed_read else
                                                 'processed' if all_processed else 'pending')
-        if len(ready_activities) >= 2 and not failed_read and (not checked_targets or all_processed):
+        if len(ready_polls) >= 2 and not failed_read and (not checked_targets or all_processed):
             print('Node participation verified by fresh role/peer messages.')
             print('Supplied target transfers processed.' if checked_targets else
                   'No target transfer supplied; process readiness is not transfer completion.')
