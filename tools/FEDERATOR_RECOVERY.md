@@ -140,9 +140,20 @@ state is unknown. It does not establish a replay frontier or settlement.
 workflow. This mode depends on RPC availability, asks whether to preserve each
 cursor, and requires explicit source-block selection and typed confirmation for
 changes. Missing or forward-moving cursors require a specific older-deposit
-completeness statement. It backs up the database privately, stops a running
-container before cursor edits, rechecks source anchors, and rolls back its exact
-writes if an installation fails. Use it only with reviewed replay evidence.
+completeness statement. It creates temporary private database copies, stops a
+running container before cursor edits, rechecks source anchors, and rolls back
+its exact writes if an installation fails. Use it only with reviewed replay
+evidence. Ordinary original-key restoration and start use `--recover
+--restart-only`, which creates no database copies. The replay route is not
+recommended for routine recovery when no cursor edits are intended.
+
+The replay copies are temporary rollback material. Retain them while recovery
+has failed or remains unverified and rollback may still be needed. After the
+relevant cursor recovery and any affected transfers are verified, manually
+remove only `db-before` and `db-after-stop` inside the **exact private evidence
+directory printed by this recovery run**. Preserve the live mounted database
+and sanitized support evidence, including `logs.txt`. The helper does not
+automatically clean up these copies.
 
 Local/restart-only modes reject transfer hashes, completed anchors, `--lookback`,
 `--max-pages` and `--no-scan`. Run the separate chain diagnosis command for those
