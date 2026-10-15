@@ -3,27 +3,11 @@ const https = require('https');
 const CustomError = require('./CustomError');
 
 module.exports = class GasPriceFetcher {
-    constructor(
-        logger,
-        etherscanApiKey,
-        etherscanApiBaseUrl = 'https://api.etherscan.io/v2/api'
-        )
-        {
-            this.logger = logger;
-            this.etherscanApiKey = etherscanApiKey;
-            this.etherscanApiBaseUrl = etherscanApiBaseUrl;
-            //For Mainnet:
-            // const etherscanApiBaseUrl = 'https://api.etherscan.io/api';
-            
-            //For RinkebyTestnet:
-            //const etherscanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
-            
-            //For Unit Testing only:
-            //const etherscanApiBaseUrl = 'https://example.invalid/api';
-            
-            //wss://rinkeby.infura.io/ws/v3/
-            // this.etherscanApiKey = etherscanApiKey;
-        }        
+    constructor(logger, etherscanApiKey, etherscanApiBaseUrl = 'https://api.etherscan.io/v2/api') {
+        this.logger = logger;
+        this.etherscanApiKey = etherscanApiKey;
+        this.etherscanApiBaseUrl = etherscanApiBaseUrl;
+    }
 
     async getEtherscanBaseGasPrice() {
         if (

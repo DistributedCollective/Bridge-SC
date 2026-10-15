@@ -17,10 +17,10 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
-// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/v2/api';
 // console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
 //For Mainnet:
-// const etherScanApiBaseUrl = 'https://api.etherscan.io/api';
+// const etherScanApiBaseUrl = 'https://api.etherscan.io/v2/api';
 //For RinkebyTestnet:
 //const etherScanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
 

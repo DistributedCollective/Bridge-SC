@@ -76,7 +76,7 @@ module.exports = class TransactionSender {
             case RINKEBY_ID:
                 return 'rinkeby';
             case ROPSTEN_ID:
-                    return 'ropsten';
+                return 'ropsten';
             default:
                 throw new Error('Unknown chain id');
         }
@@ -237,7 +237,11 @@ module.exports = class TransactionSender {
             let signedTx;
 
             if (privateKey && privateKey.length) {
-                if (parseInt(chainId) === parseInt(MAINNET_ID) || parseInt(chainId) === parseInt(RINKEBY_ID) || parseInt(chainId) === parseInt(ROPSTEN_ID)) {
+                if (
+                    parseInt(chainId) === parseInt(MAINNET_ID) ||
+                    parseInt(chainId) === parseInt(RINKEBY_ID) ||
+                    parseInt(chainId) === parseInt(ROPSTEN_ID)
+                ) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 } else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);
