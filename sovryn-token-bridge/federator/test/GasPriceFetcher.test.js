@@ -88,6 +88,7 @@ describe('GasPriceFetcher', () => {
             emitter.statusCode = statusCode;
             emitter.setEncoding = () => {};
             emitter.resume = () => {};
+            emitter.destroy = () => {};
 
             setTimeout(() => {
                 emitter.emit('data', JSON.stringify(responseJson));
@@ -96,6 +97,7 @@ describe('GasPriceFetcher', () => {
             callback(emitter);
             return {
                 on: () => {},
+                destroy: () => {},
             }
         });
         return https.get;
@@ -106,10 +108,10 @@ describe('GasPriceFetcher', () => {
     }
 
     describe('#getGasPrice', function () {
-        it('gets gas price without api key', async () => {
+        it('rejects missing V2 API key', async () => {
             mockWeb3GasPrice(22);
             mockHttpsGet({
-                expectedUrl: 'https://example.invalid/api?module=gastracker&action=gasoracle',
+                expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
                 statusCode: 200,
                 responseJson: {
                     "status": "1",
@@ -119,14 +121,13 @@ describe('GasPriceFetcher', () => {
                     }
                 }
             })
-            const gasPrice = await estimatorWithoutApiKey.getEtherscanBaseGasPrice(1);
-            expect(parseInt(gasPrice)).toEqual(12);
+            await expect(estimatorWithoutApiKey.getEtherscanBaseGasPrice(1)).rejects.toThrow(CustomError);
         });
 
         it('gets gas price with api key', async () => {
             mockWeb3GasPrice(22);
             mockHttpsGet({
-                expectedUrl: 'https://example.invalid/api?module=gastracker&action=gasoracle',
+                expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
                 statusCode: 200,
                 responseJson: {
                     "status": "1",

@@ -31,7 +31,7 @@ module.exports = class GasServices {
 
         let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby')
             ? 'https://api-rinkeby.etherscan.io/api'
-            : 'https://api.etherscan.io/api';
+            : 'https://api.etherscan.io/v2/api';
         console.log('etherscanApiBaseUrl: ' + etherscanApiBaseUrl);
 
         // this.gasPriceEstimator = new GasPriceEstimator({
@@ -102,7 +102,7 @@ module.exports = class GasServices {
             );
             this.logger.debug('currentEthGasPriceAvg: ', globals.currentEthGasPriceAvg);
         } catch (err) {
-            logger.error('Unhandled Error on runGasWatcher()', err);
+            this.logger.error('Unhandled Error on runGasWatcher()', err);
             // process.exit();
         }
     }
