@@ -46,7 +46,7 @@ class IncompleteAudit(RecoveryError):
         self.chain_changed = chain_changed
 
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 LOG_TAIL = 2000
 LOG_TIMEOUT = 15
 MAX_LOG_WINDOW = 24 * 60 * 60
@@ -859,7 +859,23 @@ def perform_recovery(node, changes, confirm, restart=False, pre_write=None, reco
     return backup
 
 
-def restart_only(node, confirm):
+def ensure_signing_key(node, confirm, aws_secrets=True):
+    """Require the existing identity; AWS restoration is opt-out, never automatic fallback."""
+    key = safe_path(node.cfg / 'federator.key', node.cfg)
+    if not key.exists():
+        if not aws_secrets:
+            raise RecoveryError('AWS secret recovery disabled. Manually restore the original federator key '
+                                'to the selected config/federator.key (owner UID 1000, mode 600), '
+                                'verify its public signer, then rerun with --no-aws-secrets. '
+                                'See tools/FEDERATOR_RECOVERY.md. Container not started.')
+        if not confirm('Discover this EC2 instance and restore its ORIGINAL missing signing secret?'):
+            raise RecoveryError('Missing key left unchanged; container not started')
+        if not restore_original_key(node, confirm):
+            raise RecoveryError('Key restoration declined; container not started')
+    node.key_ready()
+
+
+def restart_only(node, confirm, aws_secrets=True):
     """Start the pinned container without stopping it or touching any database file."""
     snap = node.inspect()
     if snap['running']:
@@ -867,13 +883,7 @@ def restart_only(node, confirm):
         return False
     if os.getuid() != node.expected_uid:
         raise RecoveryError('Operator UID does not match the verified container file owner')
-    key = safe_path(node.cfg / 'federator.key', node.cfg)
-    if not key.exists():
-        if not confirm('Discover this EC2 instance and restore its ORIGINAL missing signing secret?'):
-            raise RecoveryError('Missing key left unchanged; container not started')
-        if not restore_original_key(node, confirm):
-            raise RecoveryError('Key restoration declined; container not started')
-    node.key_ready()
+    ensure_signing_key(node, confirm, aws_secrets)
     if not confirm('Start this existing container with the original key and unchanged database/fallbacks?'):
         print('Container start declined; database unchanged.')
         return False
@@ -1328,6 +1338,8 @@ def main(argv=None):
     parser.add_argument('--container', default='bridge-sc_federation_1')
     parser.add_argument('--local-only', action='store_true', help='local diagnosis without chain RPC')
     parser.add_argument('--restart-only', action='store_true', help='requires --recover; start existing stopped container without cursor edits or RPC')
+    parser.add_argument('--no-aws-secrets', dest='aws_secrets', action='store_false',
+                        help='disable EC2/AWS key recovery; manually restore the original key before recovery')
     parser.add_argument('--recover', action='store_true', help='interactive local mutation; requires a terminal')
     parser.add_argument('--tx', action='append', default=[], help='external-source target hash; repeatable')
     parser.add_argument('--completed-tx', action='append', default=[], help='external-source completed anchor hash')
@@ -1364,6 +1376,7 @@ def main(argv=None):
     evidence = {'version': VERSION, 'started_utc': utc_now(), 'bridge': args.bridge,
                 'mode': 'restart-only' if args.restart_only else 'local-only' if args.local_only else
                         'replay-recovery' if args.recover else 'chain-diagnosis',
+                'aws_secret_recovery': args.aws_secrets,
                 'node_participation': 'unverified', 'transfer_completion': 'not_checked',
                 'sharing_notice': 'Best-effort sanitizer; review manually before sharing.'}
     try:
@@ -1394,7 +1407,7 @@ def run(args, evidence):
     if args.local_only or args.restart_only:
         config = local_diagnosis(node, evidence)
         if args.restart_only:
-            restart_only(node, ask_yes)
+            restart_only(node, ask_yes, args.aws_secrets)
             evidence['container_after'] = node.inspect()
             evidence['key_after'] = key_metadata(node)
             if node.inspect()['running']:
@@ -1491,13 +1504,7 @@ def run(args, evidence):
         return 0
 
     print('\nInteractive recovery: blank/No declines an action. Keep this terminal private.')
-    key = safe_path(node.cfg / 'federator.key', node.cfg)
-    if not key.exists():
-        if not ask_yes('Discover this EC2 instance and restore its ORIGINAL missing signing secret?'):
-            raise RecoveryError('Missing key left unchanged; container not started')
-        if not restore_original_key(node, ask_yes):
-            raise RecoveryError('Key restoration declined; container not started')
-    node.key_ready()
+    ensure_signing_key(node, ask_yes, args.aws_secrets)
     for direction, path in entries:
         existing = read_checkpoint(path, node.cfg / 'db')
         if existing is not None and input(f'Keep {direction.name} saved cursor {existing}? [Y/n] ').strip().lower() not in ('n', 'no'):

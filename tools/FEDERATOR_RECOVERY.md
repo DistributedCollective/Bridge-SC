@@ -9,9 +9,12 @@ refused because they can override the inspected host files.
 
 Run on the operator's own federator host. Local diagnosis needs Python and Docker
 access. Recovery requires an interactive terminal as Ubuntu UID 1000, without
-`sudo`. Restoring a missing key additionally requires EC2 IMDSv2 and an installed
-AWS CLI with permission to read the instance's Name tag and original signing
-secret. Existing keys are validated and never overwritten.
+`sudo`. AWS secret recovery is the default for a missing key; it requires EC2
+IMDSv2 and an installed AWS CLI with permission to read the instance's Name tag
+and original signing secret. Other hosts use `--no-aws-secrets` and manually
+restore the original key as described below. Existing keys are validated and
+never overwritten. Non-AWS hosts still need the supported Linux Docker setup
+and UID 1000 used by the existing application image.
 
 ## Fetch a reviewed revision
 
@@ -118,6 +121,104 @@ fresh peer evidence at the configured threshold. Peer joins and scan lines do
 not count as new role polls; a process restart resets accumulated readiness.
 The helper performs no additional restart or cursor change when the watch times
 out.
+
+## Non-AWS hosts: restore the key manually, then start
+
+Add `--no-aws-secrets` to disable all key-recovery EC2 metadata and AWS CLI
+lookups. This also applies to guarded replay recovery. A missing key then stops
+recovery with instructions; the helper never switches to AWS or generates a key.
+A running container is left running even if its host key file is absent.
+
+1. Obtain **this node's original federator private key** from the operator's
+   existing secure backup or key custodian. Use the federator identity already
+   authorized in the peer roster/contracts, not an administrative wallet key.
+   A private key cannot be recovered from its public address or the blockchain.
+   If no original key is available, stop and coordinate signer replacement.
+2. For a stopped container, restore it with this hidden terminal prompt. Run in
+   the same Bash shell where `TOOL` points to the verified helper. Do not put a
+   key in a shell command, environment variable, chat or report. The supported
+   owner is UID 1000 and the file mode is 600. Set `BRIDGE_PROFILE=bsc-rsk` for
+   that separate deployment; confirm the exact container name if customized.
+
+```bash
+set -euo pipefail
+export BRIDGE_PROFILE=eth-rsk
+export FEDERATOR_CONTAINER=bridge-sc_federation_1
+export TOOL
+set +x
+python3 - <<'PY'
+import getpass, os, sys, warnings
+from pathlib import Path
+sys.path.insert(0, str(Path(os.environ['TOOL']).parent))
+import federator_recovery as r
+node = r.Node(Path.home() / 'Bridge-SC', os.environ['BRIDGE_PROFILE'],
+              os.environ['FEDERATOR_CONTAINER'])
+if node.inspect()['running']:
+    raise SystemExit('Container is running. Leave its key unchanged.')
+if os.getuid() != node.expected_uid:
+    raise SystemExit('Use the supported UID 1000 operator account, without sudo.')
+key = r.safe_path(node.cfg / 'federator.key', node.cfg)
+if key.exists():
+    node.key_ready()
+    print('Existing key preserved; verify its public signer before startup.')
+else:
+    warnings.simplefilter('error', getpass.GetPassWarning)
+    value = getpass.getpass('Paste ORIGINAL federator private key (hidden): ')
+    if node.inspect()['running']:
+        raise SystemExit('Container started independently; key left unchanged.')
+    r.install_key(node.cfg, value, node.expected_uid)
+    del value
+    node.key_ready()
+    print('Original key installed privately. Public signer verification is next.')
+PY
+```
+
+An invalid or empty existing file is refused; do not overwrite it or delete it
+blindly. Stop and review that file locally. The input fails if terminal echo
+cannot be disabled. The key is never printed by this procedure.
+
+3. Verify the **derived public address** against the approved federator signer
+   before startup. Enter only the public address at the prompt below. This
+   isolated one-shot uses the existing pinned container image's ethers library,
+   with no network or application entrypoint; it does not sign or start the
+   federator. A mismatch is a stop condition.
+
+```bash
+set -euo pipefail
+read -r -p 'Approved FEDERATOR public signer address: ' EXPECTED_SIGNER
+[[ "$EXPECTED_SIGNER" =~ ^0x[0-9a-fA-F]{40}$ ]]
+case "$BRIDGE_PROFILE" in
+  eth-rsk) KEY_ENV=mainnet-ETH-RSK ;;
+  bsc-rsk) KEY_ENV=mainnet-BSC-RSK ;;
+  *) printf 'Unsupported bridge profile.\n'; exit 1 ;;
+esac
+ORIGINAL_IMAGE=$(docker --host unix:///var/run/docker.sock inspect "$FEDERATOR_CONTAINER" --format '{{.Image}}')
+docker --host unix:///var/run/docker.sock run --rm --network none --read-only --log-driver none --cap-drop ALL \
+  --security-opt no-new-privileges --user 1000:1000 --entrypoint node \
+  --workdir /app/federator -e "EXPECTED_SIGNER=$EXPECTED_SIGNER" \
+  --mount "type=bind,source=$HOME/Bridge-SC/federator-env/$KEY_ENV/federator.key,target=/run/federator.key,readonly" \
+  "$ORIGINAL_IMAGE" -e '
+try {
+ const fs=require("fs"),ethers=require("ethers").ethers;
+ const key=fs.readFileSync("/run/federator.key","utf8").trim();
+ const address=new ethers.Wallet(key.startsWith("0x")?key:"0x"+key).address;
+ if(address.toLowerCase()!==process.env.EXPECTED_SIGNER.toLowerCase()) throw new Error();
+ console.log("Federator public signer matches:",address);
+} catch (_) { console.error("Public signer verification failed; do not start."); process.exit(1); }
+'
+```
+
+Continue only if that command succeeds. Then start the existing stopped node:
+
+```bash
+python3 "$TOOL" --bridge "$BRIDGE_PROFILE" --container "$FEDERATOR_CONTAINER" \
+  --repo "$HOME/Bridge-SC" --recover --restart-only --no-aws-secrets
+```
+
+Approve the start prompt only after the signer matches. The same default
+post-start watch runs; exit 3 means participation is not yet verified. No AWS
+credentials or secret name is needed. This starts the existing image; use the
+separate approved image-update procedure to install application fixes.
 
 ## Check transfers or use guarded replay separately
 

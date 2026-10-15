@@ -675,6 +675,42 @@ class LocalRecoveryTests(unittest.TestCase):
                 fr.restart_only(self.node, lambda _: False)
         self.assertFalse(self.runner.started)
 
+    def test_manual_mode_missing_key_never_calls_aws_or_starts(self):
+        (self.cfg / 'federator.key').unlink()
+        before = self.cursor.read_bytes()
+        with patch('federator_recovery.restore_original_key', side_effect=AssertionError('AWS forbidden')):
+            with self.assertRaisesRegex(fr.RecoveryError, 'AWS secret recovery disabled'):
+                fr.restart_only(self.node, lambda _: self.fail('must not prompt for AWS'), aws_secrets=False)
+        self.assertFalse(self.runner.started)
+        self.assertEqual(self.cursor.read_bytes(), before)
+
+    def test_manual_mode_restored_key_starts_without_aws(self):
+        with patch('federator_recovery.restore_original_key', side_effect=AssertionError('AWS forbidden')):
+            self.assertTrue(fr.restart_only(self.node, lambda _: True, aws_secrets=False))
+        self.assertTrue(self.runner.started)
+        self.assertEqual(self.cursor.read_bytes(), b'100\n')
+
+    def test_manual_mode_invalid_key_refuses_start_without_aws(self):
+        (self.cfg / 'federator.key').write_text('invalid')
+        with patch('federator_recovery.restore_original_key', side_effect=AssertionError('AWS forbidden')):
+            with self.assertRaises(fr.RecoveryError):
+                fr.restart_only(self.node, lambda _: True, aws_secrets=False)
+        self.assertFalse(self.runner.started)
+
+    def test_manual_mode_running_node_needs_no_key_or_aws(self):
+        self.runner.running = True
+        (self.cfg / 'federator.key').unlink()
+        with patch('federator_recovery.restore_original_key', side_effect=AssertionError('AWS forbidden')):
+            self.assertFalse(fr.restart_only(self.node, lambda _: self.fail('must not prompt'), aws_secrets=False))
+        self.assertFalse((self.cfg / 'federator.key').exists())
+
+    def test_no_aws_secrets_cli_selects_manual_recovery(self):
+        (self.cfg / 'federator.key').unlink()
+        with patch('federator_recovery.restore_original_key', side_effect=AssertionError('AWS forbidden')):
+            with self.assertRaisesRegex(fr.RecoveryError, 'AWS secret recovery disabled'):
+                self.cli(['--recover', '--restart-only', '--no-aws-secrets', '--watch-seconds', '0'])
+        self.assertFalse(self.runner.started)
+
     def test_restart_only_rechecks_identity_and_key_after_prompt(self):
         def approve(_):
             self.runner.changed_mount = True
