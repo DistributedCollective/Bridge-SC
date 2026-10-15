@@ -284,6 +284,43 @@ function transport(status, payload, mode) {
   await service.runGasPriceAvg();
   assert.strictEqual(failureLogs.length, 1);
   assert.ok(String(failureLogs[0][1]).includes("controlled averaging fault"));
+  for (const [configured, expected] of [[5,5000],[12,12000],[0,5000],[-1,5000],[0.1,5000],[NaN,5000],[Infinity,5000],[3000000,5000]]) {
+    const intervals = [];
+    const settings = {gasApiRunEvery:configured, avgGasRunEvery:10, periodAvgGas:240};
+    const Service = load("GasServices.js", {
+      web3: {}, "../../config/config.js": settings,
+      "../services/Scheduler.js": class {
+        constructor(interval) { intervals.push(interval); }
+        async start() {}
+      },
+      "./utils": {sleep: async () => {}},
+      log4js: {getLogger: () => logger},
+      "../lib/GasPriceFetcher.js": class {},
+      "../lib/GasPriceAvg.js": class {},
+    });
+    const gasService = new Service(logger, {...settings,sidechain:{host:"https://rpc.invalid"}});
+    await gasService.startGasServices();
+    assert.strictEqual(intervals[0], expected);
+    assert.strictEqual(intervals[1], 10000);
+    assert.ok(Math.ceil(86400000 / intervals[0]) <= 17280);
+  }
+  const scheduled = [];
+  let finishPoll;
+  let calls = 0;
+  const Scheduler = load("../services/Scheduler.js", {}, {
+    setTimeout(fn, delay) { scheduled.push({fn, delay}); return 1; },
+    clearTimeout() {},
+  });
+  const poller = new Scheduler(5000, logger, {
+    run() { calls++; return new Promise(resolve => { finishPoll = resolve; }); }
+  });
+  const starting = poller.start();
+  assert.strictEqual(calls, 1);
+  assert.strictEqual(scheduled.length, 0);
+  finishPoll();
+  await starting;
+  assert.strictEqual(scheduled.length, 1);
+  assert.strictEqual(scheduled[0].delay, 5000);
   console.log(
     `gas fee/oracle regressions: ${assertions} assertions passed; no network or signing`
   );

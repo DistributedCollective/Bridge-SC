@@ -53,6 +53,28 @@ class WatcherTests(unittest.TestCase):
             with self.assertRaises(w.ProbeError):w.Store(link/'child')
 
     @unittest.skipIf(w is None, 'module missing')
+    def test_etherscan_deep_probe_minimum_and_fatal_burst_guard(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            w.arguments(['--deep-every','59'])
+        self.assertEqual(w.arguments(['--deep-every','60']).deep_every,60)
+        with tempfile.TemporaryDirectory() as tmp:
+            args=w.arguments(['--repo',str(Path(tmp).resolve())])
+            class Fake:
+                deadline=None
+                def run(self,*a,**kw):raise AssertionError('unexpected command')
+            watcher=w.Watcher(args,Fake(),w.Store(Path(tmp).resolve()/'out'))
+            watcher.last_deep=100
+            snap={'source_guard':'PASS','source':{'id':'1'*64,'running':True}}
+            watcher.report['inventory']={'1'*64:{}}
+            watcher.nodes['1'*64]=object()
+            with patch.object(w.time,'monotonic',return_value=159), patch.object(w.fd,'runtime_probe') as probe:
+                watcher.deep_check(snap)
+                probe.assert_not_called()
+            with patch.object(w.time,'monotonic',return_value=160), patch.object(w.fd,'runtime_probe',return_value={'checks':[]}) as probe:
+                watcher.deep_check(snap)
+                probe.assert_called_once()
+            self.assertEqual(watcher.last_deep,160)
+
     def test_counter_reset_and_container_epoch_do_not_create_negative_delivery(self):
         old={'source':{'id':'1'*64,'started':'A'},'agent':{'id':'2'*64,'started':'B'},'collection':{'source_bytes':50,'counters':{'LogsSent':100}}}
         new={'source':{'id':'1'*64,'started':'A'},'agent':{'id':'2'*64,'started':'B'},'collection':{'source_bytes':70,'counters':{'LogsSent':5}}}

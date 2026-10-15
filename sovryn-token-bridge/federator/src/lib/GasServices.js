@@ -9,7 +9,11 @@ const log4js = require('log4js');
 const GasPriceFetcher = require('../lib/GasPriceFetcher.js');
 const GasPriceAvg = require('../lib/GasPriceAvg.js');
 
-let gasApiPollingInterval = config.gasApiRunEvery * 1000; // Seconds
+const configuredGasPollingInterval = Number(config.gasApiRunEvery) * 1000;
+// Keep dedicated-key traffic at <=17,280 reads/day; avoid Node timer overflow.
+let gasApiPollingInterval = Number.isFinite(configuredGasPollingInterval) &&
+    configuredGasPollingInterval >= 5000 && configuredGasPollingInterval <= 2147483647
+    ? configuredGasPollingInterval : 5000;
 let avgGasPollingInterval = config.avgGasRunEvery * 1000; // Seconds
 let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60; // Minutes
 let avgGasCount;

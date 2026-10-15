@@ -18,7 +18,7 @@ import time
 
 import federator_dependencies as fd
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 SITES = ('datadoghq.com', 'datadoghq.eu', 'us3.datadoghq.com', 'us5.datadoghq.com',
          'ap1.datadoghq.com', 'ap2.datadoghq.com', 'uk1.datadoghq.com', 'ddog-gov.com', 'us2.ddog-gov.com')
 OPERATORS = ('fed_2', 'fed_1', 'fed_3', 'fed_4', 'fed_5', 'unspecified')
@@ -313,11 +313,11 @@ def arguments(argv=None):
     p.add_argument('--profile',choices=tuple(fd.PROFILES),default='eth-rsk')
     p.add_argument('--repo',default='~/Bridge-SC');p.add_argument('--container',default='bridge-sc_federation_1')
     p.add_argument('--agent',default='datadog-agent');p.add_argument('--duration',type=int,default=900)
-    p.add_argument('--interval',type=int,default=60);p.add_argument('--deep-every',type=int,default=300)
+    p.add_argument('--interval',type=int,default=60);p.add_argument('--deep-every',type=int,default=300,help='deep dependency checks every 60..86400 seconds (default 300)')
     p.add_argument('--output-dir');p.add_argument('--dd-app-key-file',default='~/.config/bridge-eth/datadog-read.key')
     p.add_argument('--incident-since');p.add_argument('--incident-until');p.add_argument('--analyze',nargs='+')
     args=p.parse_args(argv)
-    if args.duration<0 or args.duration>86400 or not 1<=args.interval<=3600 or not 1<=args.deep_every<=86400:p.error('Invalid observation bounds')
+    if args.duration<0 or args.duration>86400 or not 1<=args.interval<=3600 or not 60<=args.deep_every<=86400:p.error('Invalid observation bounds')
     for name in ('container','agent'):
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}',getattr(args,name)):p.error('Invalid container name')
     if bool(args.incident_since)!=bool(args.incident_until):p.error('Historical window needs both UTC endpoints')
@@ -810,6 +810,8 @@ class Watcher:
         if self.canary.identity and time.monotonic()-self.canary.created>=120:
             self.report['canary_cleanup']=self.canary.cleanup()
     def deep_check(self,snap):
+        # New fatal markers must not bypass the Etherscan diagnostic request budget.
+        if time.monotonic()-self.last_deep<60:return
         if snap.get('source_guard')!='PASS' or snap.get('source_changed_during_sample'):
             self.deep.append({'utc':fd.utc_now(),'status':'UNKNOWN','failure':'SOURCE_PROFILE_UNVERIFIED'});return
         source=snap['source'];node=self.nodes.get(source['id'])

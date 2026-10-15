@@ -24,7 +24,7 @@ script file or checking out another branch:
   FED_REPO="$HOME/Bridge-SC"
   FED_REVISION=SET_TO_REVIEWED_FULL_COMMIT
   [[ "$FED_REVISION" =~ ^[0-9a-f]{40}$ ]]
-  FED_BRANCH=codex/federator-dependency-diagnostics
+  FED_BRANCH=federator-diagnostics-recovery-upgrade
   FED_SHA256=ebd938e63fec9c8833dd582c628eec0eb384c8a7f9f0d811addfa38849d013e0
   date -u '+%Y-%m-%dT%H:%M:%SZ'
   git -C "$FED_REPO" rev-parse HEAD

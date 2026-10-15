@@ -46,7 +46,7 @@ class IncompleteAudit(RecoveryError):
         self.chain_changed = chain_changed
 
 
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 LOG_TAIL = 2000
 LOG_TIMEOUT = 15
 MAX_LOG_WINDOW = 24 * 60 * 60
@@ -512,7 +512,7 @@ class Node:
               '"image":{{json .Config.Image}},"image_id":{{json .Image}},'
               '"user":{{json .Config.User}},"mounts":{{json .Mounts}}}')
 
-    def __init__(self, repo, profile, container, runner=None, expected_uid=1000):
+    def __init__(self, repo, profile, container, runner=None, expected_uid=1000, allow_created=False):
         if profile not in PROFILES or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', container):
             raise RecoveryError('Invalid bridge profile/container name')
         self.repo = Path(repo).expanduser().resolve()
@@ -521,6 +521,7 @@ class Node:
         self.container = container
         self.runner = runner or Runner()
         self.expected_uid = expected_uid
+        self.allow_created = allow_created
         self.image_id = None
         self.container_id = None
         self.mount_identity = {}
@@ -563,7 +564,8 @@ class Node:
                     verify_directory(path, fd)
                 finally:
                     os.close(fd)
-            if snap['status'] not in ('running', 'exited'):
+            allowed = ('running', 'exited', 'created') if self.allow_created else ('running', 'exited')
+            if snap['status'] not in allowed:
                 raise RecoveryError('Container is neither running nor exited')
             if snap['user'] not in ('node', '1000', '1000:1000'):
                 raise RecoveryError('Unsupported container user; key ownership needs review')

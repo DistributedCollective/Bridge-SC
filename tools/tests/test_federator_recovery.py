@@ -711,6 +711,21 @@ class LocalRecoveryTests(unittest.TestCase):
                 self.cli(['--recover', '--restart-only', '--no-aws-secrets', '--watch-seconds', '0'])
         self.assertFalse(self.runner.started)
 
+    def test_created_container_requires_explicit_staging_allowance(self):
+        original=self.runner.run
+        def created(args,timeout=15):
+            result=original(args,timeout)
+            if args[:2]==['docker','inspect']:
+                result=json.loads(result);result['status']='created';result['running']=False
+                return json.dumps(result)
+            return result
+        with patch.object(self.runner,'run',side_effect=created):
+            with self.assertRaises(fr.RecoveryError):self.node.inspect()
+            staged=fr.Node(self.repo,'bsc-rsk',self.node.container,self.runner,
+                           expected_uid=os.getuid(),allow_created=True)
+            self.assertEqual(staged.inspect()['status'],'created')
+            staged.key_ready()
+
     def test_restart_only_rechecks_identity_and_key_after_prompt(self):
         def approve(_):
             self.runner.changed_mount = True

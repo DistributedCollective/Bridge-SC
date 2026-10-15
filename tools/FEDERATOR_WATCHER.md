@@ -131,3 +131,21 @@ fixtures prove timeout, streaming-size and descendant cleanup. No live service
 or Datadog event is contacted by the tests. Actual deployed Agent status
 schemas, Docker/Node runtime compatibility and Datadog organization/access
 must be established by an operator run; unit tests do not claim that integration.
+
+## Etherscan request budget
+
+Use a dedicated Etherscan key for this node, separate from other applications
+and operators. The normal gas poll stays at five seconds (at most17,280 reads
+per day); slower configured polls remain slower. Invalid/faster gas intervals
+fall back to five seconds. Average sampling remains ten seconds and the average
+window remains four hours. Per-transfer fresh fee reads use the configured
+Ethereum RPC, not Etherscan.
+
+Deep watcher checks default to300 seconds (at most288 keyed V2 reads/day for
+one continuously running watcher). `--deep-every` cannot be less than60 seconds,
+and new fatal markers cannot trigger deep checks more often than that minimum.
+Even at that minimum, one gas poller plus one watcher uses at most18,720 keyed
+reads per day in a sustained run. The retired V1 comparison is unkeyed. API
+failures do not trigger an immediate retry loop. Repeated process restarts,
+multiple watchers or other software sharing a key add traffic outside this
+single-node budget; the code does not reserve an account-wide daily quota.
