@@ -459,7 +459,7 @@ class OrchestrationTests(unittest.TestCase):
         self.assertEqual(ns['search_result']({'data':[row]},'direct',marker,'2026-01-01T00:00:00Z')['status'],'FOUND')
     def test_http_search_404_does_not_claim_not_delivered(self):
         ns={'__name__':'unit'};exec(w.AGENT_CODE,ns)
-        error=ns['urllib'].error.HTTPError('https://with-secret.invalid',404,'SECRET',None,None)
+        error=ns['urllib'].error.HTTPError('https://with-secret.invalid',404,'SECRET',None,io.BytesIO(b''))
         class Opener:
             def open(self,*args,**kwargs):raise error
         with patch.dict(os.environ,{'DD_API_KEY':'a'*32,'DD_SITE':'datadoghq.com'},clear=True),patch.object(ns['urllib'].request,'build_opener',return_value=Opener()):
