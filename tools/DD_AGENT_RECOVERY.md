@@ -92,3 +92,19 @@ The private upgrade packet stores the explicit existing-volume/path override
 and verifies Agent identity/config/integrations/checkpoint retention after
 application upgrade and rollback. Unsupported or stopped Agent setups are
 prerequisites; the executable does not replace the Agent image.
+
+## Quiet sources and later delivery checks
+
+A source with no new complete log records is reported as
+`agent_running_source_idle`, with delivery `UNKNOWN`; the Agent stays running.
+If records exist but acknowledgment does not advance, the tool reports the
+unverified delivery and leaves the Agent running. Recheck the same saved packet
+with `--apply`; that path verifies the recorded Agent process/configuration and
+source, without another cutover, file patch or restart. A changed process,
+configuration, source or rotated/truncated log requires coordinator review.
+
+The upgrade verifier fails if a captured source cursor disappears. During an
+intentional container replacement, its explicit handoff mode instead requires a
+running replacement on the same config/database mounts and a valid nonzero file
+checkpoint. The report identifies the retired old cursor and does not claim
+previous log delivery was verified.

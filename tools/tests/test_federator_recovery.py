@@ -871,6 +871,19 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(args[args.index('--since') + 1], '2026-10-09T12:00:00Z')
         self.assertEqual(args[args.index('--until') + 1], '2026-10-09T12:05:00Z')
 
+    def test_log_redactor_hides_prefixed_api_keys_without_destroying_presence_metadata(self):
+        for label in ('DATADOG_API_KEY', 'DD_API_KEY', 'ETHERSCAN_API_KEY',
+                      'ALCHEMY_API_KEY', 'APP_PRIVATE_KEY', 'MY_SERVICE_ACCESS_TOKEN'):
+            for value in ('opaque-credential-value', 'a' * 32):
+                for raw in (label + '=' + value, 'export ' + label + "='" + value + "'",
+                            json.dumps({label: value}), json.dumps([label + '=' + value])):
+                    with self.subTest(label=label, raw=raw):
+                        cleaned = fr.redact_logs(raw)
+                        self.assertNotIn(value, cleaned)
+                        self.assertIn(label, cleaned)
+        ordinary = 'ETHERSCAN_API_KEY_PRESENT=true total_tokens=5 secret_name=original TypeError: RSKKeyedAuth'
+        self.assertEqual(fr.redact_logs(ordinary), ordinary)
+
     def test_log_redactor_hides_labeled_nonhex_credentials_and_other_url_schemes(self):
         raw = ('{"privateKey":"opaque-a", "password": "opaque-b", "token":"opaque-c"}\n'
                'AWS_ACCESS_KEY_ID=AKIAABCDEFGHIJKLMNOP\n'

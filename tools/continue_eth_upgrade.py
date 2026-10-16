@@ -130,7 +130,7 @@ COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "
 EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
 export EXPECTED_IMAGE_ID
 test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$REPAIR_REVISION"
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
+python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
 python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
 confirm 'Continue this saved ETH upgrade from original key recovery now?' || exit 0
 step '6/7 Restore/check the ORIGINAL federator key and signer'
@@ -138,7 +138,7 @@ python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLU
 restore_key
 step '7/7 Stage, verify and start the already-downloaded image'
 activate
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
+python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
 run_watcher
 '''
 

@@ -2,6 +2,8 @@
 import copy
 import importlib.util
 import io
+import itertools
+from unittest.mock import patch
 import json
 from pathlib import Path
 import tarfile
@@ -57,6 +59,7 @@ class StatefulDocker(m.Docker):
         if self.advance_registry and self.agent['state']['Running'] and path == m.PERSISTENT_PATH + '/registry.json':
             reg = json.loads(self.files[path]); reg['Registry']['file:' + self.log]['Offset'] = '1100'
             self.files[path] = json.dumps(reg).encode()
+            self.snapshot.update(offset=max(1100, self.snapshot['offset']), size=max(1100, self.snapshot['size']))
         destination.write_bytes(self.files[path]); destination.chmod(0o600)
         return self.files[path]
 
@@ -120,6 +123,41 @@ class InterruptedApplyTests(unittest.TestCase):
                 self.assertEqual(json.loads(docker.files[m.PERSISTENT_PATH + '/registry.json'])['Registry']['file:' + docker.log]['TailingMode'], '')
                 self.assertEqual(len(list(output.glob('attempt-*'))), 2)
                 self.assertTrue(any((p / 'failure.json').is_file() for p in output.glob('attempt-*')))
+
+    def test_idle_source_keeps_agent_running_without_claiming_delivery(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = StatefulDocker(); d.advance_registry = False
+            packet = Path(td).resolve() / 'repair'; m.prepare(d, packet)
+            with patch.object(m.time, 'monotonic', side_effect=itertools.count(0, 61)), patch.object(m.time, 'sleep'):
+                result = m.apply(d, packet)
+            self.assertTrue(d.agent['state']['Running'])
+            self.assertEqual(result['outcome'], 'agent_running_source_idle')
+            self.assertEqual(result['source_delivery'], 'UNKNOWN')
+            self.assertEqual(result['acknowledged_offset'], result['cutover_offset'])
+            self.assertEqual(d.starts, 1)
+
+    def test_stalled_poststart_check_resumes_without_repatch_restart_or_new_cutoff(self):
+        class Growing(StatefulDocker):
+            def call(self, args, **kwargs):
+                value = super().call(args, **kwargs)
+                if args[0] == 'start': self.snapshot.update(offset=1200, size=1200)
+                return value
+        with tempfile.TemporaryDirectory() as td:
+            d = Growing(); d.advance_registry = False
+            packet = Path(td).resolve() / 'repair'; m.prepare(d, packet)
+            with patch.object(m.time, 'monotonic', side_effect=itertools.count(0, 61)), patch.object(m.time, 'sleep'):
+                with self.assertRaises(m.RepairError): m.apply(d, packet)
+            self.assertTrue(d.agent['state']['Running'])
+            writes = d.writes; source = copy.deepcopy(d.source)
+            d.advance_registry = True
+            result = m.apply(d, packet)
+            self.assertEqual(result['outcome'], 'agent_running_current_source_offset_advanced')
+            self.assertEqual(result['cutover_offset'], 1000)
+            self.assertEqual(d.starts, 1); self.assertEqual(d.writes, writes)
+            self.assertEqual(d.source, source)
+            d.agent['state']['StartedAt'] = '2026-10-16T12:00:00Z'
+            with self.assertRaises(m.RepairError): m.apply(d, packet)
+            self.assertEqual(d.starts, 1); self.assertEqual(d.writes, writes)
 
     def test_unknown_installed_files_refuse_without_another_write_or_start(self):
         for kind in ('config', 'registry'):

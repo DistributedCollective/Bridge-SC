@@ -88,6 +88,43 @@ class UpgradeDatadogTests(unittest.TestCase):
             d.source['state'].update(Running=False, Status='created')
             u.verify(d, p)
 
+    def test_missing_captured_cursor_fails_without_an_explicit_verified_handoff(self):
+        u = self.load()
+        with tempfile.TemporaryDirectory() as td:
+            d = self.running(repaired=True); p = Path(td).resolve() / 'capture'; u.capture(d, p)
+            reg = json.loads(d.files[m.PERSISTENT_PATH + '/registry.json'])
+            del reg['Registry']['file:' + d.log]
+            d.files[m.PERSISTENT_PATH + '/registry.json'] = json.dumps(reg).encode()
+            with self.assertRaisesRegex(m.RepairError, 'checkpoint absent'):
+                u.verify(d, p)
+            with self.assertRaises(m.RepairError):
+                u.verify(d, p, allow_handoff=True)
+
+    def test_explicit_handoff_requires_new_running_source_with_valid_nonzero_cursor(self):
+        u = self.load()
+        for fault in ('none', 'missing', 'zero', 'past_end', 'stopped', 'wrong_mount'):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as td:
+                d = self.running(repaired=True); p = Path(td).resolve() / 'capture'; u.capture(d, p)
+                reg = json.loads(d.files[m.PERSISTENT_PATH + '/registry.json'])
+                del reg['Registry']['file:' + d.log]
+                old = d.source['id']; d.source['id'] = 'e' * 64
+                d.source['log_path'] = d.log.replace(old, d.source['id'])
+                if fault != 'missing':
+                    reg['Registry']['file:' + d.source['log_path']] = {
+                        'Offset': '0' if fault == 'zero' else '1001' if fault == 'past_end' else '100',
+                        'TailingMode': ''}
+                if fault == 'stopped': d.source['state'].update(Running=False, Status='created')
+                if fault == 'wrong_mount': d.source['mounts'][0]['Source'] = '/other/federator-env/mainnet-ETH-RSK'
+                d.files[m.PERSISTENT_PATH + '/registry.json'] = json.dumps(reg).encode()
+                if fault == 'none':
+                    u.verify(d, p, allow_handoff=True)
+                    report = json.loads(next(p.glob('verify-*/report.json')).read_text())
+                    self.assertTrue(report['source_handoff_verified'])
+                    self.assertFalse(report['previous_source_cursor_present'])
+                    self.assertFalse(report['state_retained'])
+                else:
+                    with self.assertRaises(m.RepairError): u.verify(d, p, allow_handoff=True)
+
     def test_capture_detects_agent_stop_or_pause_during_snapshot(self):
         u = self.load()
         for kind in ('stop', 'pause'):

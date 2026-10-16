@@ -9,7 +9,7 @@ import sys
 import time
 import dd_agent_recovery as r
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 
 def stable(agent):
@@ -104,7 +104,7 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
             'service': service, 'discovery_sha256': discovery['sha256'], 'source_layout': reference,
             'source_started': source['state'].get('StartedAt'),
             'cursor_key': key, 'cursor_offset': int(offset) if isinstance(offset, str) and offset.isdecimal() else None,
-            'registry': registry}
+            'registry': registry, 'observed_source': source}
 
 
 def inspect(docker, output):
@@ -154,23 +154,47 @@ def capture(docker, output):
     return state
 
 
-def verify(docker, output):
+def verify(docker, output, allow_handoff=False):
     output = r.safe_path(output, existing=True)
     path = output / 'manifest.json'
     if path.is_symlink(): raise r.RepairError('Unsafe Datadog state manifest')
-    old = json.loads(path.read_text())
+    old = r.read_json(path)
     work = output / ('verify-' + r.secrets.token_hex(6))
     current = read_state(docker, work, require_cursor=False, layout_source=old['source_layout'])
     if current['agent'] != old['agent'] or current['volume'] != old['volume'] or not current['persistent'] or current['config_sha256'] != old['config_sha256'] or current['discovery_sha256'] != old['discovery_sha256']:
         raise r.RepairError('Datadog identity/process/config/state volume changed during the application operation')
     entry = current['registry']['Registry'].get(old['cursor_key'])
+    handoff = False
     if entry is not None:
-        value = entry.get('Offset')
+        value = entry.get('Offset') if isinstance(entry, dict) else None
         if not isinstance(value, str) or not value.isdecimal() or int(value) < old['cursor_offset']:
             raise r.RepairError('Datadog previous source checkpoint regressed')
-    r.write_private(work / 'report.json', {'utc': r.utc(), 'agent_unchanged': True, 'state_retained': True,
-                                         'previous_source_cursor_present': entry is not None})
-    print('Datadog Agent and retained state are unchanged.')
+    else:
+        source = current['observed_source']
+        if not allow_handoff or source['id'] == old['source_id'] or not source['state'].get('Running') or source['state'].get('Paused'):
+            raise r.RepairError('Datadog captured source checkpoint absent; explicit replacement handoff required')
+        mounts = lambda value: sorted(json.dumps(m, sort_keys=True) for m in value['mounts'])
+        if mounts(source) != mounts(old['source_layout']):
+            raise r.RepairError('Datadog replacement source mounts changed')
+        agent = docker.inspect('datadog-agent', agent=True)
+        mapped, volume = r.validate_layout(agent, source)
+        selected = current['registry']['Registry'].get('file:' + mapped)
+        offset = selected.get('Offset') if isinstance(selected, dict) else None
+        if not isinstance(offset, str) or not re.fullmatch(r'[0-9]{1,19}', offset) or int(offset) <= 0:
+            raise r.RepairError('Datadog replacement source checkpoint unavailable')
+        snapshot = r.file_snapshot(docker, agent, source)
+        r.cutover_registry(current['registry'], mapped, snapshot['offset'], r.utc())
+        if stable(docker.inspect('datadog-agent', agent=True)) != current['agent']:
+            raise r.RepairError('Datadog Agent changed during replacement verification')
+        again = docker.inspect('bridge-sc_federation_1')
+        if any(again.get(k) != source.get(k) for k in ('id', 'image', 'log_path')) or mounts(again) != mounts(source) or again['state'].get('StartedAt') != source['state'].get('StartedAt') or not again['state'].get('Running') or again['state'].get('Paused'):
+            raise r.RepairError('Datadog replacement source changed during verification')
+        handoff = True
+    r.write_private(work / 'report.json', {'utc': r.utc(), 'agent_unchanged': True, 'state_retained': entry is not None,
+                                         'previous_source_cursor_present': entry is not None,
+                                         'source_handoff_verified': handoff, 'prior_source_delivery': 'not verified'})
+    print('Datadog replacement checkpoint verified; previous source cursor retired, prior delivery not verified.'
+          if handoff else 'Datadog Agent and retained source checkpoint are unchanged.')
 
 
 def main():
@@ -179,12 +203,15 @@ def main():
     group.add_argument('--inspect', type=Path)
     group.add_argument('--capture', type=Path)
     group.add_argument('--verify', type=Path)
+    parser.add_argument('--allow-source-handoff', action='store_true', help='verify an intentional running replacement when the previous cursor has retired')
     args = parser.parse_args()
+    if args.allow_source_handoff and not args.verify: parser.error('--allow-source-handoff requires --verify')
     try:
         if os.getuid() != 1000 or not sys.platform.startswith('linux'):
             raise r.RepairError('Run as Linux deployment user UID1000')
         action, path = next((name, getattr(args, name)) for name in ('inspect', 'capture', 'verify') if getattr(args, name))
-        globals()[action](r.Docker(), path)
+        if action == 'verify': verify(r.Docker(), path, allow_handoff=args.allow_source_handoff)
+        else: globals()[action](r.Docker(), path)
         return 0
     except (r.RepairError, OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
         print('Datadog upgrade check failed: ' + (str(exc) if isinstance(exc, r.RepairError) else type(exc).__name__), file=sys.stderr)

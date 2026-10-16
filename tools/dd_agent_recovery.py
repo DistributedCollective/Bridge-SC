@@ -4,6 +4,8 @@ import argparse
 import copy
 import hashlib
 import inspect
+import io
+import tarfile
 import json
 import os
 from pathlib import Path
@@ -19,7 +21,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-VERSION = '1.0.5'
+VERSION = '1.0.6'
 PERSISTENT_PATH = '/var/log/datadog/bridge-log-state'
 AGENT_CONFIG = '/etc/datadog-agent/datadog.yaml'
 DOCKER_CONFIG = '/etc/datadog-agent/datadog-docker.yaml'
@@ -181,11 +183,26 @@ class Docker:
     def copy_out(self, cid, path, destination):
         if destination.is_symlink():
             raise RepairError('Symlink copy destination refused')
-        self.call(['cp', cid + ':' + path, str(destination)])
-        if destination.is_symlink() or not destination.is_file() or destination.stat().st_size > MAX_BYTES:
-            raise RepairError('Unexpected copied Agent file')
-        destination.chmod(0o600)
-        return destination.read_bytes()
+        raw = self.call(['cp', cid + ':' + path, '-'])
+        try:
+            with tarfile.open(fileobj=io.BytesIO(raw), mode='r:*') as archive:
+                members = archive.getmembers()
+                if len(members) != 1 or not members[0].isfile() or not 0 <= members[0].size <= MAX_BYTES:
+                    raise RepairError('Unexpected copied Agent file')
+                data = archive.extractfile(members[0]).read(MAX_BYTES + 1)
+        except (tarfile.TarError, OSError):
+            raise RepairError('Invalid copied Agent archive') from None
+        if len(data) > MAX_BYTES:
+            raise RepairError('Copied Agent file exceeds limit')
+        fd, name = tempfile.mkstemp(prefix='.copy-', dir=str(destination.parent))
+        try:
+            with os.fdopen(fd, 'wb') as out:
+                out.write(data); out.flush(); os.fsync(out.fileno())
+            if destination.is_symlink(): raise RepairError('Symlink copy destination refused')
+            os.replace(name, str(destination))
+        finally:
+            if os.path.exists(name): os.unlink(name)
+        return data
 
     def helper(self, image, code, mounts, user=None, read_search=False):
         token = secrets.token_hex(12)
@@ -337,9 +354,7 @@ def check_discovery(docker, agent, source, config, env, destination):
         if key.endswith('.logs'):
             ensure_registry_start_modes(json.loads(value))
     raw = docker.call(['cp', agent['id'] + ':/etc/datadog-agent/conf.d', '-'])
-    with destination.open('xb') as f:
-        os.chmod(str(destination), 0o600)
-        f.write(raw)
+    write_private_bytes(destination, raw)
     code = 'import json,tarfile,yaml\nclass RepairError(Exception): pass\n' + inspect.getsource(ensure_registry_start_modes) + r'''
 checked=0
 with tarfile.open('/discovery.tar','r:*') as archive:
@@ -366,10 +381,28 @@ print(json.dumps({'files_checked':checked}))
     return checked
 
 
+def read_json(path):
+    try:
+        fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_size > MAX_BYTES:
+                raise RepairError('Unsafe private evidence file')
+            data = stream.read(MAX_BYTES + 1)
+        if len(data) > MAX_BYTES: raise RepairError('Private evidence exceeds limit')
+        return json.loads(data)
+    except (OSError, ValueError):
+        raise RepairError('Private evidence unreadable, linked or invalid') from None
+
+
+def write_private_bytes(path, data):
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, 'wb') as out:
+        out.write(data); out.flush(); os.fsync(out.fileno())
+
+
 def write_private(path, value):
-    with path.open('x', encoding='utf8') as f:
-        os.chmod(str(path), 0o600)
-        f.write(json.dumps(value, indent=2) + '\n')
+    write_private_bytes(path, (json.dumps(value, indent=2) + '\n').encode())
 
 
 def update_report(output, value):
@@ -402,8 +435,13 @@ finally: os.close(fd)
     return json.loads(docker.helper(agent['image'], code, [(source['log_path'], '/source.log')], user='0:0'))
 
 
-def ensure_same(old_agent, old_source, agent, source):
-    scope(agent, source)
+def ensure_same(old_agent, old_source, agent, source, running_agent=False):
+    if running_agent:
+        validate_layout(agent, source)
+        if not agent['state'].get('Running') or agent['state'].get('Paused') or not source['state'].get('Running') or source['state'].get('Paused'):
+            raise RepairError('Post-start Agent/source are not running')
+    else:
+        scope(agent, source)
     for old, new in ((old_agent, agent), (old_source, source)):
         for key in ('id', 'image', 'mounts', 'log_path', 'log_config'):
             left, right = old.get(key), new.get(key)
@@ -467,9 +505,71 @@ def prepare(docker, output):
     return report
 
 
+class DeliveryPending(RepairError):
+    pass
+
+
+def check_started_progress(docker, output, ctx):
+    post = read_json(output / 'poststart.private.json')
+    work = output / ('progress-' + secrets.token_hex(6))
+    agent = docker.inspect('datadog-agent', agent=True)
+    source = docker.inspect('bridge-sc_federation_1')
+    ensure_output_outside_source(output, source)
+    ensure_same(post['agent'], ctx['source'], agent, source, running_agent=True)
+    work.mkdir(mode=0o700)
+    mapped, volume = validate_layout(agent, source)
+    if mapped != ctx['mapped_path'] or volume != ctx['log_volume']:
+        raise RepairError('Post-start source/state-volume mapping changed')
+    config = docker.copy_out(agent['id'], config_path(docker, agent), work / 'config.private.yaml')
+    if sha(config) != post['config_sha256']:
+        raise RepairError('Post-start Agent configuration changed')
+    env = dict(x.split('=', 1) for x in agent.get('env', []) if '=' in x)
+    discovery = check_discovery(docker, agent, source, ctx['config'], env, work / 'discovery.private.tar')
+    if discovery['sha256'] != ctx['discovery_sha256']:
+        raise RepairError('Post-start Agent integration configuration changed')
+    cutoff = post['cutover']; deadline = time.monotonic() + 60
+    while True:
+        ensure_same(post['agent'], ctx['source'], docker.inspect('datadog-agent', agent=True),
+                    docker.inspect('bridge-sc_federation_1'), running_agent=True)
+        registry = json.loads(docker.copy_out(agent['id'], PERSISTENT_PATH + '/registry.json', work / 'registry.private.json'))
+        snapshot = file_snapshot(docker, agent, source)
+        if any(snapshot[k] != cutoff[k] for k in ('device', 'inode')) or snapshot['offset'] < cutoff['offset']:
+            raise RepairError('Post-start source rotated/truncated; inspection required')
+        cutover_registry(registry, mapped, snapshot['offset'], utc())
+        ensure_file_collection(registry, source['id'], ctx['config'], env)
+        observed = int(registry['Registry']['file:' + mapped]['Offset'])
+        if observed < cutoff['offset']:
+            raise RepairError('Post-start acknowledged checkpoint regressed')
+        if observed > cutoff['offset'] or snapshot['offset'] == cutoff['offset']:
+            break
+        if time.monotonic() >= deadline:
+            pending = {'version': VERSION, 'outcome': 'agent_running_delivery_unverified', 'utc': utc(),
+                       'cutover_offset': cutoff['offset'], 'acknowledged_offset': observed,
+                       'source_delivery': 'UNKNOWN', 'agent_left_running': True}
+            update_report(work, pending); update_report(output, pending)
+            raise DeliveryPending('Source activity is not yet acknowledged; Agent left running. Recheck the same packet with --apply')
+        time.sleep(3)
+    ensure_same(post['agent'], ctx['source'], docker.inspect('datadog-agent', agent=True),
+                docker.inspect('bridge-sc_federation_1'), running_agent=True)
+    advanced = observed > cutoff['offset']
+    result = {'version': VERSION, 'outcome': 'agent_running_current_source_offset_advanced' if advanced else 'agent_running_source_idle',
+              'cutover_utc': post['utc'], 'cutover_offset': cutoff['offset'], 'acknowledged_offset': observed,
+              'last_skipped_docker_record_utc': cutoff['last_record_utc'], 'source_delivery': 'UNKNOWN',
+              'agent_id': agent['id'], 'source_id': source['id'], 'new_registry_path': PERSISTENT_PATH + '/registry.json',
+              'indexed_visibility': 'not independently verified', 'federator_restarted': False,
+              'local_logs_deleted': False, 'resumed_prestart_attempt': post['resumed_prestart_attempt'],
+              'attempt_directory': str(work), 'utc': utc()}
+    update_report(work, result); update_report(output, result)
+    print('Agent running; source checkpoint advanced.' if advanced else 'Agent running; source idle, delivery not verified.',
+          'Report:', output / 'report.json')
+    return result
+
+
 def apply(docker, output):
     output = safe_path(output, existing=True)
-    ctx = json.loads((output / 'context.private.json').read_text())
+    ctx = read_json(output / 'context.private.json')
+    if (output / 'poststart.private.json').exists() or (output / 'poststart.private.json').is_symlink():
+        return check_started_progress(docker, output, ctx)
     agent = docker.inspect('datadog-agent', agent=True)
     source = docker.inspect('bridge-sc_federation_1')
     ensure_output_outside_source(output, source)
@@ -487,9 +587,9 @@ def apply(docker, output):
 
     try:
         progress(phase)
-        previous_report = json.loads((output / 'report.json').read_text())
+        previous_report = read_json(output / 'report.json')
         write_private(attempt / 'previous-report.json', previous_report)
-        ctx = json.loads((output / 'context.private.json').read_text())
+        ctx = read_json(output / 'context.private.json')
         marker = output / 'apply-started.json'
         if marker.is_symlink():
             raise RepairError('Symlink attempt marker refused')
@@ -531,11 +631,11 @@ def apply(docker, output):
         ensure_file_collection(registry, source['id'], original_cfg, env)
         progress('validating_source_and_cutover')
         snapshot = file_snapshot(docker, agent, source)
-        preview = json.loads((output / 'report.json').read_text())['preview_cutover']
+        preview = read_json(output / 'report.json')['preview_cutover']
         if any(snapshot[x] != preview[x] for x in ('device', 'inode')) or snapshot['size'] < preview['size']:
             raise RepairError('Source log rotated/truncated; no repair writes made')
         if retry:
-            journal = json.loads(marker.read_text())
+            journal = read_json(marker)
             cutoff, when = journal['cutover'], journal['utc']
             if any(cutoff[x] != snapshot[x] for x in ('device', 'inode')) or cutoff['offset'] > snapshot['size']:
                 raise RepairError('Journalled source log identity/bounds changed')
@@ -589,35 +689,14 @@ print(json.dumps({'exists':os.path.lexists(p),'regular':regular}))
         progress('starting_agent')
         attempted_start = True
         docker.call(['start', agent['id']])
+        fresh = docker.inspect('datadog-agent', agent=True)
+        write_private(output / 'poststart.private.json', {'agent': fresh, 'cutover': cutoff, 'utc': when,
+                      'config_sha256': sha(check_cfg), 'resumed_prestart_attempt': retry})
         progress('waiting_for_acknowledged_source_progress')
-        deadline = time.monotonic() + 60
-        observed = None
-        while time.monotonic() < deadline:
-            fresh = docker.inspect('datadog-agent', agent=True)
-            if fresh['id'] != agent['id'] or not fresh['state'].get('Running'):
-                raise RepairError('Agent failed to stay running')
-            raw = docker.copy_out(agent['id'], PERSISTENT_PATH + '/registry.json', attempt / 'live-registry.private.json')
-            value = json.loads(raw)['Registry'].get('file:' + mapped, {})
-            offset = value.get('Offset', '')
-            if isinstance(offset, str) and offset.isdecimal() and int(offset) > cutoff['offset']:
-                observed = int(offset); break
-            time.sleep(3)
-        if observed is None:
-            raise RepairError('No acknowledged current-source progress within60s')
-        final = docker.inspect('bridge-sc_federation_1')
-        if final['id'] != source['id'] or final['state']['StartedAt'] != source['state']['StartedAt'] or not final['state'].get('Running'):
-            raise RepairError('Federator changed independently; review telemetry before resuming')
-        report = {'version': VERSION, 'outcome': 'agent_running_current_source_offset_advanced', 'cutover_utc': when,
-                  'cutover_offset': cutoff['offset'], 'acknowledged_offset': observed, 'resumed_prestart_attempt': retry,
-                  'last_skipped_docker_record_utc': cutoff['last_record_utc'], 'agent_id': agent['id'], 'source_id': source['id'],
-                  'new_registry_path': PERSISTENT_PATH + '/registry.json', 'indexed_visibility': 'not independently verified',
-                  'federator_restarted': False, 'local_logs_deleted': False, 'attempt_directory': str(attempt), 'utc': utc()}
-        update_report(attempt, report)
-        update_report(output, report)
-        print('Agent resumed; its current-source registry advanced. Report:', output / 'report.json')
-        return report
+        return check_started_progress(docker, output, ctx)
+
     except Exception as exc:
-        if attempted_start:
+        if attempted_start and not isinstance(exc, DeliveryPending):
             try:
                 docker.call(['stop', agent['id']], timeout=25, optional=True)
             except RepairError:
@@ -650,11 +729,11 @@ def report_incomplete(docker, output, reason):
         ensure_output_outside_source(output, docker.inspect('bridge-sc_federation_1'))
         context = output / 'context.private.json'
         if context.is_file() and not context.is_symlink():
-            ensure_output_outside_source(output, json.loads(context.read_text())['source'])
+            ensure_output_outside_source(output, read_json(context)['source'])
         report = output / 'report.json'
         if report.is_symlink() or not report.is_file():
             return False
-        partial = json.loads(report.read_text())
+        partial = read_json(report)
         partial.update(outcome='incomplete', failure=reason, finished_utc=utc())
         update_report(output, partial)
         return True

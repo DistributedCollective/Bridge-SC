@@ -496,7 +496,7 @@ PY
   test "$(sha256sum "$OPS_DIR/deployment.private.json" | cut -d ' ' -f 1)" = "$COMPOSE_PLAN_SHA256"
   COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" -f "$OPS_DIR/deployment.private.json")
   "${COMPOSE[@]}" config --quiet
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
   confirm 'Restore the original ETH image from this archive now?' || exit 0
   step 'Restore and stage the original image'
   stage_rollback
@@ -505,7 +505,7 @@ PY
   restore_key
   confirm 'Start the restored ETH node in the agreed window now?' || exit 0
   python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --start-cleanup "$OLD_IMAGE_ID" --expected-signer "$EXPECTED_SIGNER" --output "$OPS_DIR/rollback-startup-key-cleanup.json"
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
   run_watcher
 else
   require_inputs
@@ -536,6 +536,6 @@ else
   restore_key
   step '7/7 Stage, verify and start the new image'
   activate
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
   run_watcher
 fi

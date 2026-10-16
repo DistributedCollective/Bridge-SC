@@ -612,7 +612,7 @@ def redact_logs(text):
                   r'\1[credential redacted]', text)
     labels = (r'private[_-]?key|aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key|'
               r'aws[_-]?session[_-]?token|password|passwd|secret|access[_-]?token|api[_-]?key|token')
-    text = re.sub(r'(?i)(\b(?:' + labels + r')[\"\']?\s*[:=]\s*)'
+    text = re.sub(r'(?i)(\b(?:[a-z0-9]+[_-])*(?:' + labels + r')[\"\']?\s*[:=]\s*)'
                   r'(?:"[^"\r\n]*"|\'[^\'\r\n]*\'|[^\s,;})]+)',
                   r'\1[credential redacted]', text)
     text = re.sub(r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b', '[AWS credential redacted]', text)

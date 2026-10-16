@@ -103,6 +103,7 @@ elif name=='python3':
   code=args[1] if args and args[0]=='-c' else sys.stdin.read()
   root=Path(os.environ['OPS_DIR'])
   if args and args[0]=='-c' and 'full=json.load' in code:
+   sys.stdin.read()
    (root/'deployment.private.json').write_text('{}')
   elif args and args[0]=='-c':
    print('bridge-sc' if 'compose_project' in code else old if 'image_id' in code else 'a'*64)

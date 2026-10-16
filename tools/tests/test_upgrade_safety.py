@@ -94,6 +94,37 @@ class UpgradeSafetyTests(unittest.TestCase):
                 self.assertTrue(self.node.key.exists())
                 self.assertEqual(json.loads(out.read_text())['outcome'], 'startup_key_cleanup_pending')
 
+    def test_pending_cleanup_finishes_same_process_without_restart_or_key_restore(self):
+        self.node.marker = False; report = self.root / 'pending.json'
+        with self.assertRaises(m.SafetyError):
+            m.start_and_clean(self.node, self.node.state['image_id'], report,
+                              expected_signer='0x'+'6'*40, sleep=lambda _: None)
+        self.node.marker = True; self.node.commands.clear()
+        m.finish_key_cleanup(self.node, report)
+        self.assertFalse(self.node.key.exists())
+        self.assertTrue(self.node.state['running'])
+        self.assertTrue(all(c[1] == 'logs' for c in self.node.commands))
+        self.assertEqual(json.loads(report.read_text())['outcome'], 'running_startup_key_removed')
+        m.finish_key_cleanup(self.node, report)
+
+    def test_pending_cleanup_refuses_changed_key_process_or_missing_fresh_proof(self):
+        for fault in ('key', 'process', 'proof', 'report_link'):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as td:
+                node = FakeNode(Path(td).resolve()); node.marker = False
+                report = Path(td).resolve() / 'pending.json'
+                with self.assertRaises(m.SafetyError):
+                    m.start_and_clean(node, node.state['image_id'], report,
+                                      expected_signer='0x'+'6'*40, sleep=lambda _: None)
+                node.marker = fault != 'proof'
+                if fault == 'key': node.key.write_text('2'*64+'\n')
+                if fault == 'process': node.state['started'] = '2026-10-16T13:00:00Z'
+                if fault == 'report_link':
+                    other = report.with_name('other.json'); report.rename(other); report.symlink_to(other)
+                node.commands.clear()
+                with self.assertRaises((m.SafetyError, OSError)): m.finish_key_cleanup(node, report)
+                self.assertTrue(node.key.exists())
+                self.assertTrue(all(c[1] == 'logs' for c in node.commands))
+
     def test_key_replacement_is_not_removed(self):
         def sleep(_):
             replacement=self.node.key.with_name('new.key')

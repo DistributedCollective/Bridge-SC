@@ -16,7 +16,7 @@ import time
 
 import federator_recovery as r
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 RESERVE = 2 * 1024**3
 
 
@@ -156,7 +156,8 @@ def start_and_clean(node, expected_image, report, expected_signer, sleep=time.sl
         if not stat.S_ISREG(initial.st_mode) or initial.st_uid != node.expected_uid or stat.S_IMODE(initial.st_mode) != 0o600:
             raise SafetyError('Unexpected startup key ownership/type/mode')
         evidence = {'version': VERSION, 'utc': r.utc_now(), 'source_id': before['id'],
-                    'image_id': expected_image, 'outcome': 'startup_key_cleanup_pending'}
+                    'image_id': expected_image, 'outcome': 'startup_key_cleanup_pending',
+                    'key_identity': list(identity(initial)), 'expected_signer': expected_signer}
         with r.open_report(report) as journal:
             json.dump(evidence, journal)
             journal.flush()
@@ -183,6 +184,8 @@ console.log("Verified original FEDERATOR signer: "+address);
                 running = node.inspect()
                 if not running['running'] or running['id'] != before['id'] or running['image_id'] != expected_image:
                     raise SafetyError('Started container identity/state not confirmed')
+                evidence['started_utc'] = running['started']
+                journal.seek(0); json.dump(evidence, journal); journal.truncate(); journal.flush(); os.fsync(journal.fileno())
                 print('ETH node started. Waiting 90 seconds to verify startup and remove its temporary signing key.', flush=True)
                 sleep(90)
                 def verify_process():
@@ -214,6 +217,60 @@ console.log("Verified original FEDERATOR signer: "+address);
     return evidence
 
 
+def finish_key_cleanup(node, report):
+    """Remove only the unchanged startup copy for the journalled running process."""
+    report = Path(report).expanduser().absolute()
+    parent = r.open_directory(report.parent)
+    try:
+        fd = os.open(report.name, os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+        with os.fdopen(fd, 'r+') as journal:
+            info = os.fstat(journal.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > 65536:
+                raise SafetyError('Unsafe startup cleanup report')
+            evidence = json.load(journal)
+            current = node.inspect()
+            def verify():
+                value = node.inspect()
+                if not value['running'] or any(value.get(k) != evidence.get(saved) for k, saved in
+                      (('id', 'source_id'), ('image_id', 'image_id'), ('started', 'started_utc'))):
+                    raise SafetyError('Cleanup report does not match the current running process')
+            verify()
+            key = node.cfg / 'federator.key'
+            if evidence.get('outcome') == 'running_startup_key_removed':
+                if key.exists() or key.is_symlink(): raise SafetyError('Key reappeared after completed cleanup')
+                return evidence
+            if evidence.get('outcome') != 'startup_key_cleanup_pending' or not isinstance(evidence.get('key_identity'), list):
+                raise SafetyError('Report lacks guarded cleanup metadata; coordinator review required')
+            started = r.parse_time(evidence.get('started_utc'))
+            if started is None or (r.parse_time(r.utc_now()) - started).total_seconds() < 90:
+                raise SafetyError('Wait until at least90 seconds after this process started')
+            raw = node.runner.run(['docker', 'logs', '--timestamps', '--since', current['started'], '--tail', '2000', current['id']], timeout=15)
+            if not loaded_in_current_run(raw, current['started']):
+                raise SafetyError('Fresh configuration-load proof still unavailable; key retained')
+            directory = r.open_directory(node.cfg)
+            try:
+                r.verify_directory(node.cfg, directory); verify()
+                try: initial = os.stat(key.name, dir_fd=directory, follow_symlinks=False)
+                except FileNotFoundError: initial = None
+                if initial is not None:
+                    if not stat.S_ISREG(initial.st_mode) or list(identity(initial)) != evidence['key_identity']:
+                        raise SafetyError('Startup key changed; cleanup refused')
+                    os.unlink(key.name, dir_fd=directory); os.fsync(directory)
+                evidence.update(outcome='running_startup_key_removed', removed_utc=r.utc_now(), cleanup_resumed=True)
+                r.verify_directory(report.parent, parent)
+                linked = os.stat(report.name, dir_fd=parent, follow_symlinks=False)
+                if (linked.st_dev, linked.st_ino) != (info.st_dev, info.st_ino):
+                    raise SafetyError('Cleanup report path changed')
+                journal.seek(0); json.dump(evidence, journal, indent=2); journal.write('\n')
+                journal.truncate(); journal.flush(); os.fsync(journal.fileno())
+            finally:
+                os.close(directory)
+    finally:
+        os.close(parent)
+    print('Temporary startup signing key removed; existing process was not restarted.', flush=True)
+    return evidence
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', type=Path, required=True)
@@ -222,6 +279,7 @@ def main():
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument('--archive-history', action='store_true')
     action.add_argument('--start-cleanup', metavar='EXPECTED_IMAGE_ID')
+    action.add_argument('--finish-key-cleanup', action='store_true', help='finish a pending journalled key cleanup without starting/restarting the node')
     args = parser.parse_args()
     os.umask(0o077)
     if os.getuid() != 1000:
@@ -230,6 +288,8 @@ def main():
     if args.archive_history:
         archive_history(node, args.output)
         print('Verified private Docker log/config archive:', args.output)
+    elif args.finish_key_cleanup:
+        finish_key_cleanup(node, args.output)
     else:
         if not re.fullmatch(r'sha256:[0-9a-f]{64}', args.start_cleanup):
             raise SafetyError('Expected immutable image ID required')
@@ -239,6 +299,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (SafetyError, r.RecoveryError, OSError, subprocess.SubprocessError, KeyboardInterrupt):
+    except (SafetyError, r.RecoveryError, OSError, subprocess.SubprocessError, KeyboardInterrupt, ValueError, TypeError, KeyError):
         print('Upgrade backup/startup check incomplete. Keep the private run directory; inspect the printed phase before retrying. If a start was attempted, temporary key cleanup may be pending.', file=sys.stderr)
         sys.exit(1)

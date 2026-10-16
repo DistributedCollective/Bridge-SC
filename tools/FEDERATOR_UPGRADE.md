@@ -53,6 +53,22 @@ Leave the watcher running for fifteen minutes. Send `summary.md`, `report.json`
 and any error from the paths it prints. Keep the private run directory and
 image/log backups. On an error, stop and send the error before retrying.
 
+## If startup key cleanup is pending
+
+Leave the node running. Use the saved run directory printed by the upgrade:
+
+```bash
+read -r -p 'Upgrade run directory: ' RUN_DIR
+python3 "$RUN_DIR/federator_upgrade_safety.py" \
+  --repo "$HOME/Bridge-SC" --finish-key-cleanup \
+  --output "$RUN_DIR/startup-key-cleanup.json"
+```
+
+This finishes only the unchanged startup key for the same running process after
+its configuration-load message is verified. Send the result. If refused, send the
+error and cleanup report to the coordinator. Do not rerun the full upgrade.
+Older reports lacking cleanup metadata require coordinator review.
+
 ## Rollback, when requested
 
 ```bash
