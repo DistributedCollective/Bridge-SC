@@ -90,6 +90,27 @@ class ContinueTests(unittest.TestCase):
                         with self.assertRaises((m.ContinueError,OSError)):
                             m.pre_resume_guard(run,{'FED_REPO':str(run)})
 
+    def test_interactive_continuation_runs_with_a_real_controlling_terminal(self):
+        import fcntl, pty, termios
+        self.module()
+        master,slave=pty.openpty()
+        def attach():
+            os.setsid();fcntl.ioctl(0,termios.TIOCSCTTY,0)
+        code=("import os,sys;sys.path.insert(0,"+repr(str(TOOLS))+");"
+              "import continue_eth_upgrade as m;"
+              "sys.exit(m.run_attached([sys.executable,'-c',"
+              "'import sys;print(\"interactive-child=\"+str(sys.stdin.isatty()))'],dict(os.environ)))")
+        try:
+            process=subprocess.Popen([sys.executable,'-c',code],stdin=slave,
+                stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,preexec_fn=attach)
+            os.close(slave);slave=None
+            out,err=process.communicate(timeout=10)
+            self.assertEqual(process.returncode,0,out+'\n'+err)
+            self.assertIn('interactive-child=True',out)
+        finally:
+            os.close(master)
+            if slave is not None:os.close(slave)
+
     def test_context_bindings_and_checksum_are_required(self):
         m=self.module()
         rev='1'*40;signer='0x'+'2'*40

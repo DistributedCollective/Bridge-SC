@@ -162,6 +162,11 @@ def verified_inputs(run, revision, signer):
     return c,original.decode('utf8')
 
 
+def run_attached(command, env):
+    with open('/dev/tty','r') as tty:
+        termios.tcflush(tty.fileno(),termios.TCIFLUSH)
+        return subprocess.run(command,env=env,stdin=tty).returncode
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--run',type=Path,required=True);p.add_argument('--revision',required=True)
@@ -191,13 +196,14 @@ def main():
              '--expected-signer',args.expected_signer,'--watch-seconds',c['WATCH_SECONDS']]
     if c['KEY_SOURCE']=='manual':command.append('--no-aws-secrets')
     print('Continuation evidence:',attempt,flush=True)
-    with open('/dev/tty','r+') as tty:
-        termios.tcflush(tty.fileno(),termios.TCIFLUSH)
-        return subprocess.run(command,env=env,stdin=tty).returncode
+    return run_attached(command, env)
 
 
 if __name__=='__main__':
     try:sys.exit(main())
-    except (ContinueError,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError,EOFError,KeyboardInterrupt):
-        print('Continuation stopped; original evidence retained. Send the last phase/error; do not rerun the full upgrade.',file=sys.stderr)
+    except (ContinueError,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError,EOFError,KeyboardInterrupt,termios.error) as error:
+        detail=str(error) if isinstance(error,ContinueError) else type(error).__name__
+        number=getattr(error,'errno',None)
+        if type(number) is int:detail+=' (errno '+str(number)+')'
+        print('Continuation stopped: '+detail+'. Original evidence retained; do not rerun the full upgrade.',file=sys.stderr)
         sys.exit(1)
