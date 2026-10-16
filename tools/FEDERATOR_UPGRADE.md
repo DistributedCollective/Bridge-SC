@@ -1,7 +1,9 @@
 # Upgrade an existing ETH federator
 
-Updates your ETH federator, backs up its image, checks its keys and runs the
-federator/Datadog watcher. It keeps the existing configuration and database.
+Updates your ETH federator, backs up its image and retained local logs, checks its keys and runs the
+federator/Datadog watcher. It repairs Datadog when needed, preserves an already
+repaired Agent and its checkpoint volume, and keeps the existing bridge
+configuration and database.
 
 ## 1. Log in
 
@@ -39,13 +41,17 @@ bash "$UPGRADE_DIR/upgrade.sh" --no-aws-secrets
 
 Enter the supplied values and confirm the agreed upgrade time.
 The executable reuses your Etherscan key; if missing, enter it at the hidden
-prompt. Use your original federator signing key when asked.
+prompt. Use your original federator signing key when asked. Keep the terminal open:
+the executable verifies startup and removes the temporary signing key after
+90 seconds. Datadog reuses its
+existing API key; the executable handles its checks and repair. Unsupported Agent
+versions or collection setups stop at preflight before either service is stopped.
 
 ## 4. Return the reports
 
 Leave the watcher running for fifteen minutes. Send `summary.md`, `report.json`
 and any error from the paths it prints. Keep the private run directory and
-image backup. On an error, stop and send the error before retrying.
+image/log backups. On an error, stop and send the error before retrying.
 
 ## Rollback, when requested
 

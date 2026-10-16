@@ -4,7 +4,7 @@ set +x
 set -Eeuo pipefail
 unset PYTHONOPTIMIZE PYTHONINSPECT
 umask 077
-VERSION=1.0.0
+VERSION=1.2.0
 FED_REPO="$HOME/Bridge-SC"
 REPO_OVERRIDE=''
 REPAIR_REVISION=''
@@ -99,7 +99,7 @@ require_inputs() {
   export FED_REPO REPAIR_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE OPERATOR
 }
 verify_bundle() {
-  for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py; do
+  for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
     test -f "$OPS_DIR/$file" && test ! -L "$OPS_DIR/$file"
     test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
   done
@@ -147,10 +147,10 @@ esac
 git -C "$FED_REPO" fetch --no-tags origin federator-diagnostics-recovery-upgrade
 test "$(git -C "$FED_REPO" rev-parse --verify "$REPAIR_REVISION^{commit}")" = "$REPAIR_REVISION"
 git -C "$FED_REPO" merge-base --is-ancestor "$REPAIR_REVISION" FETCH_HEAD
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
   git -C "$FED_REPO" show "$REPAIR_REVISION:tools/$file" > "$OPS_DIR/$file"
 done
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
   test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
 done
 python3 - <<'PY'
@@ -350,18 +350,7 @@ if not key.exists():
 node.key_ready()
 print('Private key file ownership/mode/format passed; public signer verification follows.')
 PY
-docker --host unix:///var/run/docker.sock run --rm --network none --read-only --log-driver none --cap-drop ALL \
-  --security-opt no-new-privileges --user 1000:1000 --entrypoint node \
-  --workdir /app/federator -e "EXPECTED_SIGNER=$EXPECTED_SIGNER" \
-  --mount "type=bind,source=$CONFIG_DIR/federator.key,target=/run/federator.key,readonly" \
-  "$FED_IMAGE" -e '
-try {
- const fs=require("fs"),ethers=require("ethers").ethers;
- const key=fs.readFileSync("/run/federator.key","utf8").trim();
- const address=new ethers.Wallet(key.startsWith("0x")?key:"0x"+key).address;
- if(address.toLowerCase()!==process.env.EXPECTED_SIGNER.toLowerCase())throw Error();
- console.log("Verified original FEDERATOR signer: "+address);
-} catch (_) { console.error("Signer verification failed; key contents withheld. Do not start.");process.exit(1); }'
+
 }
 
 activate() {
@@ -385,7 +374,7 @@ p=Path(os.environ['OPS_DIR'])/'replacement.json';p.write_text(json.dumps(s,inden
 print('New image is staged. Original config, directory identities and both numeric checkpoints match.')
 PY
 # Operator activation: this enables the node's normal signing/transaction submission.
-docker --host unix:///var/run/docker.sock start bridge-sc_federation_1
+python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --start-cleanup "$EXPECTED_IMAGE_ID" --expected-signer "$EXPECTED_SIGNER" --output "$OPS_DIR/startup-key-cleanup.json"
 docker --host unix:///var/run/docker.sock inspect bridge-sc_federation_1 \
   --format 'status={{.State.Status}} image={{.Image}} started={{.State.StartedAt}} oom={{.State.OOMKilled}}'
 }
@@ -430,6 +419,7 @@ if (s['id'],s['image'])!=(replacement['id'],replacement['image']):raise SystemEx
 if s['running']:subprocess.run(['docker','--host','unix:///var/run/docker.sock','stop','--time','30',s['id']],check=True,timeout=45)
 PY
 capture_current_state > "$OPS_DIR/rollback-stopped-state.json"
+python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --archive-history --output "$OPS_DIR/rollback-history"
 timeout --kill-after=10s 600s docker --host unix:///var/run/docker.sock image load --input "$ROLLBACK_DIR/old-image.tar"
 test "$(docker --host unix:///var/run/docker.sock image inspect "$OLD_IMAGE_ID" --format '{{.Id}}')" = "$OLD_IMAGE_ID"
 ROLLBACK_IMAGE="sovryn/fed-tokenbridge:eth-rollback-${OLD_IMAGE_ID:7:12}-$(date -u '+%Y%m%dT%H%M%SZ')"
@@ -501,6 +491,7 @@ PY
   test "$(sha256sum "$OPS_DIR/deployment.private.json" | cut -d ' ' -f 1)" = "$COMPOSE_PLAN_SHA256"
   COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" -f "$OPS_DIR/deployment.private.json")
   "${COMPOSE[@]}" config --quiet
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
   confirm 'Restore the original ETH image from this archive now?' || exit 0
   step 'Restore and stage the original image'
   stage_rollback
@@ -508,7 +499,8 @@ PY
   step 'Restore/check the original key and public signer'
   restore_key
   confirm 'Start the restored ETH node in the agreed window now?' || exit 0
-  docker --host unix:///var/run/docker.sock start bridge-sc_federation_1
+  python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --start-cleanup "$OLD_IMAGE_ID" --expected-signer "$EXPECTED_SIGNER" --output "$OPS_DIR/rollback-startup-key-cleanup.json"
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
   run_watcher
 else
   require_inputs
@@ -520,18 +512,25 @@ else
   chmod 600 "$OPS_DIR/upgrade.sh"
   step '2/7 Check the Etherscan key before stopping anything'
   python3 "$OPS_DIR/etherscan_prerequisite.py" "$CONFIG_DIR"
+  step 'Check Datadog compatibility before stopping either service'
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --inspect "$OPS_DIR/datadog-preflight"
   step '3/7 Download and verify the approved image and Compose plan'
   verify_image
   export WATCH_SECONDS
   write_context
-  confirm 'Upgrade this ETH node in the agreed window now?' || exit 0
+  confirm 'Upgrade this ETH node and repair Datadog if needed in the agreed window now?' || exit 0
   step '4/7 Back up and verify the original image'
   backup_image
+  step 'Repair Datadog if needed and retain its checkpoint volume'
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --capture "$OPS_DIR/datadog-state"
   step '5/7 Stop only the ETH federator and record checkpoints'
   stop_original
+  step 'Archive and verify retained local logs and launch configuration'
+  python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --archive-history --output "$OPS_DIR/history"
   step '6/7 Restore/check the original federator key and public signer'
   restore_key
   step '7/7 Stage, verify and start the new image'
   activate
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"
   run_watcher
 fi

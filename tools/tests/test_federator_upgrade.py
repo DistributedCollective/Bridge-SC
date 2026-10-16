@@ -79,7 +79,16 @@ elif name=='docker':
   print('1'*40 if 'revision' in a[-1] else old if a[2]==old else new)
  elif 'config' in a and '--format' in a:print('{}')
 elif name=='python3':
- if args and args[0].endswith('etherscan_prerequisite.py'):
+ if args and args[0].endswith('federator_upgrade_safety.py'):
+  action='HISTORY_BACKUP' if '--archive-history' in args else 'START_AND_CLEANUP'
+  note(action)
+  if os.environ.get('UPGRADE_FAIL')=='history' and action=='HISTORY_BACKUP':sys.exit(1)
+  if action=='START_AND_CLEANUP':note('DOCKER start bridge-sc_federation_1')
+ elif args and args[0].endswith('federator_datadog_upgrade.py'):
+  action=args[1];note('DATADOG_'+action[2:].upper())
+  if os.environ.get('UPGRADE_FAIL')=='datadog' and action=='--inspect':sys.exit(1)
+  if action in ('--inspect','--capture'):Path(args[2]).mkdir()
+ elif args and args[0].endswith('etherscan_prerequisite.py'):
   note('ETHERSCAN_CHECK')
   if os.environ.get('UPGRADE_FAIL')=='etherscan':sys.exit(1)
  elif args and args[0].endswith('federator_watcher.py'):
@@ -158,6 +167,8 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertFalse(any(' pull ' in ' '+line+' ' for line in trace))
         self.assertNotIn('ETHERSCAN_CHECK',trace)
         self.assertEqual(trace[-1],'WATCHER')
+        self.assertIn('HISTORY_BACKUP',trace)
+        self.assertIn('START_AND_CLEANUP',trace)
 
     def test_tampered_rollback_plan_fails_before_any_container_stop_or_load(self):
         result,trace,stdout,stderr=self.run_upgrade(rollback=True,tamper=True)
@@ -182,15 +193,35 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertNotIn('STOP_ORIGINAL',trace)
         self.assertFalse(any(line.startswith('DOCKER start ') for line in trace))
 
+    def test_unsupported_datadog_preflight_blocks_image_download_and_service_stop(self):
+        result,trace,stdout,stderr=self.run_upgrade('datadog')
+        self.assertNotEqual(result,0)
+        self.assertIn('DATADOG_INSPECT',trace)
+        self.assertNotIn('DATADOG_CAPTURE',trace)
+        self.assertNotIn('STOP_ORIGINAL',trace)
+        self.assertFalse(any(' pull ' in ' '+line+' ' for line in trace))
+
+    def test_failed_history_backup_never_replaces_or_starts_container(self):
+        result,trace,stdout,stderr=self.run_upgrade('history')
+        self.assertNotEqual(result,0)
+        self.assertIn('HISTORY_BACKUP',trace)
+        self.assertNotIn('STAGED_REPLACEMENT',trace)
+        self.assertFalse(any(line.startswith('DOCKER start ') for line in trace))
+
     def test_complete_sequence_checks_key_and_backup_before_stopping_only_eth(self):
         result,trace,stdout,stderr=self.run_upgrade()
         self.assertEqual(result,0,stdout+'\n'+stderr)
         backup=next(i for i,line in enumerate(trace) if 'image save' in line)
         self.assertLess(trace.index('ETHERSCAN_CHECK'),backup)
         self.assertLess(backup,trace.index('STOP_ORIGINAL'))
-        self.assertLess(trace.index('STOP_ORIGINAL'),trace.index('STAGED_REPLACEMENT'))
+        self.assertLess(trace.index('STOP_ORIGINAL'),trace.index('HISTORY_BACKUP'))
+        self.assertLess(trace.index('HISTORY_BACKUP'),trace.index('STAGED_REPLACEMENT'))
+        self.assertLess(trace.index('STAGED_REPLACEMENT'),trace.index('START_AND_CLEANUP'))
+        self.assertLess(trace.index('START_AND_CLEANUP'),trace.index('DATADOG_VERIFY'))
         self.assertEqual(sum(line.startswith('DOCKER start ') for line in trace),1)
         self.assertEqual(trace[-1],'WATCHER')
-        self.assertFalse(any('datadog' in line or 'bsc' in line.lower() or ' down' in line or 'prune' in line for line in trace))
+        self.assertLess(trace.index('DATADOG_CAPTURE'),trace.index('STOP_ORIGINAL'))
+        self.assertLess(trace.index('STAGED_REPLACEMENT'),trace.index('DATADOG_VERIFY'))
+        self.assertFalse(any('datadog-agent' in line or 'bsc' in line.lower() or ' down' in line or 'prune' in line for line in trace))
 
 if __name__ == '__main__': unittest.main()
