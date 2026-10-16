@@ -102,7 +102,7 @@ class UpgradeDatadogTests(unittest.TestCase):
 
     def test_explicit_handoff_requires_new_running_source_with_valid_nonzero_cursor(self):
         u = self.load()
-        for fault in ('none', 'missing', 'zero', 'past_end', 'stopped', 'wrong_mount'):
+        for fault in ('none', 'missing', 'zero', 'past_end', 'stopped', 'wrong_mount', 'forced_start'):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as td:
                 d = self.running(repaired=True); p = Path(td).resolve() / 'capture'; u.capture(d, p)
                 reg = json.loads(d.files[m.PERSISTENT_PATH + '/registry.json'])
@@ -115,6 +115,7 @@ class UpgradeDatadogTests(unittest.TestCase):
                         'TailingMode': ''}
                 if fault == 'stopped': d.source['state'].update(Running=False, Status='created')
                 if fault == 'wrong_mount': d.source['mounts'][0]['Source'] = '/other/federator-env/mainnet-ETH-RSK'
+                if fault == 'forced_start': d.source['labels'] = {'com.datadoghq.ad.logs': json.dumps([{'type':'file', 'path':d.source['log_path'], 'start_position':'forceBeginning'}])}
                 d.files[m.PERSISTENT_PATH + '/registry.json'] = json.dumps(reg).encode()
                 if fault == 'none':
                     u.verify(d, p, allow_handoff=True)

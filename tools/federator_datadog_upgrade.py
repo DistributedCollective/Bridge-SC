@@ -66,6 +66,10 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
     if not (enabled.lower() == 'true' if enabled is not None else config.get('logs_enabled') is True):
         raise r.RepairError('Datadog log collection is disabled; no service stopped')
     discovery = r.check_discovery(docker, agent, reference, config, env, work / 'discovery.private.tar')
+    if layout_source is not None and source['id'] != reference['id']:
+        actual_discovery = r.check_discovery(docker, agent, source, config, env, work / 'replacement-discovery.private.tar')
+        if actual_discovery['sha256'] != discovery['sha256']:
+            raise r.RepairError('Agent integrations changed during replacement discovery check')
     registry = None
     for attempt in range(3):
         data = docker.copy_out(agent['id'], run_path.rstrip('/') + '/registry.json', work / 'registry.private.json')
@@ -187,7 +191,7 @@ def verify(docker, output, allow_handoff=False):
         if stable(docker.inspect('datadog-agent', agent=True)) != current['agent']:
             raise r.RepairError('Datadog Agent changed during replacement verification')
         again = docker.inspect('bridge-sc_federation_1')
-        if any(again.get(k) != source.get(k) for k in ('id', 'image', 'log_path')) or mounts(again) != mounts(source) or again['state'].get('StartedAt') != source['state'].get('StartedAt') or not again['state'].get('Running') or again['state'].get('Paused'):
+        if any(again.get(k) != source.get(k) for k in ('id', 'image', 'log_path', 'labels')) or mounts(again) != mounts(source) or again['state'].get('StartedAt') != source['state'].get('StartedAt') or not again['state'].get('Running') or again['state'].get('Paused'):
             raise r.RepairError('Datadog replacement source changed during verification')
         handoff = True
     r.write_private(work / 'report.json', {'utc': r.utc(), 'agent_unchanged': True, 'state_retained': entry is not None,

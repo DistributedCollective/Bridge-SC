@@ -690,6 +690,9 @@ print(json.dumps({'exists':os.path.lexists(p),'regular':regular}))
         attempted_start = True
         docker.call(['start', agent['id']])
         fresh = docker.inspect('datadog-agent', agent=True)
+        expected = copy.deepcopy(agent)
+        expected['state']['StartedAt'] = fresh['state'].get('StartedAt')
+        ensure_same(expected, source, fresh, docker.inspect('bridge-sc_federation_1'), running_agent=True)
         write_private(output / 'poststart.private.json', {'agent': fresh, 'cutover': cutoff, 'utc': when,
                       'config_sha256': sha(check_cfg), 'resumed_prestart_attempt': retry})
         progress('waiting_for_acknowledged_source_progress')

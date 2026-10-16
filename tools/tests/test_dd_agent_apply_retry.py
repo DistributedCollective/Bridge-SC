@@ -124,6 +124,17 @@ class InterruptedApplyTests(unittest.TestCase):
                 self.assertEqual(len(list(output.glob('attempt-*'))), 2)
                 self.assertTrue(any((p / 'failure.json').is_file() for p in output.glob('attempt-*')))
 
+    def test_replacement_agent_after_start_is_not_adopted_as_resume_baseline(self):
+        class Replaced(StatefulDocker):
+            def call(self, args, **kwargs):
+                value = super().call(args, **kwargs)
+                if args[0] == 'start': self.agent['id'] = 'e' * 64
+                return value
+        with tempfile.TemporaryDirectory() as td:
+            d = Replaced(); packet = Path(td).resolve() / 'repair'; m.prepare(d, packet)
+            with self.assertRaises(m.RepairError): m.apply(d, packet)
+            self.assertFalse((packet / 'poststart.private.json').exists())
+
     def test_idle_source_keeps_agent_running_without_claiming_delivery(self):
         with tempfile.TemporaryDirectory() as td:
             d = StatefulDocker(); d.advance_registry = False
