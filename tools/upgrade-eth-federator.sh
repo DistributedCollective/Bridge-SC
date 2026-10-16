@@ -4,7 +4,7 @@ set +x
 set -Eeuo pipefail
 unset PYTHONOPTIMIZE PYTHONINSPECT
 umask 077
-VERSION=1.2.0
+VERSION=1.2.1
 FED_REPO="$HOME/Bridge-SC"
 REPO_OVERRIDE=''
 REPAIR_REVISION=''
@@ -99,7 +99,7 @@ require_inputs() {
   export FED_REPO REPAIR_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE OPERATOR
 }
 verify_bundle() {
-  for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
+  for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
     test -f "$OPS_DIR/$file" && test ! -L "$OPS_DIR/$file"
     test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
   done
@@ -147,10 +147,10 @@ esac
 git -C "$FED_REPO" fetch --no-tags origin federator-diagnostics-recovery-upgrade
 test "$(git -C "$FED_REPO" rev-parse --verify "$REPAIR_REVISION^{commit}")" = "$REPAIR_REVISION"
 git -C "$FED_REPO" merge-base --is-ancestor "$REPAIR_REVISION" FETCH_HEAD
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
   git -C "$FED_REPO" show "$REPAIR_REVISION:tools/$file" > "$OPS_DIR/$file"
 done
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
   test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
 done
 python3 - <<'PY'
@@ -207,10 +207,15 @@ console.log("Repair source hashes and native module imports passed");'
 unset PUBLIC_HASHES
 COMPOSE_PROJECT=$(python3 -c 'import json,os;from pathlib import Path;print(json.loads((Path(os.environ["OPS_DIR"])/"before.json").read_text())["compose_project"])')
 export COMPOSE_PROJECT FED_ENV=mainnet-ETH-RSK
-git -C "$FED_REPO" show "$REPAIR_REVISION:docker-compose-prod.yml" > "$OPS_DIR/docker-compose-prod.yml"
+git -C "$FED_REPO" show "$REPAIR_REVISION:docker-compose-prod.yml" | \
+  python3 "$OPS_DIR/federator_compose_plan.py" --base "$OPS_DIR/docker-compose-prod.yml"
 COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" \
   -f "$OPS_DIR/docker-compose-prod.yml" -f "$RELEASE_OVERRIDE")
-# Expanded Agent credentials stay in memory; only assertions are printed.
+# Parse without interpolation, then discard the Agent and its unused resources.
+# Only the selected ETH service may resolve environment variables.
+"${COMPOSE[@]}" config --no-interpolate --format json | \
+  python3 "$OPS_DIR/federator_compose_plan.py" --model "$OPS_DIR/federation-input.private.json"
+COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" -f "$OPS_DIR/federation-input.private.json")
 "${COMPOSE[@]}" config --format json | python3 -c '
 import json,os
 full=json.load(__import__("sys").stdin);s=full["services"]["federation"]

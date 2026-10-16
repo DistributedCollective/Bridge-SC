@@ -79,7 +79,10 @@ elif name=='docker':
   print('1'*40 if 'revision' in a[-1] else old if a[2]==old else new)
  elif 'config' in a and '--format' in a:print('{}')
 elif name=='python3':
- if args and args[0].endswith('federator_upgrade_safety.py'):
+ if args and args[0].endswith('federator_compose_plan.py'):
+  mode=args[1];note('COMPOSE_'+('BASE' if mode=='--base' else 'MODEL'))
+  sys.stdin.read();Path(args[2]).write_text('{}')
+ elif args and args[0].endswith('federator_upgrade_safety.py'):
   action='HISTORY_BACKUP' if '--archive-history' in args else 'START_AND_CLEANUP'
   note(action)
   if os.environ.get('UPGRADE_FAIL')=='history' and action=='HISTORY_BACKUP':sys.exit(1)
@@ -200,6 +203,18 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertNotIn('DATADOG_CAPTURE',trace)
         self.assertNotIn('STOP_ORIGINAL',trace)
         self.assertFalse(any(' pull ' in ' '+line+' ' for line in trace))
+
+    def test_only_app_model_is_interpolated_before_backup_or_stop(self):
+        result,trace,stdout,stderr=self.run_upgrade()
+        self.assertEqual(result,0,stdout+'\n'+stderr)
+        self.assertIn('COMPOSE_BASE',trace)
+        self.assertIn('COMPOSE_MODEL',trace)
+        uninterpolated=[line for line in trace if 'config --no-interpolate --format json' in line]
+        self.assertEqual(len(uninterpolated),1)
+        resolved=[line for line in trace if 'config --format json' in line and '--no-interpolate' not in line]
+        self.assertEqual(len(resolved),1)
+        self.assertIn('federation-input.private.json',resolved[0])
+        self.assertNotIn('docker-compose-prod.yml',resolved[0])
 
     def test_failed_history_backup_never_replaces_or_starts_container(self):
         result,trace,stdout,stderr=self.run_upgrade('history')
