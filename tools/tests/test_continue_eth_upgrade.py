@@ -34,6 +34,15 @@ class ContinueTests(unittest.TestCase):
         self.assertLess(boundary.index('\nrestore_key\n'),boundary.index('\nactivate\n'))
         self.assertLess(boundary.index('\nactivate\n'),boundary.index('\nrun_watcher\n'))
 
+    def test_continuation_uses_only_flags_supported_by_the_original_pinned_bundle(self):
+        m = self.module()
+        old = subprocess.check_output(['git', '-C', str(TOOLS.parent), 'show',
+            '510b1b3419593f4b1193c6249a17a7a8813712c2:tools/upgrade-eth-federator.sh'], text=True)
+        old_suffix = m.resume_script(old).split(m.SUFFIX_MARKER, 1)[1]
+        self.assertNotIn('--allow-source-handoff', old_suffix)
+        current_suffix = m.resume_script((TOOLS/'upgrade-eth-federator.sh').read_text()).split(m.SUFFIX_MARKER, 1)[1]
+        self.assertEqual(current_suffix.count('--allow-source-handoff'), 2)
+
     def test_unknown_script_layout_refused(self):
         m=self.module()
         with self.assertRaises(m.ContinueError):m.resume_script('echo do not execute\n')

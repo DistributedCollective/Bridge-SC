@@ -109,7 +109,7 @@ def resume_script(original):
     if original.count(BOUNDARY)!=1:
         raise ContinueError('Unsupported original upgrader entrypoint layout')
     prefix=original.split(BOUNDARY,1)[0]
-    return prefix+'\n'+SUFFIX_MARKER+r'''
+    suffix=r'''
 OPS_DIR=$RESUME_RUN
 export OPS_DIR
 step 'Verify this saved stopped-node attempt before continuing'
@@ -130,7 +130,7 @@ COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "
 EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
 export EXPECTED_IMAGE_ID
 test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$REPAIR_REVISION"
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
 python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
 confirm 'Continue this saved ETH upgrade from original key recovery now?' || exit 0
 step '6/7 Restore/check the ORIGINAL federator key and signer'
@@ -138,9 +138,12 @@ python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLU
 restore_key
 step '7/7 Stage, verify and start the already-downloaded image'
 activate
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
 run_watcher
 '''
+
+    flag = ' --allow-source-handoff' if '--allow-source-handoff' in original else ''
+    return prefix+'\n'+SUFFIX_MARKER+suffix.replace('__HANDOFF_FLAG__', flag)
 
 
 def verified_inputs(run, revision, signer):
