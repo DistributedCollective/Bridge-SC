@@ -18,7 +18,7 @@ import time
 
 import federator_dependencies as fd
 
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 SITES = ('datadoghq.com', 'datadoghq.eu', 'us3.datadoghq.com', 'us5.datadoghq.com',
          'ap1.datadoghq.com', 'ap2.datadoghq.com', 'uk1.datadoghq.com', 'ddog-gov.com', 'us2.ddog-gov.com')
 OPERATORS = ('fed_2', 'fed_1', 'fed_3', 'fed_4', 'fed_5', 'unspecified')
@@ -247,8 +247,7 @@ def read_app_key(path):
 def markers(text, started=None):
     rows=text.splitlines()[-2000:]
     out=[]
-    patterns=(('GAS_ERROR',r'Etherscan|GasPriceFetcher|GasPriceAvg|GasServices|fee readiness|base fee'),
-        ('DNS_ERROR',r'\b(?:ENOTFOUND|EAI_AGAIN)\b'),('SIGNATURE_ERROR',r'(?i)signature.*(?:request|error|fail)|getTransactionIdU'),
+    patterns=(('DNS_ERROR',r'\b(?:ENOTFOUND|EAI_AGAIN)\b'),
         ('PROCESS_FATAL',r'uncaughtException|UnhandledPromiseRejection|npm ERR!|FATAL ERROR|heap out of memory'),
         ('MISSING_KEY',r'ENOENT.*federator\.key'))
     known=('RSKKeyedAuthTCPTransport.addPeer','Buffer.concat','sendInitialAuth','receiveAuth','GasPriceFetcher','TransactionSender','Federator','Scheduler')
@@ -259,6 +258,14 @@ def markers(text, started=None):
         classes=[]
         if 'TypeError' in row and ('RSKKeyedAuth' in nearby or ('Buffer.concat' in nearby and 'null' in row)):
             classes.append('AUTH_STREAM_NULL')
+        # A subsystem name or signing request is not evidence of a failure.
+        message=re.sub(r'(?:\x1b)?\[[0-9;]*m','',row)
+        problem=re.search(r'(?i)\[(?:ERROR|FATAL|WARN)\]|\b(?:error|failed|failure|invalid|unavailable|deprecated|stale|timeout|rejected|insufficient)\b|\b(?:timed out|not enough|not ready|not available)\b',message)
+        if problem:
+            if re.search(r'(?i)etherscan|gaspricefetcher|gaspriceavg|gasservices|fee readiness|base fee',message):
+                classes.append('GAS_ERROR')
+            if re.search(r'(?i)signature|getTransactionIdU',message):
+                classes.append('SIGNATURE_ERROR')
         classes.extend(name for name,pat in patterns if re.search(pat,row))
         for cls in classes:
             out.append({'utc':stamp.isoformat().replace('+00:00','Z'),'class':cls,

@@ -105,6 +105,40 @@ class WatcherTests(unittest.TestCase):
         self.assertNotIn('OPAQUE',json.dumps(out))
         self.assertNotIn('Received null',json.dumps(out))
 
+    def test_healthy_gas_polls_and_signature_requests_do_not_create_error_markers(self):
+        lines = [
+            "[INFO] ETH-GasServices - scheduler poll run succesful, trigger next poll in 5000",
+            "[DEBUG] ETH-GasServices - currentEthGasBasePrice: 0.062315388",
+            "[DEBUG] ETH-GasServices - currentEthGasPriceAvg: 0.063021823",
+            "etherscanApiBaseUrl: https://api.etherscan.io/v2/api",
+            "[INFO] SIDE-FEDERATOR - Requesting other federators to sign event",
+            "[INFO] SIDE-FEDERATOR - signature request received",
+            "[INFO] SIDE-FEDERATOR - getting getTransactionIdU: 0x1234",
+        ]
+        raw = "\n".join("2026-01-01T00:00:00Z " + line for line in lines)
+        found = w.markers(raw)
+        self.assertEqual(found, [])
+        assessment = w.assess({"source": {"running": True}, "agent": {"running": True},
+                               "markers": found})
+        self.assertEqual(assessment["status"], "UNKNOWN")
+        self.assertNotEqual(assessment["reason"], "APPLICATION_MARKERS")
+
+    def test_genuine_gas_and_signature_failures_remain_visible_without_raw_secrets(self):
+        cases = [
+            ("[ERROR] ETH-GasServices - Unhandled Error on runGasPriceService() token=OPAQUE", "GAS_ERROR"),
+            ("Error getting gas prices from Etherscan: EAI_AGAIN", "GAS_ERROR"),
+            ("fee readiness: fresh positive base fee unavailable", "GAS_ERROR"),
+            ("[WARN] GasPriceFetcher - rejected response", "GAS_ERROR"),
+            ("Invalid signature from client secret=OPAQUE", "SIGNATURE_ERROR"),
+            ("signature request failed", "SIGNATURE_ERROR"),
+            ("Not enough signatures", "SIGNATURE_ERROR"),
+        ]
+        for line, expected in cases:
+            with self.subTest(line=line):
+                found = w.markers("2026-01-01T00:00:00Z " + line)
+                self.assertIn(expected, [item["class"] for item in found])
+                self.assertNotIn("OPAQUE", json.dumps(found))
+
     @unittest.skipIf(w is None, 'module missing')
     def test_read_key_missing_and_signing_shape_and_symlink_fail_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
