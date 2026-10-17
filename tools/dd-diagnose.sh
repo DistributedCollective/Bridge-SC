@@ -34,7 +34,10 @@ trap cleanup EXIT
 trap 'printf "Interrupted; partial report: %s\n" "$report"; exit 130' INT TERM
 
 safe() {
-  sed -E 's/[[:xdigit:]]{32,64}/[hex value redacted]/g; s#https?://[^[:space:]]+#[URL redacted]#g; s/(API [Kk]ey ending with )[[:alnum:]]+/\1[redacted]/g; s/((DD_API_KEY|api_key|api-key|Authorization)[=:][[:space:]]*)[^[:space:]]+/\1[redacted]/g'
+  sed -E 's/[[:xdigit:]]{32,64}/[hex value redacted]/g; s#https?://[^[:space:]]+#[URL redacted]#g; s/(API [Kk]ey ending with )[[:alnum:]]+/\1[redacted]/g;
+    s/([Bb][Ee][Aa][Rr][Ee][Rr][[:space:]]+)[^[:space:]",;]+/\1[redacted]/g;
+    s/([Aa]uthorization["'\'']?[[:space:]]*[=:][[:space:]]*).*/\1[redacted]/g;
+    s/([Aa][Pp][IiPp][_-]?[Kk][Ee][Yy]["'\'']?[[:space:]]*[=:][[:space:]]*).*/\1[redacted]/g'
 }
 note() { printf '%s\n' "$*" | tee -a "$report"; }
 section() {

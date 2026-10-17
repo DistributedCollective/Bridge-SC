@@ -16,6 +16,10 @@ restore the original key as described below. Existing keys are validated and
 never overwritten. Non-AWS hosts still need the supported Linux Docker setup
 and UID 1000 used by the existing application image.
 
+Chain RPC checks connect directly to the configured endpoint, ignoring ambient HTTP proxy
+variables and refusing redirects. Configure the final RPC URL and allow direct access from
+the host. This does not change application or Datadog networking.
+
 ## Fetch a reviewed revision
 
 Obtain the reviewed branch and its **full commit ID** through your review process.
@@ -273,7 +277,8 @@ container before repeating actions.
 
 The helper contains no Git pull/reset, image updates, container removal,
 restart-policy changes, Datadog edits, manual votes or signing/broadcast commands.
-Unit tests use temporary fixtures and stub all Docker, AWS and RPC operations:
+Unit tests use temporary fixtures, stub Docker/AWS operations and use only local fixtures
+or ephemeral localhost servers for RPC transport checks:
 
 ```sh
 python3 -m unittest discover -s tools/tests -v

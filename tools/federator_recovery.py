@@ -46,7 +46,7 @@ class IncompleteAudit(RecoveryError):
         self.chain_changed = chain_changed
 
 
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 LOG_TAIL = 2000
 LOG_TIMEOUT = 15
 MAX_LOG_WINDOW = 24 * 60 * 60
@@ -610,8 +610,9 @@ def redact_logs(text):
     text = re.sub(r'(?i)\b[a-z][a-z0-9+.-]*://[^\s<>\"\']+', '[URL redacted]', text)
     text = re.sub(r'(?i)(authorization[\"\']?\s*[:=]\s*)[^\r\n]+',
                   r'\1[credential redacted]', text)
+    text = re.sub(r'(?i)(\bbearer\s+)[^\s\"\',;]+', r'\1[credential redacted]', text)
     labels = (r'private[_-]?key|aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key|'
-              r'aws[_-]?session[_-]?token|password|passwd|secret|access[_-]?token|api[_-]?key|token')
+              r'aws[_-]?session[_-]?token|password|passwd|secret|access[_-]?token|api[_-]?key|app[_-]?key|token')
     text = re.sub(r'(?i)(\b(?:[a-z0-9]+[_-])*(?:' + labels + r')[\"\']?\s*[:=]\s*)'
                   r'(?:"[^"\r\n]*"|\'[^\'\r\n]*\'|[^\s,;})]+)',
                   r'\1[credential redacted]', text)
@@ -925,11 +926,17 @@ def local_diagnosis(node, evidence=None):
     return config
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 class RPC:
     def __init__(self, url, timeout=10):
         if not isinstance(url, str) or urlsplit(url).scheme not in ('http', 'https'):
             raise RecoveryError('RPC URL is missing or unsupported')
         self.url, self.timeout = url, timeout
+        self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
     def call(self, method, params):
         request = urllib.request.Request(
@@ -937,7 +944,7 @@ class RPC:
                                       'method': method, 'params': params}).encode(),
             headers={'Content-Type': 'application/json'})
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as res:
+            with self.opener.open(request, timeout=self.timeout) as res:
                 body = res.read(4 * 1024 * 1024 + 1)
             if len(body) > 4 * 1024 * 1024:
                 raise RecoveryError('RPC response exceeds the bounded payload size')

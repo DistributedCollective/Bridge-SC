@@ -172,7 +172,7 @@ class ProtocolTests(unittest.TestCase):
 
     def test_failed_rpc_message_does_not_expose_credential_bearing_url(self):
         url = 'https://user:SUPERSECRET@example.invalid/api?apikey=SUPERSECRET'
-        with patch('federator_recovery.urllib.request.urlopen',
+        with patch('federator_recovery.urllib.request.OpenerDirector.open',
                    side_effect=fr.urllib.error.URLError(url)):
             with self.assertRaises(fr.RecoveryError) as err:
                 fr.RPC(url).call('eth_blockNumber', [])
@@ -1115,7 +1115,7 @@ class CompatibilityTests(unittest.TestCase):
         class Response(io.BytesIO):
             pass
         payload = json.dumps({'id': 1, 'error': {'code': 'provider-private-credential', 'message': 'private'}}).encode()
-        with patch('federator_recovery.urllib.request.urlopen', return_value=Response(payload)):
+        with patch('federator_recovery.urllib.request.OpenerDirector.open', return_value=Response(payload)):
             with self.assertRaises(fr.RecoveryError) as err:
                 fr.RPC('https://rpc.invalid').call('eth_call', [])
         self.assertNotIn('provider-private-credential', str(err.exception))
