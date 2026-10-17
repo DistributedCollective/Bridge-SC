@@ -12,7 +12,7 @@ module.exports = class GasPriceAvg {
         }
         let total = 0;
         for(var i = 0; i < this.arr.length; i++) {
-            total +=  parseInt(this.arr[i], 10);
+            total +=  Number(this.arr[i]);
         }
         let avgGas = total / this.arr.length;
         return avgGas;
