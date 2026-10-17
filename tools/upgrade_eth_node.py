@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare an ETH-only upgrade automatically; --upgrade hands off to the approved release."""
+"""Interactive ETH upgrade wizard with automatic checks and a pinned approved handoff."""
 import argparse
 import fcntl
 import hashlib
@@ -17,7 +17,7 @@ import time
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
@@ -55,7 +55,9 @@ def make_override(container, image, repo):
     cfg = str(Path(repo) / 'federator-env/mainnet-ETH-RSK')
     if (container.get('Image') != BASE_IMAGE_ID or image.get('Id') != BASE_IMAGE_ID or
             image.get('Os') != 'linux' or image.get('Architecture') != 'amd64'):
-        refuse('Current application image is outside the reviewed native amd64 baseline')
+        observed = container.get('Image')
+        observed = observed if isinstance(observed,str) and re.fullmatch(r'sha256:[0-9a-f]{64}',observed) else 'unavailable'
+        refuse('Image compatibility failed: installed '+observed+'; supported baseline '+BASE_IMAGE_ID+'; Linux amd64 required')
     if container.get('State', {}).get('Status') not in ('running', 'exited'):
         refuse('An incomplete earlier upgrade or unsupported container state needs attention')
     current, original = container['Config'], image['Config']
@@ -294,24 +296,66 @@ def require_operator():
         raise LaunchError('Run this launcher on the native Linux amd64 federator host.')
 
 
+def step(number, title):
+    print('['+str(number)+'/4] '+title, flush=True)
+
+
+def prompted_value(prompt, supplied, valid, error, interactive, default=None):
+    if supplied is not None and valid(supplied):
+        return supplied
+    if not interactive:
+        raise LaunchError(error+' Provide the corresponding option or run in an interactive terminal.')
+    if supplied is not None:
+        print(error, flush=True)
+    while True:
+        try:value = input(prompt).strip()
+        except EOFError:
+            raise LaunchError('Terminal input ended. No upgrade started.') from None
+        if not value and default is not None:value = default
+        if valid(value):return value
+        print(error, flush=True)
+
+
 def main(argv=None, runner=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=(
+        'Run without options for the interactive wizard. Missing identity and key-custody inputs '
+        'are requested with validation. --prepare-only never opens the upgrader. '
+        '--upgrade skips only the launcher decision; the approved maintenance confirmation remains. '
+        '--version prints the launcher version without accessing Docker.'))
     parser.add_argument('--version', action='version', version='eth-upgrade-launcher '+VERSION)
     parser.add_argument('--repo', type=Path, default=Path.home()/'Bridge-SC')
-    parser.add_argument('--operator', choices=['fed_'+str(n) for n in range(1,6)])
-    parser.add_argument('--expected-signer')
-    parser.add_argument('--no-aws-secrets', action='store_true')
-    parser.add_argument('--upgrade', action='store_true', help='interactive handoff to approved upgrader after automatic checks')
-    parser.add_argument('--install-compose', action='store_true', help='install pinned user Compose plugin only')
+    parser.add_argument('--operator', help='anonymous node label fed_1..fed_5; prompted if missing')
+    parser.add_argument('--expected-signer', help='existing public federator address; prompted if missing')
+    custody = parser.add_mutually_exclusive_group()
+    custody.add_argument('--no-aws-secrets', dest='key_source', action='store_const', const='manual',
+                         help='manual original-key custody; hidden key input in the approved upgrader')
+    custody.add_argument('--aws-secrets', dest='key_source', action='store_const', const='aws',
+                         help='restore the original AWS secret')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--upgrade', action='store_true', help='open approved upgrader after checks without a launcher decision prompt')
+    mode.add_argument('--prepare-only', action='store_true', help='check and prepare files only; never open the approved upgrader')
+    mode.add_argument('--install-compose', action='store_true', help='install pinned user Compose plugin only')
     args = parser.parse_args(argv)
     require_operator()
     if args.install_compose:
-        if args.upgrade:parser.error('Choose --upgrade or --install-compose, not both')
+        print('Installing and verifying the pinned user Compose plugin; services remain unchanged.',flush=True)
         install_compose();return 0
-    if not args.operator or not re.fullmatch(r'0x[0-9a-fA-F]{40}', args.expected_signer or ''):
-        parser.error('--operator and --expected-signer are required for node preparation')
-    if args.upgrade and not sys.stdin.isatty():
+    interactive = sys.stdin.isatty()
+    if args.upgrade and not interactive:
         raise LaunchError('Run the command directly in interactive Bash; do not pipe it or use yes.')
+    step(1,'Identify this node and signing-key custody')
+    args.operator = prompted_value('Node label (fed_1..fed_5): ',args.operator,
+        lambda value: bool(re.fullmatch(r'fed_[1-5]',value)),
+        'Enter a node label from fed_1 through fed_5.',interactive)
+    args.expected_signer = prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
+        lambda value: bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
+        'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
+    if args.key_source is None and not interactive:
+        args.key_source = 'aws'
+    args.key_source = prompted_value('Original signing-key custody [aws/manual] (default aws): ',args.key_source,
+        lambda value: value in ('aws','manual'),
+        'Enter aws for your original AWS secret, or manual for private key entry.',interactive,default='aws')
+    step(2,'Check account, repository and upgrade lock')
     runner = runner or Runner();repo = args.repo.absolute()
     origin = runner.run(['git','-C',str(repo),'remote','get-url','origin']).strip()
     if origin not in ('https://github.com/DistributedCollective/Bridge-SC',
@@ -328,20 +372,21 @@ def main(argv=None, runner=None):
             raise LaunchError('Upgrade lock is not an owned regular file; services unchanged.')
         try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:
-            raise LaunchError('Another upgrade holds the lock. If it is only at the missing-override input prompt, '
-                              'press Ctrl+C there and repeat this command. If service changes already started, '
+            raise LaunchError('Another upgrade holds the lock. If it is only at the launcher decision or missing-override input prompt, '
+                              'decline or press Ctrl+C there, then repeat this command. If service changes already started, '
                               'keep that run and send its last phase to the coordinator.') from None
-        print('Checking existing ETH deployment; services remain running.', flush=True)
+        step(3,'Audit deployment and prepare the approved package; services remain unchanged')
         c = inspect_one(runner,['inspect','bridge-sc_federation_1'])
         image = inspect_one(runner,['image','inspect',c['Image']])
         if c['Image'] == APP_IMAGE_ID and image.get('Id') == APP_IMAGE_ID:
-            print('Approved application image is already installed. No upgrade or restart performed.');return 0
+            step(4,'Approved application image is already installed; no upgrade or restart performed');return 0
         override = make_override(c,image,repo)
         try:runner.run(DOCKER+['compose','version'])
         except LaunchError:
             command = 'python3 '+shlex.quote(str(Path(__file__).resolve()))+' --install-compose'
             raise LaunchError('Docker Compose v2 is missing/unusable. Run: '+command+
                               '\nThen repeat the same upgrade command. Neither service was changed.') from None
+        print('Fetching and verifying the pinned upgrade tools; no service is stopped.',flush=True)
         runner.run(['git','-C',str(repo),'fetch','--no-tags','origin',BRANCH],timeout=180)
         runner.run(['git','-C',str(repo),'merge-base','--is-ancestor',APP_REVISION,'FETCH_HEAD'])
         script = runner.run(['git','-C',str(repo),'show',APP_REVISION+':tools/upgrade-eth-federator.sh']).encode()
@@ -353,13 +398,22 @@ def main(argv=None, runner=None):
         same_process(c,inspect_one(runner,['inspect','bridge-sc_federation_1']))
         write_private(packet/'override.json',(json.dumps(override,indent=2)+'\n').encode())
         print('Host checks passed. Compose override prepared automatically: '+str(packet/'override.json'),flush=True)
+        step(4,'Preparation complete')
+        if args.prepare_only or (not args.upgrade and not interactive):
+            print('Preparation only; no service stopped and no upgrade started.',flush=True);return 0
         if not args.upgrade:
-            print('Preparation only; no service stopped. Add --upgrade to the same command to continue.');return 0
+            answer = prompted_value('Open the approved upgrade now? [y/N] ',None,
+                lambda value: value.lower() in ('','y','yes','n','no'),
+                'Enter y to open the approved upgrader, or n to finish without upgrading.',True)
+            if answer.lower() not in ('y','yes'):
+                print('No upgrade started. Prepared files are kept in '+str(packet),flush=True);return 0
+        # A pause at the decision prompt must not authorize a changed process.
+        same_process(c,inspect_one(runner,['inspect','bridge-sc_federation_1']))
     finally:
         os.close(fd)
     print('Starting approved upgrade. Answer y to the upgrade-window prompt only when you are ready; '
           'it handles backup, key restoration, restart and monitoring.',flush=True)
-    command = upgrade_command(packet,repo,args.operator,args.expected_signer,args.no_aws_secrets)
+    command = upgrade_command(packet,repo,args.operator,args.expected_signer,args.key_source == 'manual')
     os.execv(command[0],command)
     return 0
 

@@ -169,7 +169,7 @@ class LauncherFlowTests(unittest.TestCase):
     module = LauncherTests.module
     def invoke(self,m,root,runner,upgrade=False):
         argv=['--repo',str(root/'repo'),'--operator','fed_1','--expected-signer','0x'+'11'*20,'--no-aws-secrets']
-        if upgrade:argv.append('--upgrade')
+        argv.append('--upgrade' if upgrade else '--prepare-only')
         with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
              patch.object(m.sys.stdin,'isatty',return_value=True),patch.object(m.platform,'system',return_value='Linux'), \
              patch.object(m.platform,'machine',return_value='x86_64'),patch.object(m.os,'execv') as execute, \
@@ -298,6 +298,10 @@ class LauncherFlowTests(unittest.TestCase):
             runner.script=b'#!/bin/bash\nread -r -p "APPROVE_UPGRADE" answer\n[[ "$answer" == y ]] || exit 4\nprintf "APPROVED_WITH_TTY\\n"\n'
             pid,master=pty.fork()
             if pid==0:
+                # pytest replaces sys.stdin; the forked child must bind its actual PTY.
+                sys.stdin = os.fdopen(os.dup(0), 'r')
+                sys.stdout = os.fdopen(os.dup(1), 'w', buffering=1)
+                sys.stderr = os.fdopen(os.dup(2), 'w', buffering=1)
                 try:
                     with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root):
                         m.main(['--repo',str(root/'repo'),'--operator','fed_1',
@@ -325,6 +329,125 @@ class LauncherFlowTests(unittest.TestCase):
                     try:os.kill(pid,signal.SIGKILL)
                     except ProcessLookupError:pass
                     os.waitpid(pid,0)
+
+    def test_real_wizard_prompts_continue_into_the_same_terminal_without_restarting_checks(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.error=m.LaunchError
+            runner.script=b'#!/bin/bash\nread -r -p "APPROVE_UPGRADE" answer\n[[ "$answer" == y ]] || exit 4\nprintf "APPROVED_WITH_TTY\\n"\n'
+            pid,master=pty.fork()
+            if pid==0:
+                sys.stdin = os.fdopen(os.dup(0), 'r')
+                sys.stdout = os.fdopen(os.dup(1), 'w', buffering=1)
+                sys.stderr = os.fdopen(os.dup(2), 'w', buffering=1)
+                try:
+                    with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root):
+                        m.main(['--repo',str(root/'repo')],runner)
+                except BaseException:os._exit(8)
+                os._exit(9)
+            responses=[(b'Node label',b'fed_1\n'),(b'Existing PUBLIC',('0x'+'11'*20+'\n').encode()),
+                       (b'Original signing-key custody',b'manual\n'),(b'Open the approved upgrade now?',b'y\n'),
+                       (b'APPROVE_UPGRADE',b'y\n')]
+            output=b'';index=0;deadline=time.monotonic()+5;finished=False
+            try:
+                while time.monotonic()<deadline:
+                    if select.select([master],[],[],.1)[0]:
+                        try:chunk=os.read(master,8192)
+                        except OSError:break
+                        if not chunk:break
+                        output+=chunk
+                        if index<len(responses) and responses[index][0] in output:
+                            os.write(master,responses[index][1]);index+=1
+                        if b'APPROVED_WITH_TTY' in output:finished=True;break
+                self.assertTrue(finished,output.decode(errors='replace'))
+                self.assertEqual(index,5)
+                _,status=os.waitpid(pid,0);pid=None;self.assertEqual(os.waitstatus_to_exitcode(status),0)
+            finally:
+                os.close(master)
+                if pid is not None:
+                    try:os.kill(pid,signal.SIGKILL)
+                    except ProcessLookupError:pass
+                    os.waitpid(pid,0)
+
+
+class WizardTests(unittest.TestCase):
+    def module(self):
+        if not hasattr(self,'loaded_module'):
+            self.loaded_module = LauncherTests.module(self)
+        return self.loaded_module
+
+    def invoke(self,inputs,extra=(),runner_type=FakeRunner,interactive=True):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=runner_type(root/'repo');runner.error=m.LaunchError
+            with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
+                 patch.object(m.sys.stdin,'isatty',return_value=interactive),patch('builtins.input',side_effect=inputs) as prompt, \
+                 patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()) as output:
+                result=m.main(['--repo',str(root/'repo')]+list(extra),runner)
+            packets=len(list(root.glob('auto-eth-upgrade.*/override.json')))
+            return result,execute,prompt,output.getvalue(),runner.calls,packets
+
+    def test_missing_identity_reprompts_and_continues_without_rerunning_checks(self):
+        private_shape='f'*64
+        result,execute,prompt,output,calls,_=self.invoke(['fed_99','fed_1',private_shape,'0x'+'11'*20,'manual','y'])
+        self.assertEqual(result,0);execute.assert_called_once()
+        args=execute.call_args[0][1]
+        self.assertIn('--no-aws-secrets',args)
+        self.assertEqual(args[args.index('--expected-signer')+1],'0x'+'11'*20)
+        self.assertNotIn(private_shape,output)
+        self.assertEqual(sum('fetch' in c for c in calls),1)
+        self.assertEqual(prompt.call_count,6)
+        for number in range(1,5):self.assertIn('['+str(number)+'/4]',output)
+
+    def test_declining_wizard_stops_after_preparation_and_does_not_execute(self):
+        result,execute,_,output,calls,packets=self.invoke(['fed_1','0x'+'11'*20,'manual','n'])
+        self.assertEqual(result,0);execute.assert_not_called();self.assertEqual(packets,1)
+        self.assertIn('No upgrade started',output)
+        self.assertFalse(any(c[0]=='docker' and c[3] in ('start','stop','rm','run','pull') for c in calls))
+
+    def test_explicit_preparation_never_asks_to_activate(self):
+        result,execute,prompt,output,_,_=self.invoke([],extra=['--prepare-only','--operator','fed_1',
+            '--expected-signer','0x'+'11'*20,'--no-aws-secrets'])
+        self.assertEqual(result,0);execute.assert_not_called();prompt.assert_not_called()
+        self.assertIn('Preparation only',output)
+
+    def test_noninteractive_full_inputs_prepare_without_asking(self):
+        result,execute,prompt,_,_,_=self.invoke([],extra=['--operator','fed_1',
+            '--expected-signer','0x'+'11'*20,'--no-aws-secrets'],interactive=False)
+        self.assertEqual(result,0);execute.assert_not_called();prompt.assert_not_called()
+
+    def test_invalid_custody_and_confirmation_answers_are_reprompted(self):
+        _,execute,prompt,_,_,_=self.invoke(['fed_2','0x'+'22'*20,'unknown','aws','maybe','yes'])
+        execute.assert_called_once();self.assertNotIn('--no-aws-secrets',execute.call_args[0][1])
+        self.assertEqual(prompt.call_count,6)
+
+    def test_default_empty_confirmation_declines(self):
+        _,execute,_,output,_,_=self.invoke(['fed_1','0x'+'11'*20,'manual',''])
+        execute.assert_not_called();self.assertIn('No upgrade started',output)
+
+    def test_process_change_while_waiting_for_confirmation_blocks_handoff(self):
+        class ChangedAfterDecision(FakeRunner):
+            def run(self,args,timeout=20):
+                result=super().run(args,timeout)
+                if args[0]=='docker' and args[3:]==['inspect','bridge-sc_federation_1'] and self.inspect_count==3:
+                    value=json.loads(result);value[0]['State']['StartedAt']='2026-10-17T02:00:00Z';return json.dumps(value)
+                return result
+        m=self.module()
+        with self.assertRaises(m.LaunchError):
+            self.invoke(['fed_1','0x'+'11'*20,'manual','y'],runner_type=ChangedAfterDecision)
+
+    def test_help_explains_wizard_preparation_and_version_modes(self):
+        m=self.module()
+        with patch.object(m,'require_operator',side_effect=AssertionError('Help must work without Docker/account')), \
+             contextlib.redirect_stdout(io.StringIO()) as output,self.assertRaises(SystemExit) as exit:
+            m.main(['--help'])
+        self.assertEqual(exit.exception.code,0)
+        for word in ('wizard','--prepare-only','--version'):self.assertIn(word,output.getvalue())
+
+    def test_baseline_mismatch_reports_public_image_ids_without_extra_manual_probe(self):
+        m=self.module();c,i=fixture();observed='sha256:'+'b'*64;c['Image']=observed;i['Id']=observed
+        with self.assertRaises(m.LaunchError) as error:m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))
+        self.assertIn(observed,str(error.exception));self.assertIn(m.BASE_IMAGE_ID,str(error.exception))
 
 
 if __name__ == '__main__': unittest.main()

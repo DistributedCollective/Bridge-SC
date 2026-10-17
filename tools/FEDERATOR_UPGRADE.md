@@ -1,6 +1,6 @@
 # Upgrade an existing ETH federator
 
-The single-file [upgrade launcher](upgrade_eth_node.py) checks your existing deployment,
+The single-file [upgrade wizard](upgrade_eth_node.py) checks your existing deployment,
 prepares its Compose override automatically and runs the approved upgrade. It backs up
 the old image and retained logs, preserves bridge configuration/checkpoints, checks
 Datadog and runs the watcher. It uses a separately pinned, already-published application
@@ -14,15 +14,35 @@ release; updating this launcher does not require rebuilding the application imag
 - Access to your original federator key and your own Etherscan API key.
 
 Save the supplied file as `~/upgrade_eth_node.py`. Your coordinator provides the
-file checksum and a command filled with your node label/address. You do not need
+file checksum, node label/address and signing-key custody method. You do not need
 to prepare, download or enter a Compose override file. The launcher checks startup,
 environment, mounts, networking and resource settings directly on this server.
 
 ## 2. Run your supplied command
 
-Run the coordinator's filled launcher command with `--upgrade`. Without an AWS
-signing-key secret, it includes `--no-aws-secrets`; the original key is requested
-through hidden terminal input. Keys are never command arguments.
+Run:
+
+```bash
+python3 ~/upgrade_eth_node.py --upgrade
+```
+
+Missing node label, public federator address and AWS/manual custody are requested
+with validation; invalid answers are re-prompted without echoing them in errors.
+Use the public federator address from your supplied node table, not a private key.
+Four numbered stages identify the node, check the account/repository/lock, audit
+and prepare the approved package, then open the approved upgrader.
+
+For a natural interactive wizard, omit `--upgrade`. After preparation it asks
+`Open the approved upgrade now? [y/N]`; answering y continues with the same prepared
+packet. The approved upgrader still asks its separate maintenance confirmation
+before stopping services. Explicit `--prepare-only` finishes after checks/files,
+without an upgrade decision or handoff. Fully specified noninteractive use also
+prepares only; noninteractive `--upgrade` is refused.
+
+`--operator`, `--expected-signer`, `--aws-secrets` and `--no-aws-secrets` can supply
+known values directly. The signing key itself is requested only through the
+approved upgrader's hidden prompt. The launcher checks image identity itself;
+no preliminary manual `docker inspect` command is needed.
 
 If an earlier run is still at `Absolute path to supplied Compose override:`, press
 Ctrl+C there first. At that input prompt, no service changes have started. If an
@@ -60,9 +80,8 @@ If `report.json` is too large to attach, send its printed path with the summary.
 Keep the private run directory and image/log backups. On a failure, send the exact
 error and last phase; do not repeat the full upgrade after a service-stop phase.
 
-The launcher defaults to preparation-only without `--upgrade`: it performs checks
-and writes a private packet without starting the approved upgrader. Use `--help`
-for advanced parameters. The lower-level `upgrade-eth-federator.sh --override`
+Use `--help` for wizard, preparation and advanced parameters; `--version` prints
+the launcher version without accessing Docker. The lower-level `upgrade-eth-federator.sh --override`
 interface remains available for separately reviewed custom deployments.
 
 ## If startup key cleanup is pending
