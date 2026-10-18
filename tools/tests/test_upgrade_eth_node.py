@@ -111,6 +111,19 @@ class LauncherTests(unittest.TestCase):
             m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
         self.assertNotIn('DUMMY_PRIVATE', str(caught.exception))
 
+    def test_deployment_audit_reports_all_independent_blockers_together(self):
+        m=self.module();c,i=fixture()
+        c['Config']['Env'].append('SECRET=PRIVATE_VALUE')
+        c['HostConfig'].update(Memory=1024,IpcMode='shareable')
+        c['NetworkSettings']['Networks']['bridge-sc_default']['IPAMConfig']={'IPv4Address':'192.0.2.3'}
+        issues=[]
+        self.assertIsNone(m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'),issues=issues))
+        joined='\n'.join(issues)
+        for name in ('environment','addressing','Memory','IpcMode'):self.assertIn(name,joined)
+        self.assertNotIn('PRIVATE_VALUE',joined)
+        with self.assertRaises(m.LaunchError) as caught:m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))
+        for name in ('environment','addressing','Memory','IpcMode'):self.assertIn(name,str(caught.exception))
+
     def test_changed_process_is_not_handed_to_upgrader(self):
         m = self.module();c, _ = fixture()
         m.same_process(c, copy.deepcopy(c))
@@ -119,6 +132,12 @@ class LauncherTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(m.LaunchError):m.same_process(c, other)
         other = copy.deepcopy(c);other['State']['StartedAt'] = '2026-10-17T00:01:00Z'
         with self.assertRaises(m.LaunchError):m.same_process(c, other)
+
+    def test_mount_order_only_does_not_invalidate_the_same_process(self):
+        m=self.module();c,i=fixture();other=copy.deepcopy(c);other['Mounts'].reverse()
+        m.same_process(c,other)
+        other['Mounts'][0]['RW']=False
+        with self.assertRaises(m.LaunchError):m.same_process(c,other)
 
     def test_plan_uses_original_approved_bundle_and_manual_key_mode(self):
         m = self.module()
@@ -208,6 +227,48 @@ class LauncherFlowTests(unittest.TestCase):
             result=m.main(argv,runner)
         return result,execute,output.getvalue()
 
+    def test_collect_only_needs_no_signer_or_custody_and_never_hands_off(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.error=m.LaunchError
+            runner.container['HostConfig'].update(Memory=1024,IpcMode='shareable')
+            with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
+                 patch('builtins.input',side_effect=AssertionError('No secret or identity questions permitted')), \
+                 patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()) as out:
+                status=m.main(['--repo',str(root/'repo'),'--collect-only','--operator','fed_2'],runner)
+            self.assertEqual(status,0);execute.assert_not_called()
+            bundles=list(root.glob('environment.*/federator-environment.zip'))
+            self.assertEqual(len(bundles),1)
+            self.assertIn('Memory',out.getvalue());self.assertIn('IpcMode',out.getvalue())
+            self.assertFalse(any(a[0]=='git' and 'fetch' in a for a in runner.calls))
+            self.assertFalse(list(root.glob('auto-eth-upgrade.*/override.json')))
+
+    def test_collect_only_retains_host_packet_if_docker_is_unavailable(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve()
+            class Down(FakeRunner):
+                def run(self,args,timeout=20):
+                    if args[0]=='docker':raise m.LaunchError('Docker unavailable')
+                    return super().run(args,timeout)
+            runner=Down(root/'repo')
+            with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
+                 patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()):
+                status=m.main(['--repo',str(root/'repo'),'--collect-only','--operator','fed_2'],runner)
+            self.assertEqual(status,0);execute.assert_not_called()
+            self.assertEqual(len(list(root.glob('environment.*/federator-environment.zip'))),1)
+
+    def test_normal_wizard_saves_all_blockers_before_refusing_and_never_hands_off(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.error=m.LaunchError
+            runner.container['HostConfig'].update(Memory=1024,IpcMode='shareable')
+            with self.assertRaises(m.LaunchError):self.invoke(m,root,runner,upgrade=True)
+            reports=list(root.glob('environment.*/environment.json'));self.assertEqual(len(reports),1)
+            report=json.loads(reports[0].read_text())
+            text=json.dumps(report['checks']);self.assertIn('Memory',text);self.assertIn('IpcMode',text)
+            self.assertFalse(list(root.glob('auto-eth-upgrade.*/override.json')))
+
     def test_prepare_checks_locally_and_never_starts_or_stops_a_service(self):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -217,7 +278,7 @@ class LauncherFlowTests(unittest.TestCase):
             self.assertEqual(len(list(root.glob('auto-eth-upgrade.*/override.json'))),1)
             self.assertIn('Preparation only',output)
             for call in runner.calls:
-                if call[0]=='docker':self.assertIn(call[3],('inspect','image','compose'))
+                if call[0]=='docker':self.assertIn(call[3],('inspect','image','compose','version','exec'))
 
     def test_upgrade_executes_only_the_verified_original_bundle_with_generated_override(self):
         m=self.module()

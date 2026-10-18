@@ -14,16 +14,18 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.1.1'
+VERSION = '1.2.0'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
 BASE_IMAGE_ID = 'sha256:eb153b412d54517818953f45990a8a5c8cf552d64e881410134a6c406a0c785c'
 APP_IMAGE_ID = 'sha256:359c86c374970d1f8d6f803eb597e6713fa11695e6b3a3b7bf1ebd4503354bf4'
 BRANCH = 'federator-diagnostics-recovery-upgrade'
+ENVIRONMENT_SHA256 = '1dec671b46f00db14dfa4aaf1073bebbbbf9784d0a45418ede6c2f891469e9c9'
 DOCKER = ['docker', '--host', 'unix:///var/run/docker.sock']
 COMPOSE_URL = 'https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-x86_64'
 COMPOSE_SHA256 = 'dba9d98e1ba5bfe11d88c99b9bd32fc4a0624a30fafe68eea34d61a3e42fd372'
@@ -50,83 +52,90 @@ def environment(config):
     return result
 
 
-def make_override(container, image, repo):
+def make_override(container, image, repo, issues=None):
     """Accept the reviewed default deployment only; never silently drop custom settings."""
+    findings = []
+    def block(reason):
+        findings.append(reason)
     cfg = str(Path(repo) / 'federator-env/mainnet-ETH-RSK')
     if (container.get('Image') != BASE_IMAGE_ID or image.get('Id') != BASE_IMAGE_ID or
             image.get('Os') != 'linux' or image.get('Architecture') != 'amd64'):
         observed = container.get('Image')
         observed = observed if isinstance(observed,str) and re.fullmatch(r'sha256:[0-9a-f]{64}',observed) else 'unavailable'
-        refuse('Image compatibility failed: installed '+observed+'; supported baseline '+BASE_IMAGE_ID+'; Linux amd64 required')
+        block('Image compatibility failed: installed '+observed+'; supported baseline '+BASE_IMAGE_ID+'; Linux amd64 required')
     if container.get('State', {}).get('Status') not in ('running', 'exited'):
-        refuse('An incomplete earlier upgrade or unsupported container state needs attention')
+        block('An incomplete earlier upgrade or unsupported container state needs attention')
     current, original = container['Config'], image['Config']
     if current.get('User') not in ('node', '1000', '1000:1000'):
-        refuse('Container user is outside the UID1000 deployment profile')
+        block('Container user is outside the UID1000 deployment profile')
     if any(current.get(k) != original.get(k) for k in ('Entrypoint', 'Cmd', 'WorkingDir', 'StopSignal')):
-        refuse('Custom application startup is configured')
+        block('Custom application startup is configured')
     # ArgsEscaped is Windows-only image metadata; Linux container inspect may omit it.
     if any(v is not None and type(v) is not bool
            for v in (current.get('ArgsEscaped'), original.get('ArgsEscaped'))):
-        refuse('Unrecognized ArgsEscaped metadata (values withheld)')
+        block('Unrecognized ArgsEscaped metadata (values withheld)')
     config_runtime = {'ArgsEscaped','Hostname','Domainname','User','Env','Labels','Image','AttachStdin',
                       'AttachStdout','AttachStderr','ExposedPorts','Volumes'}
     for key in sorted(current.keys() | original.keys()):
         if key not in config_runtime and current.get(key) != original.get(key) and (current.get(key) or original.get(key)):
             field = key if re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', key) else 'unrecognized field'
-            refuse('Custom image/container configuration is present (' + field + '; values withheld)')
+            block('Custom image/container configuration is present (' + field + '; values withheld)')
     if current.get('AttachStdin'):
-        refuse('Custom attached standard input is configured')
+        block('Custom attached standard input is configured')
     if not set(current.get('ExposedPorts') or {}).issubset(set(original.get('ExposedPorts') or {}) | {'30303/tcp'}):
-        refuse('Custom exposed container ports are configured')
+        block('Custom exposed container ports are configured')
     if not set(current.get('Volumes') or {}).issubset({'/app/federator/config','/app/federator/db'}):
-        refuse('Custom image volume declarations are configured')
-    actual, baseline = environment(current), environment(original)
+        block('Custom image volume declarations are configured')
+    try:
+        actual, baseline = environment(current), environment(original)
+    except LaunchError:
+        block('Malformed container environment (values withheld)')
+        actual, baseline = {}, {}
     changed = {k for k in actual.keys() | baseline.keys() if k != 'TZ' and actual.get(k) != baseline.get(k)}
     if changed or actual.get('TZ') not in (None, 'UTC'):
-        refuse('Custom application environment is configured (values withheld)')
+        block('Custom application environment is configured (values withheld)')
     if current.get('Tty') or current.get('OpenStdin') or current.get('StdinOnce'):
-        refuse('Custom interactive container startup is configured')
+        block('Custom interactive container startup is configured')
     if current.get('Domainname') or current.get('Hostname') not in (None, '', container['Id'][:12]):
-        refuse('Custom container hostname is configured')
+        block('Custom container hostname is configured')
     mounts = container.get('Mounts') or []
     expected = {'/app/federator/config': cfg, '/app/federator/db': cfg + '/db'}
     if (len(mounts) != 2 or {m.get('Destination'): m.get('Source') for m in mounts} != expected or
             any(m.get('Type') != 'bind' or not m.get('RW') or
                 m.get('Propagation', 'rprivate') not in ('', 'rprivate') for m in mounts)):
-        refuse('Existing config/database mounts do not match the selected ETH checkout')
+        block('Existing config/database mounts do not match the selected ETH checkout')
     labels = current.get('Labels') or {}
     project = labels.get('com.docker.compose.project', '')
     if (not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,62}', project) or
             labels.get('com.docker.compose.service') != 'federation'):
-        refuse('Container is outside a supported Compose federation project')
+        block('Container is outside a supported Compose federation project')
     extra_labels = {k:v for k,v in labels.items() if not k.startswith('com.docker.compose.')
                     and v != (original.get('Labels') or {}).get(k)}
     if any(not isinstance(v,str) or '$' in v or k.startswith('org.opencontainers.image.') for k,v in extra_labels.items()):
-        refuse('Custom discovery labels require a reviewed literal-value deployment')
+        block('Custom discovery labels require a reviewed literal-value deployment')
     host = container['HostConfig']
     ports = host.get('PortBindings') or {}
     bindings = ports.get('30303/tcp') or []
     if (set(ports) != {'30303/tcp'} or len(bindings) != 1 or
             bindings[0].get('HostPort') != '4444' or bindings[0].get('HostIp', '') not in ('', '0.0.0.0')):
-        refuse('Custom peer port bindings are configured')
+        block('Custom peer port bindings are configured')
     network = project + '_default'
     if (host.get('NetworkMode') != network or
             set(container.get('NetworkSettings', {}).get('Networks') or {}) != {network}):
-        refuse('Custom application networking is configured')
-    endpoint = container['NetworkSettings']['Networks'][network]
+        block('Custom application networking is configured')
+    endpoint = (container.get('NetworkSettings', {}).get('Networks') or {}).get(network, {})
     automatic_aliases = {container['Id'][:12], 'federation', 'bridge-sc_federation_1'}
     if endpoint.get('IPAMConfig') or endpoint.get('DriverOpts') or endpoint.get('Links'):
-        refuse('Static network addressing or custom endpoint settings are configured')
+        block('Static network addressing or custom endpoint settings are configured')
     if any(not set(endpoint.get(k) or []).issubset(automatic_aliases) for k in ('Aliases','DNSNames')):
-        refuse('Custom network aliases are configured')
+        block('Custom network aliases are configured')
     dynamic_endpoint = {'Aliases','DNSNames','NetworkID','EndpointID','Gateway','IPAddress',
                         'IPPrefixLen','IPv6Gateway','GlobalIPv6Address','GlobalIPv6PrefixLen','MacAddress'}
     if any(v and k not in dynamic_endpoint for k,v in endpoint.items()):
-        refuse('Unsupported nonempty network endpoint settings are configured')
+        block('Unsupported nonempty network endpoint settings are configured')
     policy = host.get('RestartPolicy') or {}
     if policy.get('Name', '') not in ('', 'no') or policy.get('MaximumRetryCount', 0) != 0:
-        refuse('A custom restart policy is configured')
+        block('A custom restart policy is configured')
     zero_fields = ('Memory', 'MemoryReservation', 'MemorySwap', 'NanoCpus', 'CpuShares',
                    'CpuPeriod', 'CpuQuota', 'CpusetCpus', 'CpusetMems', 'BlkioWeight',
                    'OomKillDisable', 'OomScoreAdj', 'PublishAllPorts', 'Privileged',
@@ -134,13 +143,16 @@ def make_override(container, image, repo):
                    'Dns', 'DnsOptions', 'DnsSearch', 'ExtraHosts', 'Links', 'VolumesFrom',
                    'CapAdd', 'CapDrop', 'Devices', 'DeviceRequests', 'SecurityOpt', 'Sysctls',
                    'Ulimits', 'Tmpfs', 'StorageOpt', 'CgroupParent', 'GroupAdd')
-    if any(host.get(k) not in (None, False, 0, '', [], {}) for k in zero_fields):
-        refuse('Custom application limits, privileges or host settings are configured')
-    if (host.get('PidsLimit') not in (None, 0, -1) or host.get('MemorySwappiness') is not None or
-            host.get('ShmSize', 67108864) != 67108864 or
-            host.get('Runtime', 'runc') not in ('', 'runc') or
-            host.get('IpcMode', 'private') not in ('', 'private')):
-        refuse('Custom process/runtime limits are configured')
+    nondefault = [k for k in zero_fields if host.get(k) not in (None, False, 0, '', [], {})]
+    if nondefault:
+        block('Custom application limits, privileges or host settings are configured: ' + ', '.join(nondefault))
+    runtime_bad = []
+    if host.get('PidsLimit') not in (None, 0, -1):runtime_bad.append('PidsLimit')
+    if host.get('MemorySwappiness') is not None:runtime_bad.append('MemorySwappiness')
+    if host.get('ShmSize', 67108864) != 67108864:runtime_bad.append('ShmSize')
+    if host.get('Runtime', 'runc') not in ('', 'runc'):runtime_bad.append('Runtime')
+    if host.get('IpcMode', 'private') not in ('', 'private'):runtime_bad.append('IpcMode')
+    if runtime_bad:block('Custom process/runtime limits are configured: ' + ', '.join(runtime_bad))
     # Docker20.10 default OCI protections, checked against moby/v20.10.5/oci/defaults.go.
     protections = {
         'MaskedPaths': {'/proc/asound','/proc/acpi','/proc/kcore','/proc/keys','/proc/latency_stats',
@@ -148,7 +160,7 @@ def make_override(container, image, repo):
         'ReadonlyPaths': {'/proc/bus','/proc/fs','/proc/irq','/proc/sys','/proc/sysrq-trigger'}}
     for key, expected_paths in protections.items():
         if host.get(key) is not None and set(host[key]) != expected_paths:
-            refuse('Custom process filesystem protections are configured')
+            block('Custom process filesystem protections are configured')
     binds = host.get('Binds')
     if binds:
         allowed_binds = {source+':'+target for target,source in expected.items()}
@@ -156,20 +168,20 @@ def make_override(container, image, repo):
                       for b in binds if len(b.split(':')) in (2,3) and
                       (len(b.split(':'))==2 or b.split(':')[2]=='rw')}
         if len(normalized) != 2 or len(binds) != 2 or normalized != allowed_binds:
-            refuse('Custom bind mount options are configured')
+            block('Custom bind mount options are configured')
     if host.get('CgroupnsMode') not in (None,'','host','private'):
-        refuse('Unsupported cgroup namespace mode is configured')
+        block('Unsupported cgroup namespace mode is configured')
     handled_host = set(zero_fields) | set(protections) | {
         'Binds','PortBindings','NetworkMode','RestartPolicy','PidsLimit','MemorySwappiness',
         'ShmSize','Runtime','IpcMode','LogConfig','CgroupnsMode','ConsoleSize','Isolation'}
     if host.get('ConsoleSize', [0,0]) not in (None, [], [0,0]) or host.get('Isolation') not in (None,'','default'):
-        refuse('Custom terminal or process isolation settings are configured')
+        block('Custom terminal or process isolation settings are configured')
     if any(v for k,v in host.items() if k not in handled_host):
-        refuse('Unsupported nonempty Docker host settings are configured')
+        block('Unsupported nonempty Docker host settings are configured')
     if set((host.get('LogConfig') or {}).get('Config') or {}) - {'max-size','max-file'}:
-        refuse('Custom local logging options are configured')
+        block('Custom local logging options are configured')
     if host.get('LogConfig', {}).get('Type', '') not in ('', 'json-file'):
-        refuse('A different local log driver is configured')
+        block('A different local log driver is configured')
     result = {'services': {'federation': {
         'image': APP_IMAGE, 'container_name': 'bridge-sc_federation_1', 'user': '1000:1000',
         'restart': 'no', 'environment': {'TZ': 'UTC'},
@@ -178,12 +190,94 @@ def make_override(container, image, repo):
         'logging': {'driver': 'json-file', 'options': {'max-size': '20m', 'max-file': '5'}}}}}
     if extra_labels:result['services']['federation']['labels'] = extra_labels
     if host.get('CgroupnsMode'):result['services']['federation']['cgroup'] = host['CgroupnsMode']
+    if findings:
+        if issues is not None:
+            issues.extend(findings)
+            return None
+        refuse('Deployment audit found ' + str(len(findings)) + ' blockers:\n- ' + '\n- '.join(findings))
     return result
+
+
+def environment_component():
+    path=Path(__file__).resolve().with_name('federator_environment.py')
+    try:
+        fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+        with os.fdopen(fd,'rb') as source:
+            info=os.fstat(source.fileno());raw=source.read(256*1024+1)
+        if (not stat.S_ISREG(info.st_mode) or info.st_uid not in (os.getuid(),0) or
+                info.st_mode&0o022 or hashlib.sha256(raw).hexdigest()!=ENVIRONMENT_SHA256):
+            raise ValueError()
+    except (OSError,ValueError):
+        raise LaunchError('Verified environment component missing or changed. Use the complete reviewed download block; services unchanged.') from None
+    module=types.ModuleType('federator_environment');module.__file__=str(path)
+    exec(compile(raw,str(path),'exec'),module.__dict__)
+    return module
+
+
+def capture_snapshot(repo,runner,operator,container,image,previous_run=None):
+    component=environment_component()
+    report=component.collect(repo,runner,operator,container,image,previous_run,progress=lambda message:print(message,flush=True))
+    issues=[]
+    try:
+        if container.get('Image')!=APP_IMAGE_ID or image.get('Id')!=APP_IMAGE_ID:
+            make_override(container,image,repo,issues=issues)
+    except (KeyError,TypeError,ValueError,AttributeError):
+        issues.append('Deployment shape could not be fully audited; use the complete packet for review')
+    report['checks']=[{'status':'BLOCKER','summary':reason} for reason in issues]
+    if not issues:report['checks'].append({'status':'PASS','summary':'Existing deployment matches the supported replacement profile' if container.get('Image')!=APP_IMAGE_ID else 'Approved application image already installed; no replacement required'})
+    collection=report.get('agent',{}).get('collection',{})
+    version=collection.get('version')
+    if isinstance(version,str) and re.fullmatch(r'7\.\d+\.\d+',version) and int(version.split('.')[1])<33:
+        report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent '+version+' is older than the verified7.33+ repair; prepare its matched update from this packet'})
+    for field,title in [('api_key_present','Datadog API credential is absent'),('logs_enabled','Datadog log collection is disabled')]:
+        if collection.get(field) is False:report['checks'].append({'status':'BLOCKER','summary':title})
+    schema=collection.get('registry_schema')
+    if schema is not None and schema!=2:report['checks'].append({'status':'BLOCKER','summary':'Datadog logging registry schema is unsupported'})
+    for key,title in [('docker','Docker metadata'),('agent','Datadog metadata'),('application_probe','Application versions and RPC metadata')]:
+        if report.get(key,{}).get('status')=='UNAVAILABLE':report['checks'].append({'status':'UNKNOWN','summary':title+' could not be captured'})
+    if report.get('source_consistency',{}).get('status')=='CHANGED':
+        report['checks'].append({'status':'BLOCKER','summary':'Source process changed during collection; this packet is not a stable deployment profile'})
+    configuration=report.get('configuration',{})
+    if configuration.get('config_status')!='OBSERVED':report['checks'].append({'status':'UNKNOWN','summary':'Static public configuration could not be captured'})
+    if not report.get('docker',{}).get('compose_version'):
+        report['checks'].append({'status':'SETUP','summary':'Docker Compose v2 is missing or unavailable; the verified installer is available after profile review'})
+    configured=configuration.get('configured_signer')
+    rpc=report.get('application_probe',{}).get('rpc',{})
+    observed_members=[]
+    for label,chain_id in (('ethereum','0x1'),('rootstock','0x1e')):
+        values=rpc.get(label,{})
+        if values.get('status')=='OBSERVED':
+            if values.get('chainId')!=chain_id:
+                report['checks'].append({'status':'BLOCKER','summary':label+' RPC did not return the expected chain identity'})
+            members=values.get('members');required=values.get('required')
+            if members and required:
+                observed_members.append(sorted(x.lower() for x in members))
+                gate=max(required,len(members)//2+1)-1
+                if gate!=configuration.get('minimumPeerAmount'):
+                    report['checks'].append({'status':'BLOCKER','summary':label+' Federation quorum disagrees with the configured peer gate'})
+                if configured and configured.lower() not in [x.lower() for x in members]:
+                    report['checks'].append({'status':'BLOCKER','summary':label+' configured public signer is not a Federation member'})
+            settings=configuration.get('chains',{}).get(label,{})
+            if values.get('bridgeFederation') and settings.get('federation') and values['bridgeFederation'].lower()!=settings['federation'].lower():
+                report['checks'].append({'status':'BLOCKER','summary':label+' Bridge points at a different Federation than the configured one'})
+    if len(observed_members)==2 and observed_members[0]!=observed_members[1]:
+        report['checks'].append({'status':'BLOCKER','summary':'Ethereum and Rootstock Federation member sets differ'})
+    for name,info in configuration.get('key_files',{}).items():
+        if info.get('present') and (info.get('symlink') or not info.get('regular')):
+            report['checks'].append({'status':'BLOCKER','summary':name+' is not a supported regular credential file; contents were not read'})
+    if not configuration.get('key_files',{}).get('federator.key',{}).get('present'):
+        report['checks'].append({'status':'INFO','summary':'Temporary signing file absent; expected for a running node, original custody remains required for restart'})
+    report['status']='BLOCKED' if any(c['status']=='BLOCKER' for c in report['checks']) else 'CAPTURED_NOT_UPGRADE_APPROVAL'
+    return report
 
 
 def same_process(before, after):
     for key in ('Id', 'Image', 'Config', 'HostConfig', 'Mounts', 'NetworkSettings'):
-        if before.get(key) != after.get(key):
+        left,right=before.get(key),after.get(key)
+        if key=='Mounts':
+            canonical=lambda values:sorted(json.dumps(v,sort_keys=True) for v in values or [])
+            left,right=canonical(left),canonical(right)
+        if left != right:
             refuse('Container identity or deployment changed during preparation')
     for key in ('Status', 'StartedAt'):
         if before['State'].get(key) != after['State'].get(key):
@@ -339,8 +433,28 @@ def main(argv=None, runner=None):
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--upgrade', action='store_true', help='open approved upgrader after checks without a launcher decision prompt')
     mode.add_argument('--prepare-only', action='store_true', help='check and prepare files only; never open the approved upgrader')
+    mode.add_argument('--collect-only', action='store_true', help='collect one sanitized environment packet; no signer/custody prompts and no upgrade')
+    mode.add_argument('--replay-environment', type=Path, help='audit a collected environment JSON offline; no Docker/network or service changes')
+    parser.add_argument('--previous-run', type=Path, help='include a sanitized original container from a saved private upgrade run')
     mode.add_argument('--install-compose', action='store_true', help='install pinned user Compose plugin only')
     args = parser.parse_args(argv)
+    if args.replay_environment:
+        component=environment_component()
+        try:
+            report=component.load_replay(args.replay_environment)
+            deployments=[('current',report['deployment'])]
+            if isinstance(report.get('previous_deployment'),dict) and 'container' in report['previous_deployment']:
+                deployments.append(('original',report['previous_deployment']))
+            blocked=False
+            for label,data in deployments:
+                issues=[];make_override(data['container'],data['image'],Path(data['repo']),issues=issues)
+                print(label+': '+str(len(issues))+' deployment blockers')
+                for issue in issues:print('- '+issue)
+                blocked=blocked or bool(issues)
+            print('Offline deployment replay only; no Docker, network, signing or captured command was executed.')
+            return 1 if blocked else 0
+        except (component.EnvironmentError,OSError,ValueError,KeyError,TypeError,AttributeError,RecursionError):
+            raise LaunchError('Replay packet malformed or unavailable; no captured command was executed.') from None
     require_operator()
     if args.install_compose:
         print('Installing and verifying the pinned user Compose plugin; services remain unchanged.',flush=True)
@@ -348,18 +462,19 @@ def main(argv=None, runner=None):
     interactive = sys.stdin.isatty()
     if args.upgrade and not interactive:
         raise LaunchError('Run the command directly in interactive Bash; do not pipe it or use yes.')
-    step(1,'Identify this node and signing-key custody')
+    step(1,'Identify this node for read-only environment capture' if args.collect_only else 'Identify this node and signing-key custody')
     args.operator = prompted_value('Node label (fed_1..fed_5): ',args.operator,
         lambda value: bool(re.fullmatch(r'fed_[1-5]',value)),
         'Enter a node label from fed_1 through fed_5.',interactive)
-    args.expected_signer = prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
-        lambda value: bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
-        'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
-    if args.key_source is None and not interactive:
-        args.key_source = 'aws'
-    args.key_source = prompted_value('Original signing-key custody [aws/manual] (default aws): ',args.key_source,
-        lambda value: value in ('aws','manual'),
-        'Enter aws for your original AWS secret, or manual for private key entry.',interactive,default='aws')
+    if not args.collect_only:
+        args.expected_signer = prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
+            lambda value: bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
+            'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
+        if args.key_source is None and not interactive:
+            args.key_source = 'aws'
+        args.key_source = prompted_value('Original signing-key custody [aws/manual] (default aws): ',args.key_source,
+            lambda value: value in ('aws','manual'),
+            'Enter aws for your original AWS secret, or manual for private key entry.',interactive,default='aws')
     step(2,'Check account, repository and upgrade lock')
     runner = runner or Runner();repo = args.repo.absolute()
     origin = runner.run(['git','-C',str(repo),'remote','get-url','origin']).strip()
@@ -381,8 +496,23 @@ def main(argv=None, runner=None):
                               'decline or press Ctrl+C there, then repeat this command. If service changes already started, '
                               'keep that run and send its last phase to the coordinator.') from None
         step(3,'Audit deployment and prepare the approved package; services remain unchanged')
-        c = inspect_one(runner,['inspect','bridge-sc_federation_1'])
-        image = inspect_one(runner,['image','inspect',c['Image']])
+        c,image={},{}
+        try:
+            c = inspect_one(runner,['inspect','bridge-sc_federation_1'])
+            image = inspect_one(runner,['image','inspect',c['Image']])
+        except (LaunchError,KeyError):
+            print('Docker deployment metadata unavailable; collecting remaining host evidence without service changes.',flush=True)
+        report=capture_snapshot(repo,runner,args.operator,c,image,args.previous_run)
+        component=environment_component()
+        capture_dir=Path(tempfile.mkdtemp(prefix='environment.',dir=base));capture_dir.chmod(0o700)
+        bundle=component.write_bundle(report,capture_dir)
+        print(component.summary(report),flush=True)
+        print('Environment packet: '+str(bundle),flush=True)
+        if args.collect_only:
+            step(4,'Environment captured; no upgrade started. Send only the ZIP packet to your coordinator')
+            return 0
+        if any(check.get('status')=='BLOCKER' for check in report['checks']):
+            raise LaunchError('All detected deployment blockers are listed above. Services unchanged. Send only '+str(bundle)+'; do not rerun the upgrade or send raw configuration.')
         if c['Image'] == APP_IMAGE_ID and image.get('Id') == APP_IMAGE_ID:
             step(4,'Approved application image is already installed; no upgrade or restart performed');return 0
         override = make_override(c,image,repo)

@@ -1,6 +1,6 @@
 # Upgrade an existing ETH federator
 
-The single-file [upgrade wizard](upgrade_eth_node.py) checks your existing deployment,
+The [upgrade wizard](upgrade_eth_node.py) checks your existing deployment,
 prepares its Compose override automatically and runs the approved upgrade. It backs up
 the old image and retained logs, preserves bridge configuration/checkpoints, checks
 Datadog and runs the watcher. It uses a separately pinned, already-published application
@@ -9,21 +9,37 @@ release; updating this launcher does not require rebuilding the application imag
 ## 1. Have these ready
 
 - Access to the ETH server as `ubuntu`, UID1000, using interactive Bash.
-- The reviewed `upgrade_eth_node.py` file supplied by your release coordinator.
+- The verified download block supplied by your release coordinator.
 - Your assigned `fed_n` label and existing public **federator** signer address.
 - Access to your original federator key and your own Etherscan API key.
 
-Save the supplied file as `~/upgrade_eth_node.py`. Your coordinator provides the
-file checksum, node label/address and signing-key custody method. You do not need
+The supplied download block places the launcher and its hash-verified environment component
+in one private directory. Your coordinator provides the anonymous node label/address and
+signing-key custody method. You do not need
 to prepare, download or enter a Compose override file. The launcher checks startup,
 environment, mounts, networking and resource settings directly on this server.
+
+## Collect the environment before an upgrade
+
+Run the coordinator's verified download block in collection mode. It invokes
+`upgrade_eth_node.py --collect-only`; only the anonymous node label is needed.
+No signing key, AWS secret access, Etherscan key entry or service restart is requested.
+The wizard prints progress and saves one `federator-environment.zip` containing a
+sanitized deployment fixture and summary. Send that ZIP to the coordinator. Keep
+existing services running. Wait for the matched upgrade command after local replay.
+
+The same read-only capture runs automatically before ordinary upgrade preparation.
+All supported deployment checks are reported together; any blocker prevents handoff.
+An available original run is discovered only under the private ETH operations directory
+and must match this ETH checkout. Only sanitized launch/config metadata is exported;
+image layers, raw environment, logs, credentials and databases are not copied.
 
 ## 2. Run your supplied command
 
 Run:
 
 ```bash
-python3 ~/upgrade_eth_node.py --upgrade
+python3 upgrade_eth_node.py --upgrade
 ```
 
 Missing node label, public federator address and AWS/manual custody are requested
