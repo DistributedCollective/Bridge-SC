@@ -17,7 +17,7 @@ import time
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
@@ -65,11 +65,16 @@ def make_override(container, image, repo):
         refuse('Container user is outside the UID1000 deployment profile')
     if any(current.get(k) != original.get(k) for k in ('Entrypoint', 'Cmd', 'WorkingDir', 'StopSignal')):
         refuse('Custom application startup is configured')
-    config_runtime = {'Hostname','Domainname','User','Env','Labels','Image','AttachStdin',
+    # ArgsEscaped is Windows-only image metadata; Linux container inspect may omit it.
+    if any(v is not None and type(v) is not bool
+           for v in (current.get('ArgsEscaped'), original.get('ArgsEscaped'))):
+        refuse('Unrecognized ArgsEscaped metadata (values withheld)')
+    config_runtime = {'ArgsEscaped','Hostname','Domainname','User','Env','Labels','Image','AttachStdin',
                       'AttachStdout','AttachStderr','ExposedPorts','Volumes'}
-    for key in current.keys() | original.keys():
+    for key in sorted(current.keys() | original.keys()):
         if key not in config_runtime and current.get(key) != original.get(key) and (current.get(key) or original.get(key)):
-            refuse('Custom image/container configuration is present')
+            field = key if re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', key) else 'unrecognized field'
+            refuse('Custom image/container configuration is present (' + field + '; values withheld)')
     if current.get('AttachStdin'):
         refuse('Custom attached standard input is configured')
     if not set(current.get('ExposedPorts') or {}).issubset(set(original.get('ExposedPorts') or {}) | {'30303/tcp'}):

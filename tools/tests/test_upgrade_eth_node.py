@@ -80,6 +80,37 @@ class LauncherTests(unittest.TestCase):
                 self.assertNotIn('DUMMY_PRIVATE', str(caught.exception))
                 self.assertIn('existing services', str(caught.exception))
 
+    def test_linux_legacy_argsescaped_metadata_does_not_block_matching_runtime(self):
+        # The pinned public Linux image has ArgsEscaped=true; Docker omits it on containers.
+        # This flag affects Windows command-line interpretation, not our pinned Linux runtime.
+        m = self.module()
+        for observed in (None, False, True):
+            with self.subTest(container_argsescaped=observed):
+                c, i = fixture();i['Config']['ArgsEscaped'] = True
+                if observed is not None:c['Config']['ArgsEscaped'] = observed
+                plan = m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+                self.assertEqual(plan['services']['federation']['image'], m.APP_IMAGE)
+        for invalid in ('true', 1, {}, []):
+            c, i = fixture();c['Config']['ArgsEscaped'] = invalid
+            with self.subTest(invalid=invalid), self.assertRaises(m.LaunchError):
+                m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+        c, i = fixture();i['Config']['ArgsEscaped'] = True;c['Config']['Cmd'] = ['other-command']
+        with self.assertRaises(m.LaunchError):m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+        c, i = fixture();i['Config']['ArgsEscaped'] = True;i['Os'] = 'windows'
+        with self.assertRaises(m.LaunchError):m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+
+    def test_unknown_config_refusal_names_field_without_values(self):
+        m = self.module();c, i = fixture()
+        c['Config']['Healthcheck'] = {'Test': ['CMD', 'DUMMY_PRIVATE_VALUE']}
+        with self.assertRaises(m.LaunchError) as caught:
+            m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+        self.assertIn('Healthcheck', str(caught.exception))
+        self.assertNotIn('DUMMY_PRIVATE_VALUE', str(caught.exception))
+        c, i = fixture();c['Config']['DUMMY_PRIVATE_FIELD=secret'] = 'DUMMY_PRIVATE_VALUE'
+        with self.assertRaises(m.LaunchError) as caught:
+            m.make_override(c, i, Path('/home/ubuntu/Bridge-SC'))
+        self.assertNotIn('DUMMY_PRIVATE', str(caught.exception))
+
     def test_changed_process_is_not_handed_to_upgrader(self):
         m = self.module();c, _ = fixture()
         m.same_process(c, copy.deepcopy(c))
