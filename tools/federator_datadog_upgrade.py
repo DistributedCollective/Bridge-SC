@@ -9,7 +9,7 @@ import sys
 import time
 import dd_agent_recovery as r
 
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 
 
 def stable(agent):
@@ -28,6 +28,26 @@ def require_same_source(before, after):
         if left != right:raise r.RepairError('ETH source identity/layout changed during Agent operation')
     if any(before['state'].get(k)!=after['state'].get(k) for k in ('StartedAt','Running','Paused','Status')):
         raise r.RepairError('ETH source process changed during Agent operation')
+
+
+def registry_sample_metadata(data):
+    info={'bytes':len(data),'sha256':r.sha(data),'zero_bytes':data.count(b'\0'),
+          'valid_json':False,'valid_after_padding_removal':False}
+    try:
+        value=json.loads(data);info['valid_json']=True
+        info['json_type']=type(value).__name__
+        if isinstance(value,dict):
+            version=value.get('Version')
+            info['schema']=version if type(version) is int and 0<=version<=100 else None
+            info['entries']=len(value['Registry']) if isinstance(value.get('Registry'),dict) else None
+    except (ValueError,UnicodeError) as error:
+        info['error_type']=type(error).__name__
+        info['position']=getattr(error,'pos',getattr(error,'start',None))
+        trimmed=data.rstrip(b'\0 \t\r\n')
+        if trimmed and b'\0' in data[len(trimmed):]:
+            try:json.loads(trimmed);info['valid_after_padding_removal']=True
+            except (ValueError,UnicodeError):pass
+    return info
 
 
 def read_state(docker, work, require_cursor=True, layout_source=None, allow_stopped=False):
@@ -83,15 +103,21 @@ def read_state(docker, work, require_cursor=True, layout_source=None, allow_stop
         actual_discovery = r.check_discovery(docker, agent, source, config, env, work / 'replacement-discovery.private.tar')
         if actual_discovery['sha256'] != discovery['sha256']:
             raise r.RepairError('Agent integrations changed during replacement discovery check')
-    registry = None
-    for attempt in range(3):
+    registry = None;samples=[]
+    attempts=3 if agent['state'].get('Running') else 1
+    for attempt in range(attempts):
         data = docker.copy_out(agent['id'], run_path.rstrip('/') + '/registry.json', work / 'registry.private.json')
+        samples.append(registry_sample_metadata(data))
         try:
             registry = json.loads(data); break
-        except ValueError:
-            if attempt == 2: raise r.RepairError('Live Agent registry could not be sampled consistently') from None
+        except (ValueError,UnicodeError):
+            if attempt == attempts-1:
+                report=work / 'registry-diagnostic.json'
+                r.write_private(report,{'agent_running':agent['state'].get('Running') is True,'samples':samples,'registry_changed_by_tool':False,'services_changed':False})
+                label='Running Agent' if agent['state'].get('Running') else 'Stopped Agent'
+                raise r.RepairError(label+' registry copy is not valid JSON; original retained. Send only '+str(report)) from None
             time.sleep(.2)
-    if type(registry.get('Version')) is not int or registry['Version'] != 2 or not isinstance(registry.get('Registry'), dict):
+    if not isinstance(registry,dict) or type(registry.get('Version')) is not int or registry['Version'] != 2 or not isinstance(registry.get('Registry'), dict):
         raise r.RepairError('Unsupported Agent registry schema; no service stopped')
     initialization=r.initialization_state(docker,agent,volume) if persistent else None
     if persistent:
