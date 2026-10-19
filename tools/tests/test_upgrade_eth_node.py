@@ -58,6 +58,47 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(service['volumes'][0]['source'], container['Mounts'][0]['Source'])
         self.assertNotIn('DATADOG', json.dumps(result))
 
+    def test_existing_shareable_ipc_is_preserved_without_host_namespace_access(self):
+        m=self.module();c,i=fixture()
+        c['HostConfig']['IpcMode']='shareable'
+        result=m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))
+        service=result['services']['federation']
+        self.assertEqual(service['ipc'],'shareable')
+        self.assertNotIn('privileged',service)
+        for unsafe in ('host','container:unrelated','service:unrelated'):
+            c['HostConfig']['IpcMode']=unsafe
+            with self.subTest(ipc=unsafe),self.assertRaises(m.LaunchError):
+                m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))
+
+    def test_private_ipc_is_explicit_in_replacement_plan(self):
+        m=self.module();c,i=fixture()
+        self.assertEqual(m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))['services']['federation']['ipc'],'private')
+
+    def test_stopped_or_paused_agent_is_a_reported_blocker_even_if_inspect_succeeded(self):
+        import types
+        m=self.module();c,i=fixture()
+        for state in ({'Status':'exited','Running':False,'Paused':False,'ExitCode':255},
+                      {'Status':'running','Running':True,'Paused':True}):
+            report={'agent':{'status':'OBSERVED','deployment':{'State':state},'collection':None},
+                    'configuration':{'config_status':'OBSERVED'},'docker':{'compose_version':'2.40.3'}}
+            component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(report))
+            with self.subTest(state=state),patch.object(m,'environment_component',return_value=component):
+                result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_2',c,i)
+            self.assertEqual(result['status'],'BLOCKED')
+            self.assertTrue(any(x['status']=='BLOCKER' and 'Datadog Agent is not running' in x['summary'] for x in result['checks']))
+            self.assertTrue(any(x['status']=='UNKNOWN' and 'checkpoint' in x['summary'] for x in result['checks']))
+
+    def test_running_agent_does_not_gain_stopped_agent_blocker(self):
+        import types
+        m=self.module();c,i=fixture()
+        report={'agent':{'status':'OBSERVED','deployment':{'State':{'Status':'running','Running':True,'Paused':False}},
+                         'collection':{'version':'7.33.1','api_key_present':True,'logs_enabled':True,'registry_schema':2}},
+                'configuration':{'config_status':'OBSERVED'},'docker':{'compose_version':'2.40.3'}}
+        component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(report))
+        with patch.object(m,'environment_component',return_value=component):
+            result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_3',c,i)
+        self.assertFalse(any(x['status']=='BLOCKER' for x in result['checks']))
+
     def test_incompatible_host_stops_without_exporting_private_environment(self):
         m = self.module()
         variants = [('environment', lambda c: c['Config']['Env'].append('PRIVATE_PROVIDER_KEY=DUMMY_PRIVATE')),
@@ -114,7 +155,7 @@ class LauncherTests(unittest.TestCase):
     def test_deployment_audit_reports_all_independent_blockers_together(self):
         m=self.module();c,i=fixture()
         c['Config']['Env'].append('SECRET=PRIVATE_VALUE')
-        c['HostConfig'].update(Memory=1024,IpcMode='shareable')
+        c['HostConfig'].update(Memory=1024,IpcMode='host')
         c['NetworkSettings']['Networks']['bridge-sc_default']['IPAMConfig']={'IPv4Address':'192.0.2.3'}
         issues=[]
         self.assertIsNone(m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'),issues=issues))
@@ -231,7 +272,7 @@ class LauncherFlowTests(unittest.TestCase):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.error=m.LaunchError
-            runner.container['HostConfig'].update(Memory=1024,IpcMode='shareable')
+            runner.container['HostConfig'].update(Memory=1024,IpcMode='host')
             with patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
                  patch('builtins.input',side_effect=AssertionError('No secret or identity questions permitted')), \
                  patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()) as out:
@@ -262,7 +303,7 @@ class LauncherFlowTests(unittest.TestCase):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.error=m.LaunchError
-            runner.container['HostConfig'].update(Memory=1024,IpcMode='shareable')
+            runner.container['HostConfig'].update(Memory=1024,IpcMode='host')
             with self.assertRaises(m.LaunchError):self.invoke(m,root,runner,upgrade=True)
             reports=list(root.glob('environment.*/environment.json'));self.assertEqual(len(reports),1)
             report=json.loads(reports[0].read_text())

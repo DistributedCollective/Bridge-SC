@@ -18,7 +18,7 @@ import types
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
@@ -151,7 +151,7 @@ def make_override(container, image, repo, issues=None):
     if host.get('MemorySwappiness') is not None:runtime_bad.append('MemorySwappiness')
     if host.get('ShmSize', 67108864) != 67108864:runtime_bad.append('ShmSize')
     if host.get('Runtime', 'runc') not in ('', 'runc'):runtime_bad.append('Runtime')
-    if host.get('IpcMode', 'private') not in ('', 'private'):runtime_bad.append('IpcMode')
+    if host.get('IpcMode', 'private') not in ('', 'private', 'shareable'):runtime_bad.append('IpcMode')
     if runtime_bad:block('Custom process/runtime limits are configured: ' + ', '.join(runtime_bad))
     # Docker20.10 default OCI protections, checked against moby/v20.10.5/oci/defaults.go.
     protections = {
@@ -185,6 +185,7 @@ def make_override(container, image, repo, issues=None):
     result = {'services': {'federation': {
         'image': APP_IMAGE, 'container_name': 'bridge-sc_federation_1', 'user': '1000:1000',
         'restart': 'no', 'environment': {'TZ': 'UTC'},
+        'ipc': host.get('IpcMode') or 'private',
         'volumes': [{'type': 'bind', 'source': source, 'target': target}
                     for target, source in expected.items()],
         'logging': {'driver': 'json-file', 'options': {'max-size': '20m', 'max-file': '5'}}}}}
@@ -225,7 +226,13 @@ def capture_snapshot(repo,runner,operator,container,image,previous_run=None):
         issues.append('Deployment shape could not be fully audited; use the complete packet for review')
     report['checks']=[{'status':'BLOCKER','summary':reason} for reason in issues]
     if not issues:report['checks'].append({'status':'PASS','summary':'Existing deployment matches the supported replacement profile' if container.get('Image')!=APP_IMAGE_ID else 'Approved application image already installed; no replacement required'})
-    collection=report.get('agent',{}).get('collection',{})
+    agent=report.get('agent',{})
+    state=agent.get('deployment',{}).get('State',{})
+    if agent.get('status')=='OBSERVED' and (state.get('Running') is not True or state.get('Paused')):
+        report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent is not running or is paused; preserve its saved checkpoint before a matched recovery'})
+    collection=agent.get('collection') or {}
+    if agent.get('status')=='OBSERVED' and not collection:
+        report['checks'].append({'status':'UNKNOWN','summary':'Datadog credential validity and logging checkpoint were not captured; metadata inspection is not delivery proof'})
     version=collection.get('version')
     if isinstance(version,str) and re.fullmatch(r'7\.\d+\.\d+',version) and int(version.split('.')[1])<33:
         report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent '+version+' is older than the verified7.33+ repair; prepare its matched update from this packet'})

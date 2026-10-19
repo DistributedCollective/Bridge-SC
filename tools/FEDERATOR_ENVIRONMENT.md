@@ -27,7 +27,9 @@ Docker inspect output, configuration, key files, logs, databases or backup archi
   each configured RPC for chain/head and public Federation/Bridge/multisig state, without
   signing. URL credentials, paths, queries and hostnames are not exported.
 - Agent version, topology/coverage, credential presence, log flags and the current source's
-  registry schema/mode/offset. No intake credential value or other sources' data is exported.
+  registry schema/mode/offset when the Agent is running. A stopped or paused Agent is
+  an explicit blocker; unavailable collection/credential/checkpoint evidence remains
+  unknown. No intake credential value or other sources' data is exported.
 - A matching retained original ETH upgrade, if available. Current Docker image metadata is
   used first; if pruned, only its digest-verified config JSON is read from the retained image
   archive. No image layers are loaded or extracted. `--previous-run` can choose a reviewed
@@ -59,5 +61,7 @@ Collection and replay do not prove private-key custody, Etherscan entitlement, h
 RPC availability, live P2P participation, Datadog indexed delivery, pending transfer
 settlement or successful startup with the repair image. Those checks and the existing
 verified image backup, original-key proof/removal, Datadog preservation and watcher remain
-part of the approved upgrade. A successful synthetic Docker test is not proof that an
+part of the approved upgrade. The replacement plan explicitly preserves the
+captured isolated IPC mode (`private` or `shareable`); host/other-container IPC
+namespace access remains unsupported. A successful synthetic Docker test is not proof that an
 uncaptured production host will upgrade smoothly.
