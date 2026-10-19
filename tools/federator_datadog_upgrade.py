@@ -177,13 +177,13 @@ def capture(docker, output):
             raise r.RepairError('Agent changed before cutover; no service stopped')
         if fresh['state'].get('Running'):docker.call(['stop', fresh['id']], timeout=35)
         repair = output / 'repair'
-        print('Repairing Datadog before the federator is stopped.')
+        print('Repairing Datadog independently; the application is not changed by this tool.')
         try:
             r.prepare(docker, repair)
             r.apply(docker, repair)
         except Exception:
             print('Datadog repair evidence:', repair, file=sys.stderr)
-            print('Federator upgrade has not stopped the node. Send the error/report before retrying.', file=sys.stderr)
+            print('Datadog recovery is incomplete. Keep its evidence; do not repeat the application upgrade.', file=sys.stderr)
             raise
         state = read_state(docker, output / 'after-repair')
         repaired = True
