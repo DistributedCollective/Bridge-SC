@@ -424,7 +424,19 @@ class LauncherFlowTests(unittest.TestCase):
                 result,execute,output=self.invoke(m,root,runner,upgrade=True)
             self.assertEqual(result,0);execute.assert_called_once()
 
-    def test_configured_signer_is_reused_without_manual_address_or_custody_input(self):
+    def test_config_does_not_supply_its_own_trusted_signer_when_the_flag_is_missing(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+            report={'schema':1,'checks':[], 'configuration':{'configured_signer':'0x'+'22'*20}}
+            with patch.object(m,'capture_snapshot',return_value=report),patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
+                 patch.object(m.sys.stdin,'isatty',return_value=True),patch('builtins.input',side_effect=['fed_2','0x'+'11'*20]), \
+                 patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()),self.assertRaises(m.LaunchError):
+                m.main(['--repo',str(root/'repo'),'--upgrade'],runner)
+            execute.assert_not_called()
+            self.assertFalse(any('fetch' in value for value in runner.calls))
+
+    def test_coordinator_supplied_signer_needs_no_additional_public_address_prompt(self):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
@@ -432,11 +444,9 @@ class LauncherFlowTests(unittest.TestCase):
             with patch.object(m,'capture_snapshot',return_value=report),patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
                  patch.object(m.sys.stdin,'isatty',return_value=True),patch('builtins.input',side_effect=['fed_2']) as prompt, \
                  patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()):
-                m.main(['--repo',str(root/'repo'),'--upgrade'],runner)
+                m.main(['--repo',str(root/'repo'),'--upgrade','--expected-signer','0x'+'22'*20],runner)
             self.assertEqual(prompt.call_count,1)
-            args=execute.call_args[0][1]
-            self.assertEqual(args[args.index('--expected-signer')+1],'0x'+'22'*20)
-            self.assertNotIn('--no-aws-secrets',args)
+            self.assertIn('--expected-signer',execute.call_args[0][1])
 
     def test_approved_app_with_stopped_agent_does_not_claim_completed_recovery(self):
         m=self.module()
@@ -592,7 +602,7 @@ class LauncherFlowTests(unittest.TestCase):
                         m.main(['--repo',str(root/'repo')],runner)
                 except BaseException:os._exit(8)
                 os._exit(9)
-            responses=[(b'Node label',b'fed_1\n'),(b'Existing PUBLIC',('0x'+'11'*20+'\n').encode()),
+            responses=[(b'Node label',b'fed_1\n'),(b'Expected PUBLIC',('0x'+'11'*20+'\n').encode()),
                        (b'Open the approved upgrade now?',b'y\n'),
                        (b'APPROVE_UPGRADE',b'y\n')]
             output=b'';index=0;deadline=time.monotonic()+5;finished=False

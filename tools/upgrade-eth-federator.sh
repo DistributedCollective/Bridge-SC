@@ -4,7 +4,7 @@ set +x
 set -Eeuo pipefail
 unset PYTHONOPTIMIZE PYTHONINSPECT
 umask 077
-VERSION=1.4.0
+VERSION=1.4.1
 FED_REPO="$HOME/Bridge-SC"
 REPO_OVERRIDE=''
 REPAIR_REVISION=''
@@ -60,6 +60,7 @@ while (($#)); do
     *) parameter_error 'Unknown parameter; use --help' ;;
   esac
 done
+[[ "$MONITORING_ONLY" != true || -z "$ROLLBACK_RUN" ]] || parameter_error 'Cannot combine --monitoring-only and --rollback'
 [[ "$WATCH_SECONDS" =~ ^[0-9]{1,5}$ ]] || parameter_error 'Invalid watcher duration'
 ((10#$WATCH_SECONDS>=1 && 10#$WATCH_SECONDS<=86400)) || parameter_error 'Watcher duration must be 1..86400'
 [[ -z "$PUBLIC_OPERATOR" || "$PUBLIC_OPERATOR" =~ ^fed_[1-5]$ ]] || parameter_error 'Invalid fed_n label'

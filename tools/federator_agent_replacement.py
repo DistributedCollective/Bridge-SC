@@ -18,7 +18,46 @@ IMAGE = 'public.ecr.aws/datadog/agent@sha256:6a91c406eca7232125b4df4f638a9625006
 IMAGE_ID = 'sha256:dd5a13fea6fd412ce447742a6c74400527e06afe10a278fccf52e7eb2de43bc8'
 
 
+def validate_config_environment(old):
+    canonical={'DD_CONF_PATH':'/etc/datadog-agent','DD_CONFIG_FILE':r.AGENT_CONFIG,'DD_CONFD_PATH':'/etc/datadog-agent/conf.d'}
+    for row in old.get('Config',{}).get('Env') or []:
+        key,sep,value=row.partition('=')
+        if sep and value and ((key in canonical and value!=canonical[key]) or key in ('DD_CONFIG_PROVIDERS','DD_EXTRA_CONFIG_PROVIDERS')):
+            raise r.RepairError('Agent uses custom configuration paths or live providers; original Agent retained')
+
+
+def runtime_settings(old):
+    """Preserve container identity and resolver settings; refuse unsupported networks."""
+    args=[];cfg=old.get('Config') or {};host=old.get('HostConfig') or {}
+    def text(value):
+        if not isinstance(value,str) or not value or any(c in value for c in ('\r','\n','\0')):
+            raise r.RepairError('Agent identity or resolver setting cannot be preserved')
+        return value
+    for key,flag in (('Hostname','--hostname'),('Domainname','--domainname')):
+        if cfg.get(key):args.extend([flag,text(cfg[key])])
+    for key,flag in (('Dns','--dns'),('DnsSearch','--dns-search'),('DnsOptions','--dns-option'),('ExtraHosts','--add-host')):
+        rows=host.get(key) or []
+        if not isinstance(rows,list):raise r.RepairError('Agent resolver settings cannot be preserved')
+        for row in rows:args.extend([flag,text(row)])
+    network=host.get('NetworkMode') or 'bridge'
+    networks=(old.get('NetworkSettings') or {}).get('Networks') or {}
+    if len(networks)>1 or (networks and network not in networks):
+        raise r.RepairError('Agent uses secondary or unmatched networks; original Agent retained')
+    for row in networks.values():
+        if row.get('IPAMConfig') or row.get('DriverOpts') or row.get('Links'):
+            raise r.RepairError('Agent uses custom network endpoint settings; original Agent retained')
+        for alias in row.get('Aliases') or []:
+            if alias not in (old.get('Id'),old.get('Id','')[:12]):args.extend(['--network-alias',text(alias)])
+    labels=cfg.get('Labels') or {}
+    if not isinstance(labels,dict):raise r.RepairError('Agent labels cannot be preserved')
+    if any(not isinstance(key,str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:/-]*',key) or not isinstance(value,str) or any(c in value for c in ('\r','\n','\0')) for key,value in labels.items()):
+        raise r.RepairError('Agent labels cannot be preserved in a private label file')
+    labels=dict(labels)
+    return args,labels
+
+
 def environment(old, request_key=None):
+    validate_config_environment(old)
     values = {}
     discard = {'DD_CONF_PATH','DD_CONFIG_FILE','DD_CONFD_PATH','DD_CONFIG_PROVIDERS','DD_EXTRA_CONFIG_PROVIDERS'}
     for row in old.get('Config', {}).get('Env') or []:
@@ -83,7 +122,10 @@ def fresh_log_positions(value):
 def prepared_configuration(docker, output, work):
     config_file=output/'config.private.yaml';integrations=output/'integrations.private.tar'
     code='import json,yaml,tarfile,io,base64\n'+inspect.getsource(fresh_log_positions)+"""
-body=open('/old-config.yaml','rb').read();cfg=yaml.safe_load(body);new=fresh_log_positions(cfg);changed=int(cfg!=new)
+body=open('/old-config.yaml','rb').read();cfg=yaml.safe_load(body)
+if isinstance(cfg,dict) and (cfg.get('config_providers') or cfg.get('extra_config_providers') or cfg.get('confd_path','/etc/datadog-agent/conf.d')!='/etc/datadog-agent/conf.d'):
+ print(json.dumps({'unsupported_config':True}));raise SystemExit(0)
+new=fresh_log_positions(cfg);changed=int(cfg!=new)
 if new!=cfg:body=yaml.safe_dump(new,default_flow_style=False).encode()
 buf=io.BytesIO()
 with tarfile.open('/old-integrations.tar','r:') as original,tarfile.open(fileobj=buf,mode='w') as target:
@@ -99,6 +141,8 @@ with tarfile.open('/old-integrations.tar','r:') as original,tarfile.open(fileobj
 print(json.dumps({'config':base64.b64encode(body).decode(),'integrations':base64.b64encode(buf.getvalue()).decode(),'fresh_start_settings':changed}))
 """
     value=json.loads(docker.helper(IMAGE,code,[(str(config_file),'/old-config.yaml'),(str(integrations),'/old-integrations.tar')]))
+    if value.get('unsupported_config'):
+        raise r.RepairError('Agent YAML uses live providers or a custom integration path; original Agent retained')
     cfg=work/'active-config.private.yaml';confd=work/'active-integrations.private.tar'
     r.write_private_bytes(cfg,base64.b64decode(value['config'],validate=True))
     r.write_private_bytes(confd,base64.b64decode(value['integrations'],validate=True))
@@ -179,6 +223,8 @@ def replace(docker, output, old, request_key=None, progress=lambda stage:None):
         raise r.RepairError('Agent is paused; it was not replaced automatically')
     if before['state'].get('Status') not in ('running','exited'):
         raise r.RepairError('Original Agent is not in a replaceable lifecycle state')
+    runtime_args,labels=runtime_settings(old)
+    validate_config_environment(old)
     progress('DOWNLOAD_AGENT_IMAGE')
     docker.call(['pull','--platform','linux/amd64',IMAGE], timeout=300)
     target = json.loads(docker.call(['image','inspect',IMAGE]))[0]
@@ -202,6 +248,10 @@ def replace(docker, output, old, request_key=None, progress=lambda stage:None):
     r.write_private_bytes(env_file, ''.join(k+'='+v+'\n' for k,v in sorted(env.items())).encode())
     progress('BACKUP_ORIGINAL_AGENT_IMAGE')
     original = json.loads(docker.call(['image','inspect',before['image']]))[0]
+    defaults=(original.get('Config') or {}).get('Labels') or {}
+    labels={key:value for key,value in labels.items() if defaults.get(key)!=value and key!=r.LABEL}
+    label_file=work/'agent.labels.private'
+    r.write_private_bytes(label_file,''.join(key+'='+value+'\n' for key,value in sorted(labels.items())).encode())
     size = original.get('Size')
     if type(size) is not int or size <= 0 or shutil.disk_usage(work).free < size*2+2*1024**3:
         raise r.RepairError('Insufficient reserve for a verified original Agent image archive')
@@ -254,6 +304,7 @@ def replace(docker, output, old, request_key=None, progress=lambda stage:None):
             '--mount','type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock,readonly',
             '--mount','type=bind,source=/proc,target=/host/proc,readonly',
             '--mount','type=bind,source=/sys/fs/cgroup,target=/host/sys/fs/cgroup,readonly',IMAGE]
+    args[-1:-1]=runtime_args+['--label-file',str(label_file)]
     for mount in dependencies:args[-1:-1]=['--mount',mount]
     progress('CREATE_REPLACEMENT_AGENT')
     new_id = docker.call(args).decode().strip()

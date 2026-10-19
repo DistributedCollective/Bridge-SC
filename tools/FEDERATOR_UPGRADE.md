@@ -12,9 +12,9 @@ Use the coordinator's verified download block. No override file or manual upload
 
 ## 2. Run the wizard
 
-Enter your assigned `fed_n` label. The wizard reads the public signer from configuration
-and reuses available credentials. It requests a public address only if that setting
-cannot be read automatically.
+Select your assigned `fed_n` label in the coordinator's block. That block supplies
+your independently approved public signer. When run without it, the wizard requests
+the expected public signer from your coordinator; local configuration alone is not proof.
 
 - If Compose is missing, approve its verified installation.
 - If requested, enter your own Etherscan API key through hidden input.
@@ -25,7 +25,7 @@ cannot be read automatically.
   input is requested only when it is unavailable.
 
 The wizard verifies backups, recreates the ETH container and proves the signing key
-matches its configured public address. It removes the temporary startup key after
+matches the independently supplied public address and current configuration. It removes the temporary startup key after
 90 seconds and fresh configuration-load proof, then replaces Datadog while retaining
 its old container, image archive and volumes. Monitoring failure does not roll back
 or restart the application.

@@ -21,7 +21,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-VERSION = '1.0.8'
+VERSION = '1.0.9'
 PERSISTENT_PATH = '/var/log/datadog/bridge-log-state'
 AGENT_CONFIG = '/etc/datadog-agent/datadog.yaml'
 DOCKER_CONFIG = '/etc/datadog-agent/datadog-docker.yaml'
@@ -322,6 +322,7 @@ class Docker:
         with tarfile.open(fileobj=io.BytesIO(body),mode='r:') as archive:
             members=archive.getmembers()
             if len(members)>10000 or sum(row.size for row in members)>MAX_BYTES:raise RepairError('Integration archive exceeds bound')
+            links={}
             for row in members:
                 name=posixpath.normpath(row.name)
                 if row.name.startswith('/') or '..' in Path(row.name).parts or not (name=='conf.d' or name.startswith('conf.d/')):
@@ -329,7 +330,18 @@ class Docker:
                 if row.issym() or row.islnk():
                     target=posixpath.normpath(posixpath.join(posixpath.dirname(name),row.linkname) if row.issym() else row.linkname)
                     if not target.startswith('conf.d/'):raise RepairError('Integration link escapes its configuration directory')
+                    links[name]=target
                 elif not row.isdir() and not row.isfile():raise RepairError('Unsupported integration archive entry')
+            # Resolve links in any path component; self-links and directory cycles are invalid.
+            for initial in links:
+                current=initial;seen=set()
+                for _ in range(len(links)+1):
+                    parts=current.split('/');prefix=next(('/'.join(parts[:n]) for n in range(1,len(parts)+1) if '/'.join(parts[:n]) in links),None)
+                    if prefix is None:break
+                    if prefix in seen:raise RepairError('Cyclic integration link refused')
+                    seen.add(prefix);current=posixpath.normpath(links[prefix]+current[len(prefix):])
+                else:raise RepairError('Cyclic integration link refused')
+
         result=subprocess.run(['docker','--host','unix:///var/run/docker.sock','cp','-',cid+':/etc/datadog-agent'],
                               input=body,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=35)
         if result.returncode:raise RepairError('Agent integration restore failed; raw output withheld')

@@ -66,7 +66,9 @@ with tempfile.TemporaryDirectory(prefix='clean-dd-lab-') as tmp:
         env=['DD_HOSTNAME='+nonce,'DD_APM_ENABLED=false','DD_PROCESS_AGENT_ENABLED=false','DD_LOG_LEVEL=error',
              'DD_LOGS_CONFIG_LOGS_DD_URL=sink:8080','DD_LOGS_CONFIG_LOGS_NO_SSL=true','DD_LOGS_CONFIG_FORCE_USE_HTTP=true',
              'DD_ENABLE_PAYLOADS_SERIES=false','DD_ENABLE_PAYLOADS_EVENTS=false','DD_ENABLE_PAYLOADS_SERVICE_CHECKS=false','DD_ENABLE_PAYLOADS_SKETCHES=false']
-        argv=['create','--platform','linux/amd64','--name',agent,'--label','bridge-clean-lab='+nonce,'--network',network,'--restart','always']
+        argv=['create','--platform','linux/amd64','--name',agent,'--label','bridge-clean-lab='+nonce,'--network',network,'--network-alias','preserved-agent','--hostname','preserved-host','--domainname','lab.internal',
+              '--dns','127.0.0.11','--dns-search','lab.internal','--dns-option','ndots:1','--add-host','preserved.invalid:127.0.0.2',
+              '--label','deployment.owner=opaque-lab','--restart','always']
         for value in env:argv+=['-e',value]
         call(argv+[fresh.IMAGE]);track(agent)
         main=root/'original.yaml'
@@ -140,13 +142,19 @@ with tempfile.TemporaryDirectory(prefix='clean-dd-lab-') as tmp:
         assert sum('RESTART' in x for x in got)>3
         assert metadata(source)['State']['StartedAt']==before
         assert (cfg/'db/keep').read_text()=='database fixture'
+        new=metadata(agent)
+        assert new['Config']['Hostname']=='preserved-host' and new['Config']['Domainname']=='lab.internal'
+        assert new['Config']['Labels']['deployment.owner']=='opaque-lab'
+        assert new['HostConfig']['Dns']==['127.0.0.11'] and new['HostConfig']['DnsSearch']==['lab.internal']
+        assert new['HostConfig']['DnsOptions']==['ndots:1'] and new['HostConfig']['ExtraHosts']==['preserved.invalid:127.0.0.2']
+        assert 'preserved-agent' in new['NetworkSettings']['Networks'][network]['Aliases']
         retained=metadata(old_id)
         assert retained['State']['Running'] is False and retained['HostConfig']['RestartPolicy']['Name']=='no'
         for volume in old_volumes:assert call(['volume','inspect',volume])
         saved=root/'new-config.yaml';effective=r.config_path(docker,docker.inspect('datadog-agent',agent=True));call(['cp',agent+':'+effective,str(saved)])
         copied=json.loads(saved.read_text());assert copied['site']=='datadoghq.eu' and copied['tags']==['lab:clean-replacement']
         result.update(status='PASS',fresh_records=fresh_count,historical_records=history,restart_records=sum('RESTART' in x for x in got),
-                      application_unchanged=True,retained_agent_restart_disabled=True,existing_yaml_key_reused=True,site_tags_preserved=True,old_volumes_retained=old_volumes.issubset(volumes),
+                      application_unchanged=True,container_identity_dns_labels_preserved=True,retained_agent_restart_disabled=True,existing_yaml_key_reused=True,site_tags_preserved=True,old_volumes_retained=old_volumes.issubset(volumes),
                       production_docker_autodiscovery_tested=False,static_file_collector_tested=True,forced_start_fixture=args.force_start)
     except BaseException as error:
         result.update(status='FAIL',failure_type=type(error).__name__,reason=str(error) if isinstance(error,RuntimeError) else 'Evidence assertion failed')

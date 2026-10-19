@@ -42,9 +42,10 @@ class UpgradeExecutableTests(unittest.TestCase):
         self.assertEqual(help_result.returncode, 0)
         for flag in ('--image', '--override', '--revision', '--no-aws-secrets', '--rollback'):
             self.assertIn(flag, help_result.stdout)
-        for arguments in (['--image'], ['--unknown'], ['--watch-seconds','0'], ['--watch-seconds','evil']):
+        for arguments in (['--image'], ['--unknown'], ['--watch-seconds','0'], ['--watch-seconds','evil'], ['--monitoring-only','--rollback','/private/run']):
             result = subprocess.run(['bash', str(SCRIPT)] + arguments, capture_output=True, text=True)
             self.assertEqual(result.returncode, 2, result.stderr)
+            if '--monitoring-only' in arguments:self.assertIn('Cannot combine',result.stderr)
 
 
 

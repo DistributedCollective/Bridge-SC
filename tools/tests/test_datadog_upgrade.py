@@ -43,6 +43,33 @@ class UpgradeDatadogTests(unittest.TestCase):
             self.assertNotIn('dummy-private-fixture', (p / 'manifest.json').read_text())
             u.verify(d, p)
 
+    def test_retained_checkpoint_start_detects_rotation_and_stops_agent(self):
+        u=self.load()
+        for fault in ('inode','truncated'):
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as td:
+                d=self.running(repaired=True);d.agent['state'].update(Running=False,Status='exited')
+                original=d.call
+                def rotated(args,**kwargs):
+                    out=original(args,**kwargs)
+                    if args[0]=='start':
+                        if fault=='inode':d.snapshot['inode']+=1
+                        else:d.snapshot.update(size=500,offset=500)
+                    return out
+                d.call=rotated
+                with self.assertRaises(u.r.RepairError):u.capture(d,Path(td).resolve()/'capture')
+                self.assertEqual(d.starts,1)
+                self.assertFalse(d.agent['state']['Running'])
+                self.assertTrue(d.source['state']['Running'])
+
+    def test_empty_quiet_log_can_resume_its_zero_checkpoint(self):
+        u=self.load();d=self.running(repaired=True)
+        d.agent['state'].update(Running=False,Status='exited');d.snapshot.update(size=0,offset=0)
+        key=next(iter(d.registry['Registry']));d.registry['Registry'][key]['Offset']='0'
+        d.files[m.PERSISTENT_PATH+'/registry.json']=json.dumps(d.registry).encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            value=u.capture(d,Path(tmp).resolve()/'capture')
+        self.assertTrue(d.agent['state']['Running']);self.assertEqual(value['cursor_offset'],0)
+
     def test_compatible_original_agent_is_repaired_before_capture(self):
         u = self.load()
         with tempfile.TemporaryDirectory() as td:

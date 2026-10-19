@@ -18,7 +18,7 @@ import types
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.4.0'
+VERSION = '1.4.1'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
@@ -534,13 +534,9 @@ def main(argv=None, runner=None):
             step(4,'Environment captured; no upgrade started. Send only the ZIP packet to your coordinator')
             return 0
         configured=report.get('configuration',{}).get('configured_signer')
-        if args.expected_signer is None and isinstance(configured,str) and re.fullmatch(r'0x[0-9a-fA-F]{40}',configured):
-            args.expected_signer=configured
-            print('Using the configured public federator address: '+configured,flush=True)
-        else:
-            args.expected_signer=prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
-                lambda value:bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
-                'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
+        args.expected_signer=prompted_value('Expected PUBLIC federator address supplied by your coordinator (0x..., not a private key): ',args.expected_signer,
+            lambda value:bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
+            'Enter the independently approved public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
         if isinstance(configured,str) and configured.lower()!=args.expected_signer.lower():
             raise LaunchError('Supplied public signer differs from existing configuration; services unchanged.')
         if any(check.get('status')=='BLOCKER' for check in report['checks']):

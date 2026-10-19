@@ -9,7 +9,7 @@ import sys
 import time
 import dd_agent_recovery as r
 
-VERSION = '1.1.2'
+VERSION = '1.1.3'
 
 
 def stable(agent):
@@ -163,6 +163,22 @@ def inspect(docker, output):
     return result
 
 
+def log_identity(docker, agent, source):
+    # fstat also supports an empty, quiet JSON log; no complete record is required.
+    code="""import json,os,stat
+fd=os.open('/source.log',os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+try:
+ s=os.fstat(fd)
+ if not stat.S_ISREG(s.st_mode):raise ValueError('Expected regular source log')
+ print(json.dumps({'device':s.st_dev,'inode':s.st_ino,'size':s.st_size}))
+finally:os.close(fd)
+"""
+    value=json.loads(docker.helper(agent['image'],code,[(source['log_path'],'/source.log')],user='0:0'))
+    if any(type(value.get(key)) is not int or value[key]<0 for key in ('device','inode','size')):
+        raise r.RepairError('Source log identity unavailable')
+    return value
+
+
 def capture(docker, output):
     output = r.safe_path(output)
     # read_state validates containment before creating this directory.
@@ -195,10 +211,15 @@ def capture(docker, output):
         source = docker.inspect('bridge-sc_federation_1')
         if source['id'] != state['source_id'] or source['state'].get('StartedAt') != state['source_started'] or not source['state'].get('Running') or source['state'].get('Paused'):
             raise r.RepairError('ETH source changed before retained-checkpoint restart')
-        r.write_private(output / 'retained-start.private.json', {'agent':state['agent'], 'cursor_key':state['cursor_key'], 'cursor_offset':state['cursor_offset']})
+        before_log=log_identity(docker,original,source)
+        if state['cursor_offset']>before_log['size']:raise r.RepairError('Retained source checkpoint exceeds the current log')
+        r.write_private(output / 'retained-start.private.json', {'agent':state['agent'], 'cursor_key':state['cursor_key'], 'cursor_offset':state['cursor_offset'],'source_log':before_log})
         try:
             docker.call(['start', original['id']])
             resumed = read_state(docker, output / 'after-retained-start')
+            after_log=log_identity(docker,original,source)
+            if (after_log['device'],after_log['inode'])!=(before_log['device'],before_log['inode']) or after_log['size']<before_log['size']:
+                raise r.RepairError('Source log rotated or truncated during retained Agent restart; Agent stopped')
             expected = dict(state['agent'])
             expected.update(started=resumed['agent']['started'], running=True)
             if (resumed['agent'] != expected or resumed['config_sha256'] != state['config_sha256'] or
