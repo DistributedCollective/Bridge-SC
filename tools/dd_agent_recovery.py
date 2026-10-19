@@ -309,6 +309,31 @@ class Docker:
             if os.path.exists(name): os.unlink(name)
         return data
 
+    def copy_config_archive(self, cid, path):
+        """Restore only a bounded conf.d archive inside the new Agent; never extract on the host."""
+        import posixpath
+        if not re.fullmatch(r'[0-9a-f]{64}',cid):raise RepairError('Invalid replacement Agent identity')
+        path=safe_path(path)
+        fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+        with os.fdopen(fd,'rb') as source:
+            info=os.fstat(source.fileno());body=source.read(MAX_BYTES+1)
+        if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o600 or len(body)>MAX_BYTES:
+            raise RepairError('Unexpected private Agent integration archive')
+        with tarfile.open(fileobj=io.BytesIO(body),mode='r:') as archive:
+            members=archive.getmembers()
+            if len(members)>10000 or sum(row.size for row in members)>MAX_BYTES:raise RepairError('Integration archive exceeds bound')
+            for row in members:
+                name=posixpath.normpath(row.name)
+                if row.name.startswith('/') or '..' in Path(row.name).parts or not (name=='conf.d' or name.startswith('conf.d/')):
+                    raise RepairError('Integration archive escapes its configuration directory')
+                if row.issym() or row.islnk():
+                    target=posixpath.normpath(posixpath.join(posixpath.dirname(name),row.linkname) if row.issym() else row.linkname)
+                    if not target.startswith('conf.d/'):raise RepairError('Integration link escapes its configuration directory')
+                elif not row.isdir() and not row.isfile():raise RepairError('Unsupported integration archive entry')
+        result=subprocess.run(['docker','--host','unix:///var/run/docker.sock','cp','-',cid+':/etc/datadog-agent'],
+                              input=body,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=35)
+        if result.returncode:raise RepairError('Agent integration restore failed; raw output withheld')
+
     def helper(self, image, code, mounts, user=None, read_search=False):
         token = secrets.token_hex(12)
         name = 'bridge-dd-read-' + token

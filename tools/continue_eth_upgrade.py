@@ -48,6 +48,8 @@ def validate_context(c, revision, signer, home):
         raise ContinueError('Invalid saved context')
     if 'APP_REVISION' in c and not re.fullmatch(r'[0-9a-f]{40}',c['APP_REVISION'] if isinstance(c['APP_REVISION'],str) else ''):
         raise ContinueError('Saved application revision invalid')
+    if c.get('MONITORING_POLICY','legacy') not in ('legacy','independent'):
+        raise ContinueError('Invalid saved monitoring policy')
     repo = home/'Bridge-SC'
     if c['FED_REPO'] != str(repo) or c['CONFIG_DIR'] != str(repo/'federator-env/mainnet-ETH-RSK'):
         raise ContinueError('Unexpected saved repo/config mounts')
@@ -55,7 +57,7 @@ def validate_context(c, revision, signer, home):
         raise ContinueError('Saved revision/signer differs from supplied original release')
     if not re.fullmatch(r'sovryn/fed-tokenbridge:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}',c['FED_IMAGE']):
         raise ContinueError('Saved immutable image invalid')
-    if not re.fullmatch(r'fed_[1-5]',c['PUBLIC_OPERATOR']) or c['KEY_SOURCE'] not in ('aws','manual'):
+    if not re.fullmatch(r'fed_[1-5]',c['PUBLIC_OPERATOR']) or c['KEY_SOURCE'] not in ('auto','aws','manual'):
         raise ContinueError('Saved operator/key source invalid')
     if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*',c['COMPOSE_PROJECT']):
         raise ContinueError('Saved project invalid')
@@ -113,7 +115,8 @@ def resume_script(original):
     prefix=original.split(BOUNDARY,1)[0]
     suffix=r'''
 OPS_DIR=$RESUME_RUN
-export OPS_DIR
+MONITORING_POLICY=${RESUME_MONITORING_POLICY:-legacy}
+export OPS_DIR MONITORING_POLICY
 step 'Verify this saved stopped-node attempt before continuing'
 verify_bundle
 python3 "$RESUME_TOOL" --guard --run "$OPS_DIR" --revision "$REPAIR_REVISION" --expected-signer "$EXPECTED_SIGNER"
@@ -132,7 +135,9 @@ COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "
 EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
 export EXPECTED_IMAGE_ID
 test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "${APP_REVISION:-$REPAIR_REVISION}"
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+if [[ "${MONITORING_POLICY:-legacy}" == legacy ]]; then
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+fi
 python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
 confirm 'Continue this saved ETH upgrade from original key recovery now?' || exit 0
 step '6/7 Restore/check the ORIGINAL federator key and signer'
@@ -140,7 +145,10 @@ python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLU
 restore_key
 step '7/7 Stage, verify and start the already-downloaded image'
 activate
-python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+if [[ "${MONITORING_POLICY:-legacy}" == independent ]]; then monitoring_recovery; fi
+if [[ "${MONITORING_POLICY:-legacy}" == legacy ]]; then
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+fi
 run_watcher
 '''
 
@@ -159,7 +167,8 @@ def verified_inputs(run, revision, signer):
     original=private_bytes(run/'upgrade.sh')
     if original!=blob('upgrade-eth-federator.sh'):
         raise ContinueError('Original upgrader does not match pinned source')
-    for name in TOOLS:
+    names=TOOLS + (('federator_upgrade_monitoring.py','federator_agent_replacement.py','federator_signing_key.py') if c.get('MONITORING_POLICY')=='independent' else ())
+    for name in names:
         if private_bytes(run/name)!=blob(name):
             raise ContinueError('Saved tool bundle differs from pinned source')
     if hashlib.sha256(private_bytes(run/'deployment.private.json')).hexdigest()!=c['COMPOSE_PLAN_SHA256']:
@@ -175,6 +184,8 @@ def run_attached(command, env):
 def continuation_environment(context, run, attempt):
     return {**os.environ, **context,
             'APP_REVISION':context.get('APP_REVISION',context['REPAIR_REVISION']),
+            'MONITORING_POLICY':context.get('MONITORING_POLICY','legacy'),
+            'RESUME_MONITORING_POLICY':context.get('MONITORING_POLICY','legacy'),
             'RESUME_RUN':str(run), 'RESUME_TOOL':str(Path(__file__).resolve()),
             'RESUME_ATTEMPT':str(attempt), 'AWS_PAGER':'',
             'COMPOSE_REMOVE_ORPHANS':'false','COMPOSE_IGNORE_ORPHANS':'true'}

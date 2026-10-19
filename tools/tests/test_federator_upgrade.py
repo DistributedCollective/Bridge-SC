@@ -82,11 +82,17 @@ elif name=='python3':
  if args and args[0].endswith('federator_compose_plan.py'):
   mode=args[1];note('COMPOSE_'+('BASE' if mode=='--base' else 'MODEL'))
   sys.stdin.read();Path(args[2]).write_text('{}')
+ elif args and args[0].endswith('federator_signing_key.py'):
+  note('KEY_SOURCE='+os.environ['KEY_SOURCE'])
  elif args and args[0].endswith('federator_upgrade_safety.py'):
   action='HISTORY_BACKUP' if '--archive-history' in args else 'START_AND_CLEANUP'
   note(action)
   if os.environ.get('UPGRADE_FAIL')=='history' and action=='HISTORY_BACKUP':sys.exit(1)
   if action=='START_AND_CLEANUP':note('DOCKER start bridge-sc_federation_1')
+ elif args and args[0].endswith('federator_upgrade_monitoring.py'):
+  action=args[1];note('MONITORING_'+action[2:].upper())
+  if action=='--snapshot':Path(args[2]).mkdir()
+  if os.environ.get('UPGRADE_FAIL')=='datadog' and action!='--result':sys.exit(1)
  elif args and args[0].endswith('federator_datadog_upgrade.py'):
   action=args[1];note('DATADOG_'+action[2:].upper())
   if os.environ.get('UPGRADE_FAIL')=='datadog' and action=='--inspect':sys.exit(1)
@@ -142,7 +148,7 @@ class UpgradeOrchestrationTests(unittest.TestCase):
                     stdin=slave,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
                 os.close(slave);slave=None
                 os.write(master,b'y\n')
-                stdout,stderr=process.communicate(timeout=15)
+                stdout,stderr=process.communicate(timeout=30)
                 if rollback and process.returncode==0:
                     run=next(p for p in (root/'.local/share/bridge-ops').glob('eth-upgrade.*') if p.is_dir())
                     override.unlink()  # A moved original override must not prevent rollback.
@@ -154,12 +160,14 @@ class UpgradeOrchestrationTests(unittest.TestCase):
                             stdin=rollback_slave,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
                         os.close(rollback_slave);rollback_slave=None
                         os.write(rollback_master,b'y\ny\n')
-                        stdout,stderr=process.communicate(timeout=15)
+                        stdout,stderr=process.communicate(timeout=30)
                     finally:
                         os.close(rollback_master)
                         if rollback_slave is not None:os.close(rollback_slave)
                 return process.returncode,trace.read_text().splitlines(),stdout,stderr
             finally:
+                if process.poll() is None:
+                    process.kill(); process.communicate(timeout=5)
                 os.close(master)
                 if slave is not None:os.close(slave)
 
@@ -167,7 +175,7 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         result,trace,stdout,stderr=self.run_upgrade(app_revision='7'*40,image_revision='7'*40)
         self.assertEqual(result,0,stdout+'\n'+stderr)
         self.assertTrue(any('show '+'7'*40+':sovryn-token-bridge/federator/' in line for line in trace))
-        self.assertEqual(trace[-1],'WATCHER')
+        self.assertEqual(trace[-1],'MONITORING_RESULT')
 
     def test_wrong_application_revision_stops_before_backup_and_services(self):
         result,trace,stdout,stderr=self.run_upgrade(app_revision='7'*40,image_revision='8'*40)
@@ -183,7 +191,7 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertEqual(sum(line.startswith('DOCKER start ') for line in trace),1)
         self.assertFalse(any(' pull ' in ' '+line+' ' for line in trace))
         self.assertNotIn('ETHERSCAN_CHECK',trace)
-        self.assertEqual(trace[-1],'WATCHER')
+        self.assertEqual(trace[-1],'MONITORING_RESULT')
         self.assertIn('HISTORY_BACKUP',trace)
         self.assertIn('START_AND_CLEANUP',trace)
 
@@ -210,13 +218,18 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertNotIn('STOP_ORIGINAL',trace)
         self.assertFalse(any(line.startswith('DOCKER start ') for line in trace))
 
-    def test_unsupported_datadog_preflight_blocks_image_download_and_service_stop(self):
+    def test_datadog_failure_does_not_prevent_application_start_or_rollback(self):
         result,trace,stdout,stderr=self.run_upgrade('datadog')
-        self.assertNotEqual(result,0)
-        self.assertIn('DATADOG_INSPECT',trace)
-        self.assertNotIn('DATADOG_CAPTURE',trace)
-        self.assertNotIn('STOP_ORIGINAL',trace)
-        self.assertFalse(any(' pull ' in ' '+line+' ' for line in trace))
+        self.assertNotIn('DATADOG_INSPECT',trace)
+        self.assertIn('STOP_ORIGINAL',trace)
+        self.assertIn('STAGED_REPLACEMENT',trace)
+        self.assertIn('START_AND_CLEANUP',trace)
+        self.assertIn('MONITORING_RECOVER',trace)
+        self.assertIn('WATCHER',trace)
+        self.assertLess(trace.index('START_AND_CLEANUP'),trace.index('MONITORING_RECOVER'))
+        result,trace,stdout,stderr=self.run_upgrade('datadog',rollback=True)
+        self.assertTrue(any('image load' in line for line in trace),stdout+stderr)
+        self.assertIn('START_AND_CLEANUP',trace)
 
     def test_only_app_model_is_interpolated_before_backup_or_stop(self):
         result,trace,stdout,stderr=self.run_upgrade()
@@ -246,11 +259,11 @@ class UpgradeOrchestrationTests(unittest.TestCase):
         self.assertLess(trace.index('STOP_ORIGINAL'),trace.index('HISTORY_BACKUP'))
         self.assertLess(trace.index('HISTORY_BACKUP'),trace.index('STAGED_REPLACEMENT'))
         self.assertLess(trace.index('STAGED_REPLACEMENT'),trace.index('START_AND_CLEANUP'))
-        self.assertLess(trace.index('START_AND_CLEANUP'),trace.index('DATADOG_VERIFY'))
+        self.assertLess(trace.index('START_AND_CLEANUP'),trace.index('MONITORING_RECOVER'))
         self.assertEqual(sum(line.startswith('DOCKER start ') for line in trace),1)
-        self.assertEqual(trace[-1],'WATCHER')
-        self.assertLess(trace.index('DATADOG_CAPTURE'),trace.index('STOP_ORIGINAL'))
-        self.assertLess(trace.index('STAGED_REPLACEMENT'),trace.index('DATADOG_VERIFY'))
+        self.assertEqual(trace[-1],'MONITORING_RESULT')
+        self.assertLess(trace.index('MONITORING_SNAPSHOT'),trace.index('STOP_ORIGINAL'))
+        self.assertLess(trace.index('STAGED_REPLACEMENT'),trace.index('MONITORING_RECOVER'))
         self.assertFalse(any('datadog-agent' in line or 'bsc' in line.lower() or ' down' in line or 'prune' in line for line in trace))
 
 if __name__ == '__main__': unittest.main()

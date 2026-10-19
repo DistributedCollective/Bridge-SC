@@ -4,7 +4,7 @@ set +x
 set -Eeuo pipefail
 unset PYTHONOPTIMIZE PYTHONINSPECT
 umask 077
-VERSION=1.3.1
+VERSION=1.4.0
 FED_REPO="$HOME/Bridge-SC"
 REPO_OVERRIDE=''
 REPAIR_REVISION=''
@@ -13,12 +13,14 @@ FED_IMAGE=''
 RELEASE_OVERRIDE=''
 PUBLIC_OPERATOR=''
 EXPECTED_SIGNER=''
-KEY_SOURCE=aws
+KEY_SOURCE=auto
 KEY_SOURCE_OVERRIDE=false
 WATCH_OVERRIDE=''
 WATCH_SECONDS=900
 ROLLBACK_RUN=''
 OPS_DIR=''
+MONITORING_POLICY=legacy
+MONITORING_ONLY=false
 STAGE=arguments
 SCRIPT_FILE=${BASH_SOURCE[0]}
 usage() {
@@ -32,7 +34,8 @@ Missing release/public inputs are requested interactively. Never edit this file.
   --override PATH             Supplied private Compose override
   --operator fed_1..fed_5     Anonymous node label
   --expected-signer ADDRESS  This node's approved public federator address
-  --no-aws-secrets            Restore original key manually instead of AWS
+  --no-aws-secrets            Skip instance-secret discovery and enter the original key privately
+  --monitoring-only           Replace only Datadog beside an already approved running federator
   --watch-seconds SECONDS    Post-upgrade watcher duration, 1..86400 (default 900)
   --rollback RUN_DIRECTORY   Restore an archived image, then verify key and start
   --help | --version
@@ -43,6 +46,7 @@ while (($#)); do
   case "$1" in
     --help|-h) usage; exit 0 ;;
     --version) printf 'federator-upgrade %s\n' "$VERSION"; exit 0 ;;
+    --monitoring-only) MONITORING_ONLY=true; shift ;;
     --no-aws-secrets) KEY_SOURCE=manual; KEY_SOURCE_OVERRIDE=true; shift ;;
     --repo|--revision|--app-revision|--image|--override|--operator|--expected-signer|--watch-seconds|--rollback)
       (($#>=2)) && [[ "$2" != --* && -n "$2" ]] || parameter_error "Missing value for $1"
@@ -104,7 +108,9 @@ require_inputs() {
   export FED_REPO REPAIR_REVISION APP_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE OPERATOR
 }
 verify_bundle() {
-  for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
+  local tools='federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py'
+  if [[ "$MONITORING_POLICY" == independent ]]; then tools+=" federator_upgrade_monitoring.py federator_agent_replacement.py federator_signing_key.py"; fi
+  for file in $tools; do
     test -f "$OPS_DIR/$file" && test ! -L "$OPS_DIR/$file"
     test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
   done
@@ -113,7 +119,7 @@ write_context() {
 python3 - <<'PY'
 import json,os
 from pathlib import Path
-fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION')
+fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION','MONITORING_POLICY')
 with (Path(os.environ['OPS_DIR'])/'upgrade-context.json').open('x') as out:
  json.dump({name:os.environ[name] for name in fields},out,indent=2)
 PY
@@ -127,17 +133,47 @@ run_watcher() {
   else
     status=$?
   fi
-  printf '\nSend these two reports:\n%s/summary.md\n%s/report.json\n' "$REPORT_DIR" "$REPORT_DIR"
+  if [[ "$MONITORING_POLICY" == independent ]]; then
+    printf '\nSend the final application/monitoring status and %s/summary.md. Keep the full watcher report private.\n' "$REPORT_DIR"
+  else
+    printf '\nSend these two reports:\n%s/summary.md\n%s/report.json\n' "$REPORT_DIR" "$REPORT_DIR"
+  fi
   printf 'Keep the image backup private until recovery is accepted. Watcher exit: %s\n' "$status"
+  if [[ "$MONITORING_POLICY" == independent ]]; then
+    local final_args=(--result "$OPS_DIR" --watcher "$REPORT_DIR")
+    if [[ -n "$ROLLBACK_RUN" ]]; then final_args+=(--rollback); fi
+    if python3 "$OPS_DIR/federator_upgrade_monitoring.py" "${final_args[@]}"; then
+      printf 'Application and monitoring results are recorded separately in the private run directory.\n'
+    else
+      printf 'Application verification needs attention. No automatic rollback or restart was performed.\n' >&2
+      return 1
+    fi
+  fi
   return "$status"
+}
+
+monitoring_backup() {
+  if python3 "$OPS_DIR/federator_upgrade_monitoring.py" --snapshot "$OPS_DIR/monitoring"; then :
+  else printf 'Monitoring snapshot incomplete; application upgrade continues with monitoring unresolved. Keep the private run directory.\n' >&2
+  fi
+}
+monitoring_recovery() {
+  if python3 "$OPS_DIR/federator_upgrade_monitoring.py" --recover "$OPS_DIR/monitoring"; then :
+  else printf 'Monitoring recovery unresolved; the federator was not rolled back or restarted. Keep the private run directory.\n' >&2
+  fi
+}
+monitoring_verify_legacy() {
+  if [[ "$MONITORING_POLICY" == legacy ]]; then
+    python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+  fi
 }
 
 prepare() {
 set -euo pipefail
 umask 077
 export DOCKER_HOST=unix:///var/run/docker.sock
-KEY_SOURCE=${KEY_SOURCE:-aws}
-case "$KEY_SOURCE" in aws|manual) ;; *) printf 'KEY_SOURCE must be aws or manual.\n'; exit 1 ;; esac
+KEY_SOURCE=${KEY_SOURCE:-auto}
+case "$KEY_SOURCE" in auto|aws|manual) ;; *) printf 'KEY_SOURCE must be auto, aws or manual.\n'; exit 1 ;; esac
 export KEY_SOURCE
 CONFIG_DIR="$FED_REPO/federator-env/mainnet-ETH-RSK"
 export OPERATOR PUBLIC_OPERATOR EXPECTED_SIGNER FED_REPO CONFIG_DIR REPAIR_REVISION
@@ -152,10 +188,10 @@ esac
 git -C "$FED_REPO" fetch --no-tags origin federator-diagnostics-recovery-upgrade
 test "$(git -C "$FED_REPO" rev-parse --verify "$REPAIR_REVISION^{commit}")" = "$REPAIR_REVISION"
 git -C "$FED_REPO" merge-base --is-ancestor "$REPAIR_REVISION" FETCH_HEAD
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py federator_upgrade_monitoring.py federator_agent_replacement.py federator_signing_key.py; do
   git -C "$FED_REPO" show "$REPAIR_REVISION:tools/$file" > "$OPS_DIR/$file"
 done
-for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
+for file in federator_watcher.py federator_dependencies.py federator_recovery.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py federator_upgrade_monitoring.py federator_agent_replacement.py federator_signing_key.py; do
   test "$(git -C "$FED_REPO" hash-object "$OPS_DIR/$file")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/$file")"
 done
 python3 - <<'PY'
@@ -330,38 +366,10 @@ PY
 }
 
 restore_key() {
-set +x
-python3 - <<'PY'
-import getpass,os,stat,sys,warnings
-from pathlib import Path
-sys.path.insert(0,os.environ['OPS_DIR']);import federator_recovery as r
-node=r.Node(Path(os.environ['FED_REPO']),'eth-rsk','bridge-sc_federation_1',allow_created=True)
-if node.inspect()['running']:raise SystemExit('Federator must stay stopped for key restoration')
-key=node.cfg/'federator.key'
-if key.is_symlink():raise SystemExit('Unexpected key symlink')
-if key.exists():
- m=key.stat()
- if not stat.S_ISREG(m.st_mode) or m.st_uid!=1000:raise SystemExit('Key ownership/type needs review')
- if m.st_size==0:key.unlink()
-if not key.exists():
- def confirm(question):
-  print(question+' [y/N] ',end='',flush=True)
-  with open('/dev/tty') as tty:return tty.readline().strip().lower() in ('y','yes')
- source=os.environ.get('KEY_SOURCE','aws')
- if source=='manual':
-  warnings.simplefilter('error',getpass.GetPassWarning)
-  value=getpass.getpass('Paste ORIGINAL federator private key (hidden): ')
-  if node.inspect()['running']:raise SystemExit('Container started independently; key left unchanged')
-  r.install_key(node.cfg,value,node.expected_uid)
-  del value
- elif source=='aws':
-  if not r.restore_original_key(node,confirm):raise SystemExit('Original key restoration declined')
- else:raise SystemExit('KEY_SOURCE must be aws or manual')
-node.key_ready()
-print('Private key file ownership/mode/format passed; public signer verification follows.')
-PY
-
+  set +x
+  python3 "$OPS_DIR/federator_signing_key.py" --repo "$FED_REPO" --mode "$KEY_SOURCE"
 }
+
 
 activate() {
 "${COMPOSE[@]}" up --no-start --no-deps --no-build --pull never --force-recreate federation
@@ -472,27 +480,28 @@ root=Path(sys.argv[1]);path=root/'upgrade-context.json'
 if path.is_symlink() or path.stat().st_uid!=os.getuid() or stat.S_IMODE(path.stat().st_mode)!=0o600:
  raise SystemExit('Unsafe rollback context')
 value=json.loads(path.read_text())
-fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION')
+fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION','MONITORING_POLICY')
 for name in fields:
- item=value.get(name,value.get('REPAIR_REVISION') if name=='APP_REVISION' else None)
+ item=value.get(name,value.get('REPAIR_REVISION') if name=='APP_REVISION' else 'legacy' if name=='MONITORING_POLICY' else None)
  if not isinstance(item,str) or '\0' in item:raise SystemExit('Invalid rollback context')
  sys.stdout.buffer.write(item.encode()+b'\0')
 PY
   SAVED=()
   while IFS= read -r -d '' value; do SAVED+=("$value"); done < "$CONTEXT_FIELDS"
   rm -- "$CONTEXT_FIELDS"
-  ((${#SAVED[@]}==12)) || parameter_error 'Incomplete rollback context'
+  ((${#SAVED[@]}==13)) || parameter_error 'Incomplete rollback context'
   [[ -z "$REPO_OVERRIDE" || "$REPO_OVERRIDE" == "${SAVED[0]}" ]] || parameter_error 'Repo differs from saved upgrade; use the original run'
   FED_REPO=${SAVED[0]}; REPAIR_REVISION=${SAVED[1]}; FED_IMAGE=${SAVED[2]}; RELEASE_OVERRIDE=${SAVED[3]}
   PUBLIC_OPERATOR=${SAVED[4]}; EXPECTED_SIGNER=${SAVED[5]}; KEY_SOURCE=${SAVED[6]}; COMPOSE_PROJECT=${SAVED[7]}
-  CONFIG_DIR=${SAVED[8]}; WATCH_SECONDS=${SAVED[9]}; COMPOSE_PLAN_SHA256=${SAVED[10]}; APP_REVISION=${SAVED[11]}
+  CONFIG_DIR=${SAVED[8]}; WATCH_SECONDS=${SAVED[9]}; COMPOSE_PLAN_SHA256=${SAVED[10]}; APP_REVISION=${SAVED[11]}; MONITORING_POLICY=${SAVED[12]}
+  [[ "$MONITORING_POLICY" == independent || "$MONITORING_POLICY" == legacy ]] || parameter_error 'Invalid saved monitoring policy'
   if [[ "$KEY_SOURCE_OVERRIDE" == true ]]; then KEY_SOURCE=manual; fi
   if [[ -n "$WATCH_OVERRIDE" ]]; then WATCH_SECONDS=$WATCH_OVERRIDE; fi
   test "$CONFIG_DIR" = "$FED_REPO/federator-env/mainnet-ETH-RSK"
   export FED_ENV=mainnet-ETH-RSK
-  export FED_REPO REPAIR_REVISION APP_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE COMPOSE_PROJECT CONFIG_DIR WATCH_SECONDS
+  export FED_REPO REPAIR_REVISION APP_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE COMPOSE_PROJECT CONFIG_DIR WATCH_SECONDS MONITORING_POLICY
   [[ "$REPAIR_REVISION" =~ ^[0-9a-f]{40}$ && "$PUBLIC_OPERATOR" =~ ^fed_[1-5]$ && "$EXPECTED_SIGNER" =~ ^0x[0-9a-fA-F]{40}$ ]] || parameter_error 'Invalid rollback release/signer context'
-  [[ "$KEY_SOURCE" == aws || "$KEY_SOURCE" == manual ]] || parameter_error 'Invalid saved key source'
+  [[ "$KEY_SOURCE" == auto || "$KEY_SOURCE" == aws || "$KEY_SOURCE" == manual ]] || parameter_error 'Invalid saved key source'
   [[ "$WATCH_SECONDS" =~ ^[0-9]{1,5}$ ]] && ((10#$WATCH_SECONDS>=1 && 10#$WATCH_SECONDS<=86400)) || parameter_error 'Invalid saved watcher duration'
   test "$(git -C "$FED_REPO" hash-object "$SCRIPT_FILE")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/upgrade-eth-federator.sh")"
   verify_bundle
@@ -501,7 +510,7 @@ PY
   test "$(sha256sum "$OPS_DIR/deployment.private.json" | cut -d ' ' -f 1)" = "$COMPOSE_PLAN_SHA256"
   COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" -f "$OPS_DIR/deployment.private.json")
   "${COMPOSE[@]}" config --quiet
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+  monitoring_verify_legacy
   confirm 'Restore the original ETH image from this archive now?' || exit 0
   step 'Restore and stage the original image'
   stage_rollback
@@ -510,9 +519,11 @@ PY
   restore_key
   confirm 'Start the restored ETH node in the agreed window now?' || exit 0
   python3 "$OPS_DIR/federator_upgrade_safety.py" --repo "$FED_REPO" --start-cleanup "$OLD_IMAGE_ID" --expected-signer "$EXPECTED_SIGNER" --output "$OPS_DIR/rollback-startup-key-cleanup.json"
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+  monitoring_verify_legacy
+  if [[ "$MONITORING_POLICY" == independent ]]; then monitoring_recovery; fi
   run_watcher
 else
+  MONITORING_POLICY=independent; export MONITORING_POLICY
   require_inputs
   step '1/7 Fetch and verify the pinned upgrade tools'
   OPS_DIR=$(mktemp -d "$BASE_DIR/eth-upgrade.XXXXXX"); export OPS_DIR
@@ -520,19 +531,37 @@ else
   test "$(git -C "$FED_REPO" hash-object "$SCRIPT_FILE")" = "$(git -C "$FED_REPO" rev-parse "$REPAIR_REVISION:tools/upgrade-eth-federator.sh")"
   cp -- "$SCRIPT_FILE" "$OPS_DIR/upgrade.sh"
   chmod 600 "$OPS_DIR/upgrade.sh"
+  if [[ "$MONITORING_ONLY" == true ]]; then
+    step 'Verify the already-approved application; it will not be restarted'
+    EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
+    export EXPECTED_IMAGE_ID
+    python3 - <<'MONITOR'
+import json,os,sys
+from pathlib import Path
+sys.path.insert(0,os.environ['OPS_DIR']);import federator_recovery as r
+node=r.Node(Path(os.environ['FED_REPO']),'eth-rsk','bridge-sc_federation_1');now=node.inspect()
+old=json.loads((Path(os.environ['OPS_DIR'])/'before.json').read_text())
+if not now['running'] or now['image_id']!=os.environ['EXPECTED_IMAGE_ID'] or any(now.get(k)!=old.get(k) for k in ('id','image_id','started')):
+ raise SystemExit('Expected unchanged running approved application; no monitoring replacement started')
+with r.open_report(Path(os.environ['OPS_DIR'])/'monitoring-only.json') as out:json.dump(now,out)
+MONITOR
+    confirm 'Replace only Datadog now, leaving the running ETH federator unchanged?' || exit 0
+    monitoring_backup
+    monitoring_recovery
+    run_watcher
+    exit 0
+  fi
   step '2/7 Check the Etherscan key before stopping anything'
   python3 "$OPS_DIR/etherscan_prerequisite.py" "$CONFIG_DIR"
-  step 'Check Datadog compatibility before stopping either service'
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --inspect "$OPS_DIR/datadog-preflight"
   step '3/7 Download and verify the approved image and Compose plan'
   verify_image
   export WATCH_SECONDS
   write_context
-  confirm 'Upgrade this ETH node and repair Datadog if needed in the agreed window now?' || exit 0
+  confirm 'Upgrade this ETH federator now? Monitoring recovery follows startup.' || exit 0
   step '4/7 Back up and verify the original image'
   backup_image
-  step 'Repair Datadog if needed and retain its checkpoint volume'
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --capture "$OPS_DIR/datadog-state"
+  step 'Save private monitoring evidence without requiring a compatible checkpoint'
+  monitoring_backup
   step '5/7 Stop only the ETH federator and record checkpoints'
   stop_original
   step 'Archive and verify retained local logs and launch configuration'
@@ -541,6 +570,7 @@ else
   restore_key
   step '7/7 Stage, verify and start the new image'
   activate
-  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state" --allow-source-handoff
+  monitoring_verify_legacy
+  if [[ "$MONITORING_POLICY" == independent ]]; then monitoring_recovery; fi
   run_watcher
 fi

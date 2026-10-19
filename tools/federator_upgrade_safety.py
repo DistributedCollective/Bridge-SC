@@ -16,7 +16,7 @@ import time
 
 import federator_recovery as r
 
-VERSION = '1.0.1'
+VERSION = '1.1.0'
 RESERVE = 2 * 1024**3
 
 
@@ -90,6 +90,47 @@ def stream_logs(command, target, timeout=600):
     return {'uncompressed_bytes': size, 'uncompressed_sha256': digest.hexdigest()}
 
 
+def database_records(root, copy_to=None):
+    """Read a bounded stopped database tree without following links."""
+    root = Path(root)
+    if not root.exists() and not root.is_symlink():
+        return None
+    records = {}; total = 0
+    def walk(path, relative, depth):
+        nonlocal total
+        if depth > 32:
+            raise SafetyError('Database directory depth exceeds backup bound')
+        directory = r.open_directory(path)
+        try:
+            for name in sorted(os.listdir(directory)):
+                entry = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                rel = relative/name
+                if stat.S_ISDIR(entry.st_mode):
+                    if copy_to is not None: (copy_to/rel).mkdir(mode=0o700)
+                    walk(path/name, rel, depth+1)
+                elif stat.S_ISREG(entry.st_mode):
+                    body, before = r.read_regular_at(directory, name, 16*1024*1024)
+                    total += len(body)
+                    if len(records) >= 10000 or total > 64*1024*1024:
+                        raise SafetyError('Database exceeds private backup bound')
+                    after = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                    if identity(before) != identity(after):
+                        raise SafetyError('Database changed during stopped backup')
+                    records[str(rel)] = hashlib.sha256(body).hexdigest()
+                    if copy_to is not None:
+                        fd = os.open(copy_to/rel, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+                        with os.fdopen(fd, 'wb') as out:
+                            out.write(body); out.flush(); os.fsync(out.fileno())
+                else:
+                    raise SafetyError('Database contains a link or unsupported file; nothing replaced')
+            r.verify_directory(path, directory)
+        finally:
+            os.close(directory)
+    if copy_to is not None: copy_to.mkdir(mode=0o700)
+    walk(root, Path(), 0)
+    return records
+
+
 def archive_history(node, destination, command=None):
     before = stopped(node)
     destination = Path(destination)
@@ -111,6 +152,7 @@ def archive_history(node, destination, command=None):
             out.flush()
             os.fsync(out.fileno())
         configs[name] = hashlib.sha256(body).hexdigest()
+    database = database_records(node.cfg/'db', destination/'database')
     command = command or ['docker', '--host', 'unix:///var/run/docker.sock', 'logs', '--timestamps', before['id']]
     partial = destination/'docker.log.gz.partial'
     result = stream_logs(command, partial)
@@ -121,11 +163,13 @@ def archive_history(node, destination, command=None):
         saved=r.safe_path(destination/name,destination)
         if not saved.is_file() or hashlib.sha256(saved.read_bytes()).hexdigest()!=expected:
             raise SafetyError('Saved configuration verification failed; original container retained')
+    if database_records(node.cfg/'db') != database or (database is not None and database_records(destination/'database') != database):
+        raise SafetyError('Database source or private backup changed; original container retained')
     partial.rename(destination/'docker.log.gz')
     result.update(version=VERSION, utc=r.utc_now(), source_id=before['id'],
                   image_id=before['image_id'], config_sha256=configs,
                   scope='All retained Docker stdout/stderr with timestamps; original rotated-away logs are unavailable',
-                  database_copied=False, signing_key_copied=False)
+                  database_copied=database is not None, database_sha256=database, signing_key_copied=False)
     write_json(destination/'manifest.json', result)
     return result
 

@@ -60,6 +60,17 @@ class ContinueTests(unittest.TestCase):
             if app is None:self.assertNotIn('--app-revision',command)
             else:self.assertEqual(command[command.index('--app-revision')+1],app)
 
+    def test_continuation_monitoring_policy_comes_from_saved_run_not_ambient_environment(self):
+        from unittest.mock import patch
+        m=self.module()
+        base={'REPAIR_REVISION':'1'*40}
+        with patch.dict(os.environ,{'MONITORING_POLICY':'independent'}):
+            value=m.continuation_environment(base,Path('/private/run'),Path('/private/attempt'))
+        self.assertEqual(value['MONITORING_POLICY'],'legacy')
+        base['MONITORING_POLICY']='independent'
+        value=m.continuation_environment(base,Path('/private/run'),Path('/private/attempt'))
+        self.assertEqual(value['MONITORING_POLICY'],'independent')
+
     def test_unknown_script_layout_refused(self):
         m=self.module()
         with self.assertRaises(m.ContinueError):m.resume_script('echo do not execute\n')

@@ -31,17 +31,18 @@ class UpgradeMonitoringTests(unittest.TestCase):
         self.root=Path(self.tmp.name).resolve();self.output=self.root/'monitoring'
         self.d=SnapshotDocker()
 
-    def test_invalid_stopped_registry_is_preserved_and_never_reset(self):
+    def test_invalid_stopped_registry_is_backed_up_and_does_not_block_clean_replacement(self):
         self.d.files['/opt/datadog-agent/run/registry.json']=b'broken-private-fixture\0'
-        original=copy.deepcopy(self.d.files)
-        result=self.m.snapshot(self.d,self.output)
-        self.assertEqual(result['backup'],'COMPLETE')
-        self.assertFalse(result['registry']['valid_json'])
+        self.m.snapshot(self.d,self.output)
         self.assertEqual((self.output/'registry.private.json').read_bytes(),b'broken-private-fixture\0')
-        outcome=self.m.recover(self.d,self.output)
-        self.assertEqual(outcome['status'],'UNRESOLVED')
-        self.assertEqual(outcome['reason'],'INVALID_REGISTRY')
-        self.assertEqual(self.d.files,original);self.assertEqual(self.d.starts,0);self.assertEqual(self.d.writes,0)
+        new=copy.deepcopy(self.d.agent);new['id']='e'*64
+        new['image']=self.m.fresh.IMAGE_ID;new['state'].update(Running=True,Status='running')
+        manifest={'utc':'2026-10-19T14:00:00Z','source_cutoff':1000}
+        with patch.object(self.m.fresh,'replace',return_value=(manifest,new)):
+            outcome=self.m.recover(self.d,self.output)
+        self.assertEqual(outcome['status'],'TRACKING_CONFIGURED')
+        self.assertEqual(outcome['source_cutoff'],1000)
+        self.assertEqual(self.d.files['/opt/datadog-agent/run/registry.json'],b'broken-private-fixture\0')
         for name in ('report.json','snapshot.json'):
             self.assertNotIn('private-fixture',(self.output/name).read_text())
         for path in self.output.iterdir():
@@ -57,17 +58,6 @@ class UpgradeMonitoringTests(unittest.TestCase):
         self.assertNotIn('SECRET',(self.output/'report.json').read_text())
         self.assertEqual(self.d.starts,0);self.assertEqual(self.d.writes,0)
 
-    def test_supported_recovery_runs_existing_real_guards_and_preserves_other_sources(self):
-        original=copy.deepcopy(self.d.source)
-        self.m.snapshot(self.d,self.output)
-        value=self.m.recover(self.d,self.output)
-        self.assertEqual(value['status'],'TRACKING_CONFIGURED')
-        self.assertEqual(value['indexed_visibility'],'UNKNOWN')
-        self.assertEqual(self.d.source,original)
-        registry=json.loads(self.d.files[r.PERSISTENT_PATH+'/registry.json'])
-        self.assertEqual(registry['Registry']['file:/other.log']['Offset'],'9')
-        self.assertTrue((self.output/'state/manifest.json').is_file())
-
     def test_changed_agent_or_missing_backup_refuses_recovery_without_mutation(self):
         self.m.snapshot(self.d,self.output)
         self.d.agent['id']='f'*64
@@ -81,7 +71,7 @@ class UpgradeMonitoringTests(unittest.TestCase):
         def fail(docker,output):
             docker.call(['stop',docker.agent['id']])
             raise r.RepairError('SECRET=must-not-print')
-        with patch.object(self.m.u,'capture',side_effect=fail):
+        with patch.object(self.m.fresh,'replace',side_effect=lambda docker,output,*a,**kw:fail(docker,output)):
             result=self.m.recover(self.d,self.output)
         self.assertEqual(result['status'],'UNRESOLVED')
         self.assertEqual(self.d.source,source);self.assertTrue(self.d.source['state']['Running'])

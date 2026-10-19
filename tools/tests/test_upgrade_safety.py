@@ -159,7 +159,7 @@ class UpgradeSafetyTests(unittest.TestCase):
                 m.start_and_clean(self.node, image, self.root/('start'+str(running)+'.json'), expected_signer='0x'+'6'*40, sleep=lambda _:None)
         self.assertEqual(self.node.commands, [])
 
-    def test_archive_keeps_all_streamed_logs_config_and_excludes_key_and_database(self):
+    def test_archive_keeps_all_streamed_logs_config_and_excludes_signing_key(self):
         data=b'2025 historical\n2026 current\n'
         dest=self.root/'history'
         cmd=[sys.executable,'-c', 'import sys;sys.stdout.buffer.write('+repr(data)+')']
@@ -172,6 +172,36 @@ class UpgradeSafetyTests(unittest.TestCase):
         self.assertEqual(report['uncompressed_bytes'], len(data))
         self.assertFalse(self.node.state['running'])
         self.assertEqual(os.stat(dest/'docker.log.gz').st_mode & 0o777, 0o600)
+
+    def test_database_copy_preserves_both_cursors_and_is_read_back_before_manifest(self):
+        db=self.node.cfg/'db';(db/'side-fed').mkdir(parents=True)
+        (db/'lastBlock.txt').write_text('9330278')
+        (db/'side-fed/lastBlock.txt').write_text('26206212')
+        dest=self.root/'history'
+        value=m.archive_history(self.node,dest,command=[sys.executable,'-c','print(123)'])
+        self.assertTrue(value['database_copied'])
+        self.assertEqual((dest/'database/lastBlock.txt').read_text(),'9330278')
+        self.assertEqual((dest/'database/side-fed/lastBlock.txt').read_text(),'26206212')
+        self.assertEqual((db/'lastBlock.txt').read_text(),'9330278')
+        self.assertFalse((dest/'federator.key').exists())
+        self.assertEqual((dest/'database/lastBlock.txt').stat().st_mode&0o777,0o600)
+
+    def test_database_symlink_and_modified_backup_block_archive_completion(self):
+        for fault in ('symlink','changed_copy'):
+            with self.subTest(fault=fault):
+                db=self.node.cfg/'db';db.mkdir(exist_ok=True)
+                (db/'lastBlock.txt').write_text('9330278')
+                dest=self.root/fault;original=m.stream_logs
+                if fault=='symlink':(db/'bad').symlink_to(self.node.key)
+                def mutate(*args,**kwargs):
+                    out=original(*args,**kwargs)
+                    (dest/'database/lastBlock.txt').write_text('modified')
+                    return out
+                with patch.object(m,'stream_logs',side_effect=mutate if fault=='changed_copy' else original):
+                    with self.assertRaises((m.SafetyError,m.r.RecoveryError)):
+                        m.archive_history(self.node,dest,command=[sys.executable,'-c','print(123)'])
+                self.assertFalse((dest/'manifest.json').exists())
+                if (db/'bad').is_symlink():(db/'bad').unlink()
 
     def test_failed_log_read_leaves_container_and_original_logs_available(self):
         cmd=[sys.executable,'-c', 'import sys;print("private error");sys.exit(1)']

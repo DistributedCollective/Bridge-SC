@@ -74,7 +74,7 @@ class LauncherTests(unittest.TestCase):
         m=self.module();c,i=fixture()
         self.assertEqual(m.make_override(c,i,Path('/home/ubuntu/Bridge-SC'))['services']['federation']['ipc'],'private')
 
-    def test_stopped_or_paused_agent_is_a_reported_blocker_even_if_inspect_succeeded(self):
+    def test_stopped_or_paused_agent_is_a_monitoring_warning_not_application_blocker(self):
         import types
         m=self.module();c,i=fixture()
         for state in ({'Status':'exited','Running':False,'Paused':False,'ExitCode':255},
@@ -84,9 +84,9 @@ class LauncherTests(unittest.TestCase):
             component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(report))
             with self.subTest(state=state),patch.object(m,'environment_component',return_value=component):
                 result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_2',c,i)
-            self.assertEqual(result['status'],'BLOCKED')
-            self.assertTrue(any(x['status']=='BLOCKER' and 'Datadog Agent is not running' in x['summary'] for x in result['checks']))
-            self.assertTrue(any(x['status']=='UNKNOWN' and 'checkpoint' in x['summary'] for x in result['checks']))
+            self.assertEqual(result['status'],'CAPTURED_NOT_UPGRADE_APPROVAL')
+            self.assertTrue(any(x['status']=='WARN' and x.get('scope')=='monitoring' and 'Datadog Agent is not running' in x['summary'] for x in result['checks']))
+            self.assertTrue(any(x['status']=='WARN' and x.get('scope')=='monitoring' and 'checkpoint' in x['summary'] for x in result['checks']))
 
     def test_only_exited_unpaused_agent_is_eligible_for_validated_backend_recovery(self):
         import types
@@ -98,9 +98,23 @@ class LauncherTests(unittest.TestCase):
             component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(report))
             with patch.object(m,'environment_component',return_value=component):
                 result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_2',c,i)
-            blockers=[v for v in result['checks'] if v['status']=='BLOCKER']
+            blockers=[v for v in result['checks'] if v.get('scope')=='monitoring' and v['status']=='WARN']
             self.assertTrue(blockers)
             self.assertEqual(any(v.get('recovery')=='stopped_agent' for v in blockers),eligible)
+
+    def test_unreadable_registry_and_missing_tracking_are_monitoring_warnings(self):
+        import types
+        m=self.module();c,i=fixture()
+        for extra in ({'registry_status':'UNAVAILABLE'}, {'registry_status':'OBSERVED','persistent_registry':False,'current_sources':[]}):
+            values={'version':'7.33.1','config_status':'OBSERVED','api_key_present':True,'logs_enabled':True,'collect_all':True}
+            values.update(extra)
+            raw={'agent':{'status':'OBSERVED','deployment':{'State':{'Running':True,'Status':'running','Paused':False}},'collection':values},
+                 'configuration':{'config_status':'OBSERVED'},'docker':{'compose_version':'2.40.3'}}
+            component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(raw))
+            with patch.object(m,'environment_component',return_value=component):
+                result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_3',c,i)
+            self.assertTrue(any(v['status']=='WARN' and v.get('scope')=='monitoring' for v in result['checks']))
+            self.assertFalse(any(v['status']=='BLOCKER' for v in result['checks']))
 
     def test_running_agent_does_not_gain_stopped_agent_blocker(self):
         import types
@@ -392,7 +406,7 @@ class LauncherFlowTests(unittest.TestCase):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
-            report={'schema':1,'checks':[{'status':'BLOCKER','recovery':'stopped_agent','summary':'Agent stopped'}]}
+            report={'schema':1,'checks':[{'status':'WARN','scope':'monitoring','recovery':'stopped_agent','summary':'Agent stopped'}]}
             with patch.object(m,'capture_snapshot',return_value=report):
                 result,execute,output=self.invoke(m,root,runner,upgrade=True)
             self.assertEqual(result,0);execute.assert_called_once()
@@ -401,22 +415,64 @@ class LauncherFlowTests(unittest.TestCase):
             self.assertEqual(command[command.index('--app-revision')+1],m.APP_REVISION)
             self.assertFalse(any(x[0]=='docker' and x[3] in ('start','stop','rm','run') for x in runner.calls))
 
+    def test_monitoring_warnings_do_not_block_verified_application_handoff(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+            report={'schema':1,'checks':[{'status':'WARN','scope':'monitoring','summary':'Unsupported Agent registry'}]}
+            with patch.object(m,'capture_snapshot',return_value=report):
+                result,execute,output=self.invoke(m,root,runner,upgrade=True)
+            self.assertEqual(result,0);execute.assert_called_once()
+
+    def test_configured_signer_is_reused_without_manual_address_or_custody_input(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+            report={'schema':1,'checks':[], 'configuration':{'configured_signer':'0x'+'22'*20}}
+            with patch.object(m,'capture_snapshot',return_value=report),patch.object(m,'require_operator'),patch.object(m,'private_base',return_value=root), \
+                 patch.object(m.sys.stdin,'isatty',return_value=True),patch('builtins.input',side_effect=['fed_2']) as prompt, \
+                 patch.object(m.os,'execv') as execute,contextlib.redirect_stdout(io.StringIO()):
+                m.main(['--repo',str(root/'repo'),'--upgrade'],runner)
+            self.assertEqual(prompt.call_count,1)
+            args=execute.call_args[0][1]
+            self.assertEqual(args[args.index('--expected-signer')+1],'0x'+'22'*20)
+            self.assertNotIn('--no-aws-secrets',args)
+
     def test_approved_app_with_stopped_agent_does_not_claim_completed_recovery(self):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
             runner.container['Image']=m.APP_IMAGE_ID;runner.image['Id']=m.APP_IMAGE_ID
-            report={'schema':1,'checks':[{'status':'BLOCKER','recovery':'stopped_agent','summary':'Agent stopped'}]}
-            with patch.object(m,'capture_snapshot',return_value=report),self.assertRaises(m.LaunchError):
-                self.invoke(m,root,runner,upgrade=True)
-            self.assertFalse(any('fetch' in x for x in runner.calls))
+            report={'schema':1,'checks':[{'status':'WARN','scope':'monitoring','recovery':'stopped_agent','summary':'Agent stopped'}]}
+            with patch.object(m,'capture_snapshot',return_value=report):
+                _,execute,output=self.invoke(m,root,runner,upgrade=True)
+            execute.assert_called_once()
+            self.assertIn('--monitoring-only',execute.call_args[0][1])
+            self.assertIn('monitoring',output.lower())
 
     def test_already_approved_image_is_not_replaced(self):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo');runner.container['Image']=m.APP_IMAGE_ID;runner.image['Id']=m.APP_IMAGE_ID
-            _,execute,output=self.invoke(m,root,runner,upgrade=True)
+            with patch.object(m,'capture_snapshot',return_value={'schema':1,'checks':[]}):
+                _,execute,output=self.invoke(m,root,runner,upgrade=True)
             execute.assert_not_called();self.assertIn('already installed',output)
+
+    def test_previous_approved_runtime_is_not_replaced_and_monitoring_uses_its_own_image(self):
+        m=self.module()
+        previous='sha256:58b72a504b8a3cfb7b6464c531f9a8a487522d69126762e12b13502ce6095781'
+        for broken in (False,True):
+            with self.subTest(broken=broken),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+                runner.container['Image']=previous;runner.image['Id']=previous
+                report={'schema':1,'checks':[{'status':'WARN','scope':'monitoring','summary':'Agent stopped'}] if broken else []}
+                with patch.object(m,'capture_snapshot',return_value=report):
+                    _,execute,output=self.invoke(m,root,runner,upgrade=True)
+                if broken:
+                    argv=execute.call_args[0][1]
+                    self.assertIn('--monitoring-only',argv)
+                    self.assertEqual(argv[argv.index('--image')+1],m.APP_RELEASES[previous][1])
+                else:execute.assert_not_called()
 
     def test_compose_installer_checks_digest_and_never_overwrites_existing_plugin(self):
         m=self.module();payload=b'dummy-compose-binary'
@@ -537,7 +593,7 @@ class LauncherFlowTests(unittest.TestCase):
                 except BaseException:os._exit(8)
                 os._exit(9)
             responses=[(b'Node label',b'fed_1\n'),(b'Existing PUBLIC',('0x'+'11'*20+'\n').encode()),
-                       (b'Original signing-key custody',b'manual\n'),(b'Open the approved upgrade now?',b'y\n'),
+                       (b'Open the approved upgrade now?',b'y\n'),
                        (b'APPROVE_UPGRADE',b'y\n')]
             output=b'';index=0;deadline=time.monotonic()+5;finished=False
             try:
@@ -551,7 +607,7 @@ class LauncherFlowTests(unittest.TestCase):
                             os.write(master,responses[index][1]);index+=1
                         if b'APPROVED_WITH_TTY' in output:finished=True;break
                 self.assertTrue(finished,output.decode(errors='replace'))
-                self.assertEqual(index,5)
+                self.assertEqual(index,4)
                 _,status=os.waitpid(pid,0);pid=None;self.assertEqual(os.waitstatus_to_exitcode(status),0)
             finally:
                 os.close(master)
@@ -580,18 +636,18 @@ class WizardTests(unittest.TestCase):
 
     def test_missing_identity_reprompts_and_continues_without_rerunning_checks(self):
         private_shape='f'*64
-        result,execute,prompt,output,calls,_=self.invoke(['fed_99','fed_1',private_shape,'0x'+'11'*20,'manual','y'])
+        result,execute,prompt,output,calls,_=self.invoke(['fed_99','fed_1',private_shape,'0x'+'11'*20,'y'])
         self.assertEqual(result,0);execute.assert_called_once()
         args=execute.call_args[0][1]
-        self.assertIn('--no-aws-secrets',args)
+        self.assertNotIn('--no-aws-secrets',args)
         self.assertEqual(args[args.index('--expected-signer')+1],'0x'+'11'*20)
         self.assertNotIn(private_shape,output)
         self.assertEqual(sum('fetch' in c for c in calls),1)
-        self.assertEqual(prompt.call_count,6)
+        self.assertEqual(prompt.call_count,5)
         for number in range(1,5):self.assertIn('['+str(number)+'/4]',output)
 
     def test_declining_wizard_stops_after_preparation_and_does_not_execute(self):
-        result,execute,_,output,calls,packets=self.invoke(['fed_1','0x'+'11'*20,'manual','n'])
+        result,execute,_,output,calls,packets=self.invoke(['fed_1','0x'+'11'*20,'n'])
         self.assertEqual(result,0);execute.assert_not_called();self.assertEqual(packets,1)
         self.assertIn('No upgrade started',output)
         self.assertFalse(any(c[0]=='docker' and c[3] in ('start','stop','rm','run','pull') for c in calls))
@@ -607,13 +663,13 @@ class WizardTests(unittest.TestCase):
             '--expected-signer','0x'+'11'*20,'--no-aws-secrets'],interactive=False)
         self.assertEqual(result,0);execute.assert_not_called();prompt.assert_not_called()
 
-    def test_invalid_custody_and_confirmation_answers_are_reprompted(self):
-        _,execute,prompt,_,_,_=self.invoke(['fed_2','0x'+'22'*20,'unknown','aws','maybe','yes'])
+    def test_invalid_confirmation_answers_are_reprompted_without_a_custody_question(self):
+        _,execute,prompt,_,_,_=self.invoke(['fed_2','0x'+'22'*20,'maybe','yes'])
         execute.assert_called_once();self.assertNotIn('--no-aws-secrets',execute.call_args[0][1])
-        self.assertEqual(prompt.call_count,6)
+        self.assertEqual(prompt.call_count,4)
 
     def test_default_empty_confirmation_declines(self):
-        _,execute,_,output,_,_=self.invoke(['fed_1','0x'+'11'*20,'manual',''])
+        _,execute,_,output,_,_=self.invoke(['fed_1','0x'+'11'*20,''])
         execute.assert_not_called();self.assertIn('No upgrade started',output)
 
     def test_process_change_while_waiting_for_confirmation_blocks_handoff(self):
@@ -625,7 +681,7 @@ class WizardTests(unittest.TestCase):
                 return result
         m=self.module()
         with self.assertRaises(m.LaunchError):
-            self.invoke(['fed_1','0x'+'11'*20,'manual','y'],runner_type=ChangedAfterDecision)
+            self.invoke(['fed_1','0x'+'11'*20,'y'],runner_type=ChangedAfterDecision)
 
     def test_help_explains_wizard_preparation_and_version_modes(self):
         m=self.module()

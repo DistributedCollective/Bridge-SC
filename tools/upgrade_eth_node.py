@@ -24,6 +24,12 @@ APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
 BASE_IMAGE_ID = 'sha256:eb153b412d54517818953f45990a8a5c8cf552d64e881410134a6c406a0c785c'
 APP_IMAGE_ID = 'sha256:359c86c374970d1f8d6f803eb597e6713fa11695e6b3a3b7bf1ebd4503354bf4'
+APP_RELEASES = {
+    APP_IMAGE_ID: (APP_REVISION, APP_IMAGE),
+    'sha256:58b72a504b8a3cfb7b6464c531f9a8a487522d69126762e12b13502ce6095781': (
+        '510b1b3419593f4b1193c6249a17a7a8813712c2',
+        'sovryn/fed-tokenbridge:eth-repair-510b1b3419593f4b1193c6249a17a7a8813712c2@sha256:c3a4a03f61ea82612c449f2e4e795fa5219dabfe67d2ac8bbcaf967c0f594b25'),
+}
 TOOL_REVISION = 'daf296389a0539ca477e37f8d2de1aaaaedd8474'
 BRANCH = 'federator-diagnostics-recovery-upgrade'
 ENVIRONMENT_SHA256 = '1dec671b46f00db14dfa4aaf1073bebbbbf9784d0a45418ede6c2f891469e9c9'
@@ -221,31 +227,39 @@ def capture_snapshot(repo,runner,operator,container,image,previous_run=None):
     report=component.collect(repo,runner,operator,container,image,previous_run,progress=lambda message:print(message,flush=True))
     issues=[]
     try:
-        if container.get('Image')!=APP_IMAGE_ID or image.get('Id')!=APP_IMAGE_ID:
+        if container.get('Image') not in APP_RELEASES or image.get('Id')!=container.get('Image'):
             make_override(container,image,repo,issues=issues)
     except (KeyError,TypeError,ValueError,AttributeError):
         issues.append('Deployment shape could not be fully audited; use the complete packet for review')
     report['checks']=[{'status':'BLOCKER','summary':reason} for reason in issues]
-    if not issues:report['checks'].append({'status':'PASS','summary':'Existing deployment matches the supported replacement profile' if container.get('Image')!=APP_IMAGE_ID else 'Approved application image already installed; no replacement required'})
+    if not issues:report['checks'].append({'status':'PASS','summary':'Existing deployment matches the supported replacement profile' if container.get('Image') not in APP_RELEASES else 'Approved application image already installed; no replacement required'})
     agent=report.get('agent',{})
     state=agent.get('deployment',{}).get('State',{})
     if agent.get('status')=='OBSERVED' and (state.get('Running') is not True or state.get('Paused')):
-        finding={'status':'BLOCKER','summary':'Datadog Agent is not running or is paused; preserve its saved checkpoint before a matched recovery'}
+        finding={'status':'WARN','scope':'monitoring','summary':'Datadog Agent is not running or is paused; monitoring recovery follows application startup'}
         if state.get('Status')=='exited' and state.get('Running') is False and not state.get('Paused'):
             finding['recovery']='stopped_agent'
         report['checks'].append(finding)
     collection=agent.get('collection') or {}
     if agent.get('status')=='OBSERVED' and not collection:
-        report['checks'].append({'status':'UNKNOWN','summary':'Datadog credential validity and logging checkpoint were not captured; metadata inspection is not delivery proof'})
+        report['checks'].append({'status':'WARN','scope':'monitoring','summary':'Datadog credential validity and logging checkpoint were not captured; metadata inspection is not delivery proof'})
+    if agent.get('status')=='OBSERVED' and collection:
+        for condition,title in (
+            (collection.get('config_status')!='OBSERVED','Datadog effective configuration is unavailable'),
+            (collection.get('registry_status')!='OBSERVED','Datadog logging checkpoint is unavailable or unreadable'),
+            (collection.get('persistent_registry') is not True,'Datadog logging checkpoint is not confirmed persistent'),
+            (collection.get('collect_all') is not True,'Datadog automatic container collection is not enabled'),
+            (not collection.get('current_sources'),'Datadog current source tracking was not observed')):
+            if condition:report['checks'].append({'status':'WARN','scope':'monitoring','summary':title})
     version=collection.get('version')
     legacy_image='sha256:4b37339b169c666008e4717eebc7f529329656f9ed13619f1d54d40a85adeeb8'
     legacy_supported=version=='7.32.4' and agent.get('deployment',{}).get('Image')==legacy_image
     if isinstance(version,str) and re.fullmatch(r'7\.\d+\.\d+',version) and int(version.split('.')[1])<33 and not legacy_supported:
-        report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent '+version+' is older than the verified7.33+ repair; prepare its matched update from this packet'})
+        report['checks'].append({'status':'WARN','scope':'monitoring','summary':'Datadog Agent '+version+' is older than the verified7.33+ repair; prepare its matched update from this packet'})
     for field,title in [('api_key_present','Datadog API credential is absent'),('logs_enabled','Datadog log collection is disabled')]:
-        if collection.get(field) is False:report['checks'].append({'status':'BLOCKER','summary':title})
+        if collection.get(field) is False:report['checks'].append({'status':'WARN','scope':'monitoring','summary':title})
     schema=collection.get('registry_schema')
-    if schema is not None and schema!=2:report['checks'].append({'status':'BLOCKER','summary':'Datadog logging registry schema is unsupported'})
+    if schema is not None and schema!=2:report['checks'].append({'status':'WARN','scope':'monitoring','summary':'Datadog logging registry schema is unsupported'})
     for key,title in [('docker','Docker metadata'),('agent','Datadog metadata'),('application_probe','Application versions and RPC metadata')]:
         if report.get(key,{}).get('status')=='UNAVAILABLE':report['checks'].append({'status':'UNKNOWN','summary':title+' could not be captured'})
     if report.get('source_consistency',{}).get('status')=='CHANGED':
@@ -393,11 +407,13 @@ def install_compose():
     print('Verified Compose v2.40.3 installed in your account; Docker services were not restarted.', flush=True)
 
 
-def upgrade_command(packet, repo, operator, signer, manual):
-    args = ['/bin/bash', str(packet/'upgrade.sh'), '--repo', str(repo), '--revision', TOOL_REVISION, '--app-revision', APP_REVISION,
-            '--image', APP_IMAGE, '--override', str(packet/'override.json'),
+def upgrade_command(packet, repo, operator, signer, manual, monitoring_only=False, release=None):
+    app_revision,app_image=release or (APP_REVISION,APP_IMAGE)
+    args = ['/bin/bash', str(packet/'upgrade.sh'), '--repo', str(repo), '--revision', TOOL_REVISION, '--app-revision', app_revision,
+            '--image', app_image, '--override', str(packet/'override.json'),
             '--operator', operator, '--expected-signer', signer]
     if manual:args.append('--no-aws-secrets')
+    if monitoring_only:args.append('--monitoring-only')
     return args
 
 
@@ -430,7 +446,7 @@ def prompted_value(prompt, supplied, valid, error, interactive, default=None):
 
 def main(argv=None, runner=None):
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
-        'Run without options for the interactive wizard. Missing identity and key-custody inputs '
+        'Run without options for the interactive wizard. Missing identity inputs '
         'are requested with validation. --prepare-only never opens the upgrader. '
         '--upgrade skips only the launcher decision; the approved maintenance confirmation remains. '
         '--version prints the launcher version without accessing Docker.'))
@@ -475,19 +491,12 @@ def main(argv=None, runner=None):
     interactive = sys.stdin.isatty()
     if args.upgrade and not interactive:
         raise LaunchError('Run the command directly in interactive Bash; do not pipe it or use yes.')
-    step(1,'Identify this node for read-only environment capture' if args.collect_only else 'Identify this node and signing-key custody')
+    step(1,'Identify this node for read-only environment capture' if args.collect_only else 'Identify this node; original-key recovery is automatic')
     args.operator = prompted_value('Node label (fed_1..fed_5): ',args.operator,
         lambda value: bool(re.fullmatch(r'fed_[1-5]',value)),
         'Enter a node label from fed_1 through fed_5.',interactive)
     if not args.collect_only:
-        args.expected_signer = prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
-            lambda value: bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
-            'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
-        if args.key_source is None and not interactive:
-            args.key_source = 'aws'
-        args.key_source = prompted_value('Original signing-key custody [aws/manual] (default aws): ',args.key_source,
-            lambda value: value in ('aws','manual'),
-            'Enter aws for your original AWS secret, or manual for private key entry.',interactive,default='aws')
+        args.key_source = args.key_source or 'auto'
     step(2,'Check account, repository and upgrade lock')
     runner = runner or Runner();repo = args.repo.absolute()
     origin = runner.run(['git','-C',str(repo),'remote','get-url','origin']).strip()
@@ -524,13 +533,24 @@ def main(argv=None, runner=None):
         if args.collect_only:
             step(4,'Environment captured; no upgrade started. Send only the ZIP packet to your coordinator')
             return 0
-        if any(check.get('status')=='BLOCKER' and check.get('recovery')!='stopped_agent' for check in report['checks']):
+        configured=report.get('configuration',{}).get('configured_signer')
+        if args.expected_signer is None and isinstance(configured,str) and re.fullmatch(r'0x[0-9a-fA-F]{40}',configured):
+            args.expected_signer=configured
+            print('Using the configured public federator address: '+configured,flush=True)
+        else:
+            args.expected_signer=prompted_value('Existing PUBLIC federator address (0x..., not a private key): ',args.expected_signer,
+                lambda value:bool(re.fullmatch(r'0x[0-9a-fA-F]{40}',value)),
+                'Enter a public address: 0x followed by exactly 40 hexadecimal characters.',interactive)
+        if isinstance(configured,str) and configured.lower()!=args.expected_signer.lower():
+            raise LaunchError('Supplied public signer differs from existing configuration; services unchanged.')
+        if any(check.get('status')=='BLOCKER' for check in report['checks']):
             raise LaunchError('All detected deployment blockers are listed above. Services unchanged. Send only '+str(bundle)+'; do not rerun the upgrade or send raw configuration.')
-        if c['Image'] == APP_IMAGE_ID and image.get('Id') == APP_IMAGE_ID:
-            if any(check.get('status')=='BLOCKER' for check in report['checks']):
-                raise LaunchError('Application image is already approved but Datadog still requires recovery; no application replacement or restart performed. Send the saved environment packet.')
+        monitoring_only = c['Image'] in APP_RELEASES and image.get('Id') == c['Image']
+        if monitoring_only and not any(check.get('scope')=='monitoring' and check.get('status')!='PASS' for check in report['checks']):
             step(4,'Approved application image is already installed; no upgrade or restart performed');return 0
-        override = make_override(c,image,repo)
+        if monitoring_only:
+            print('Application already approved; only monitoring will be replaced. The federator remains running.',flush=True)
+        override = {'services':{}} if monitoring_only else make_override(c,image,repo)
         try:runner.run(DOCKER+['compose','version'])
         except LaunchError:
             if args.prepare_only or not interactive:
@@ -571,7 +591,7 @@ def main(argv=None, runner=None):
         os.close(fd)
     print('Starting approved upgrade. Answer y to the upgrade-window prompt only when you are ready; '
           'it handles backup, key restoration, restart and monitoring.',flush=True)
-    command = upgrade_command(packet,repo,args.operator,args.expected_signer,args.key_source == 'manual')
+    command = upgrade_command(packet,repo,args.operator,args.expected_signer,args.key_source == 'manual',monitoring_only,APP_RELEASES.get(c['Image']) if monitoring_only else None)
     os.execv(command[0],command)
     return 0
 
