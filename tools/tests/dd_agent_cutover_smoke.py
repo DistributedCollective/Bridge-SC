@@ -5,6 +5,7 @@ from pathlib import Path
 parser=argparse.ArgumentParser(description='Manual isolated Agent cutoff proof; uses only dummy data and an internal network.')
 parser.add_argument('--agent-image',required=True,help='already-local official Agent image ID or immutable digest')
 parser.add_argument('--upgrade-integration',action='store_true',help='exercise stopped-Agent upgrade preflight/capture/verify and retained restart')
+parser.add_argument('--unregistered-source-fixture',action='store_true',help='start recovery with no checkpoint for the selected source')
 parser.add_argument('--socket-cursor-fixture',action='store_true',help='start recovery with only the selected legacy Docker socket checkpoint')
 parser.add_argument('--node-image',default='node:22-bookworm',help='already-local Node image for disposable fixtures')
 parser.add_argument('--evidence-dir',type=Path,required=True,help='private local evidence directory')
@@ -43,7 +44,7 @@ with tempfile.TemporaryDirectory(prefix='dd-agent-cutover-lab-') as td:
   call(['run','-d','--name',sink,'--label','bridge-dd-lab='+nonce,'--network',network,'--network-alias','sink','--log-opt','max-size=1m','--entrypoint','node',NODE,'-e',sink_code]);owned.append(sink)
   call(['run','-d','--name',source,'--label','bridge-dd-lab='+nonce,'--network','none','--log-driver','json-file','--log-opt','max-size=2m','--log-opt','max-file=2','--mount','type=bind,source='+str(cfg)+',target=/app/federator/config','--mount','type=bind,source='+str(cfg/'db')+',target=/app/federator/db','--entrypoint','node',NODE,'-e',source_code]);owned.append(source)
   source_meta=json.loads(call(['inspect',source]))[0];log_path=source_meta['LogPath'];log_dir=str(Path(log_path).parent.parent if args.upgrade_integration else Path(log_path).parent)
-  original.write_text(json.dumps({'api_key':'0'*32,'hostname':nonce,'logs_enabled':True,'logs_config':{'run_path':'/opt/datadog-agent/run','logs_dd_url':'sink:8080','logs_no_ssl':True,'force_use_http':True,'container_collect_all':False},'enable_payloads':{'series':False,'events':False,'service_checks':False,'sketches':False}}));original.chmod(0o600)
+  original.write_text(json.dumps({'api_key':'0'*32,'hostname':nonce,'logs_enabled':True,'logs_config':{'run_path':'/opt/datadog-agent/run','logs_dd_url':'sink:8080','logs_no_ssl':True,'force_use_http':True,'container_collect_all':bool(args.unregistered_source_fixture)},'enable_payloads':{'series':False,'events':False,'service_checks':False,'sketches':False}}));original.chmod(0o600)
   (logs_cfg/'conf.yaml.default').write_text(json.dumps({'logs':[{'type':'file','path':log_path,'service':'bridge-dd-lab','source':'docker'}]}))
   def create_agent(recreated=False):
    a=['create','--name',agent,'--label','bridge-dd-lab='+nonce,'--network',network,'-e','DD_API_KEY='+'0'*32,'-e','DD_HOSTNAME='+nonce,'-e','DD_APM_ENABLED=false','-e','DD_PROCESS_AGENT_ENABLED=false','-e','DD_LOG_LEVEL=error','-e','DD_ENABLE_PAYLOADS_SERIES=false','-e','DD_ENABLE_PAYLOADS_EVENTS=false','-e','DD_ENABLE_PAYLOADS_SERVICE_CHECKS=false','-e','DD_ENABLE_PAYLOADS_SKETCHES=false','--mount','type=bind,source='+log_dir+',target='+log_dir+',readonly','--log-opt','max-size=2m']
@@ -70,6 +71,8 @@ with tempfile.TemporaryDirectory(prefix='dd-agent-cutover-lab-') as td:
   registry['Registry'][key]['Offset']='0'
   if args.socket_cursor_fixture:
    registry['Registry'].pop(key);registry['Registry']['docker:'+source_meta['Id']]={'Offset':'2025-11-19T16:00:00Z','TailingMode':''};results['started_with_socket_only_checkpoint']=True
+  if args.unregistered_source_fixture:
+   registry['Registry'].pop(key,None);registry['Registry'].pop('docker:'+source_meta['Id'],None);results['started_without_current_source_checkpoint']=True
   reg.write_text(json.dumps(registry));call(['cp',str(reg),agent+':/opt/datadog-agent/run/registry.json'])
   reset_sink();(cfg/'phase').write_text('BRIDGE_LAB_FRESH')
   wait(lambda:'BRIDGE_LAB_FRESH' in call(['logs','--tail','1',source]),'new source phase',15)

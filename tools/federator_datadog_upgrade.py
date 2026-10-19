@@ -9,7 +9,7 @@ import sys
 import time
 import dd_agent_recovery as r
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 
 def stable(agent):
@@ -93,7 +93,10 @@ def read_state(docker, work, require_cursor=True, layout_source=None, allow_stop
             time.sleep(.2)
     if type(registry.get('Version')) is not int or registry['Version'] != 2 or not isinstance(registry.get('Registry'), dict):
         raise r.RepairError('Unsupported Agent registry schema; no service stopped')
-    if persistent:r.ensure_file_collection(registry, source['id'], config, env)
+    initialization=r.initialization_state(docker,agent,volume) if persistent else None
+    if persistent:
+        r.ensure_file_collection(registry, source['id'], config, env)
+        r.require_initialization_ack(initialization,registry)
     key = 'file:' + mapped
     entry = registry['Registry'].get(key)
     offset = entry.get('Offset') if isinstance(entry, dict) else None
@@ -108,7 +111,7 @@ def read_state(docker, work, require_cursor=True, layout_source=None, allow_stop
         if not source['state'].get('Running') or source['state'].get('Paused'):
             raise r.RepairError('Start/recover the existing ETH node before its Datadog cutover; no service stopped')
         snapshot = r.file_snapshot(docker, agent, source)
-        migrated = r.recovery_registry(registry, mapped, source['id'], snapshot['offset'], r.utc())
+        migrated = r.recovery_registry(registry, mapped, source['id'], snapshot['offset'], r.utc(), allow_unregistered=r.configured_collect_all(config,env))
         r.ensure_file_collection(migrated, source['id'], r.persistent_config(config, validation_env), env)
     if r.sha(docker.copy_out(agent['id'], path, work / 'config-rechecked.private.yaml')) != r.sha(raw):
         raise r.RepairError('Agent main configuration changed during preflight; no service stopped')
@@ -123,7 +126,7 @@ def read_state(docker, work, require_cursor=True, layout_source=None, allow_stop
             'service': service, 'discovery_sha256': discovery['sha256'], 'source_layout': reference,
             'source_started': source['state'].get('StartedAt'),
             'cursor_key': key, 'cursor_offset': int(offset) if isinstance(offset, str) and offset.isdecimal() else None,
-            'registry': registry, 'observed_source': source}
+            'registry': registry, 'observed_source': source, 'initialization':initialization}
 
 
 def inspect(docker, output):
@@ -183,6 +186,18 @@ def capture(docker, output):
         except Exception:
             docker.call(['stop', original['id']], timeout=35, optional=True)
             raise
+    initialization=state.get('initialization')
+    if initialization is not None and initialization['Acknowledged'] is None:
+        agent=docker.inspect('datadog-agent',agent=True)
+        if stable(agent)!=state['agent']:raise r.RepairError('Agent changed before initialization acknowledgement')
+        if initialization['SourceId']!=state['source_id'] or initialization['Path']!=state['cursor_key'][5:]:
+            raise r.RepairError('Pending initialization belongs to a different source')
+        snapshot=r.file_snapshot(docker,agent,state['observed_source'])
+        r.cutover_registry(state['registry'],initialization['Path'],snapshot['offset'],r.utc())
+        state['initialization']=r.complete_initialization(docker,agent,state['volume'],initialization,state['cursor_offset'],output)
+        require_same_source(state['observed_source'],docker.inspect('bridge-sc_federation_1'))
+    if stable(docker.inspect('datadog-agent',agent=True)) != state['agent']:
+        raise r.RepairError('Agent changed before its recovery state could be captured')
     service = state['service']
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', service):
         raise r.RepairError('Unsupported Agent Compose service name')

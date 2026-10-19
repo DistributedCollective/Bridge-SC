@@ -38,7 +38,10 @@ The tool prints an exact `--apply` command for that private packet.
 - Agent7.33+, or the verified official Linuxamd64 Agent7.32.4 image, with registry
   schema2 and an existing checkpoint for this exact Docker source. A legacy socket
   checkpoint can migrate to the current file boundary; only that source's socket entry
-  is retired. Other file/socket checkpoints remain unchanged. File reading is enabled
+  is retired. With explicitly enabled collect-all, a missing current source checkpoint
+  can be initialized at the current complete-file boundary. A durable source-specific
+  acknowledgement record prevents fresh runs from bypassing the required delivery
+  check. Other file/socket checkpoints remain unchanged. File reading is enabled
   without enabling the global force-file switch.
   Normal saved tailing modes include the empty default, `beginning`, and `end`;
   forced/unknown modes are refused.
@@ -82,7 +85,8 @@ It uses dummy credentials, an internal Docker network, one dedicated test log
 and local receiver; no production telemetry or host Docker socket is mounted.
 Add `--socket-cursor-fixture --upgrade-integration` to test the consolidated
 stopped-Agent preflight/capture and retained-checkpoint restart with a legacy
-socket-only checkpoint.
+socket-only checkpoint. Use `--unregistered-source-fixture --upgrade-integration`
+for the configured collect-all case with no current source checkpoint.
 
 It checks cutoff, fresh delivery, normal restart, Agent recreation with explicit
 state-volume reuse, and preservation of the test application process/data/logs.

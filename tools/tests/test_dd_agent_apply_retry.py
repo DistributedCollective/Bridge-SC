@@ -76,7 +76,7 @@ class StatefulDocker(m.Docker):
             src = Path(args[1]); target = args[2].split(':', 1)[1]
             if target == m.PERSISTENT_PATH:
                 self.fail('before-registry')
-                self.files[target + '/registry.json'] = (src / 'registry.json').read_bytes()
+                for entry in src.iterdir():self.files[target+'/'+entry.name]=entry.read_bytes()
                 self.writes += 1; self.fail('after-registry')
             else:
                 self.files[target] = src.read_bytes(); self.writes += 1; self.fail('after-config')
@@ -90,6 +90,9 @@ class StatefulDocker(m.Docker):
         raise AssertionError(args)
 
     def helper(self, image, code, mounts, user=None, read_search=False):
+        if 'bridge-initialization-state' in code:
+            raw=self.files.get(m.PERSISTENT_PATH+'/'+m.INITIALIZATION_FILE)
+            return json.dumps(json.loads(raw) if raw is not None else None).encode()
         if 'fd=os.open' in code: return json.dumps(self.snapshot).encode()
         if '/discovery.tar' in code: return b'{"files_checked":1}'
         if '/agent-logs/bridge-log-state' in code:

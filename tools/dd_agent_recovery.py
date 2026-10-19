@@ -21,7 +21,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-VERSION = '1.0.7'
+VERSION = '1.0.8'
 PERSISTENT_PATH = '/var/log/datadog/bridge-log-state'
 AGENT_CONFIG = '/etc/datadog-agent/datadog.yaml'
 DOCKER_CONFIG = '/etc/datadog-agent/datadog-docker.yaml'
@@ -71,7 +71,7 @@ def validate_agent_version(value, image):
     return match[1]
 
 
-def recovery_registry(registry, path, cid, offset, when):
+def recovery_registry(registry, path, cid, offset, when, allow_unregistered=False):
     # Keep all other source checkpoints, including legacy Docker socket readers.
     if not re.fullmatch(r'[0-9a-f]{64}', cid) or not path.endswith('/'+cid+'/'+cid+'-json.log'):
         raise RepairError('Recovery source identity does not match its Docker log path')
@@ -86,11 +86,82 @@ def recovery_registry(registry, path, cid, offset, when):
         if not isinstance(old, str) or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,9})?Z', old):
             raise RepairError('Selected legacy socket checkpoint is unsupported')
     if file_key not in entries:
-        if socket is None:
+        if socket is None and allow_unregistered is not True:
             raise RepairError('Selected source has no existing file or socket checkpoint; collection requires review')
         entries[file_key] = {'Offset': '0', 'TailingMode': '', 'LastUpdated': when}
     result = cutover_registry(result, path, offset, when)
     result['Registry'].pop(socket_key, None)
+    return result
+
+
+def configured_collect_all(config, env):
+    value=env.get('DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL')
+    if value is not None:
+        if not isinstance(value,str) or value.lower() not in ('true','false'):
+            raise RepairError('Unsupported collect-all environment value')
+        return value.lower()=='true'
+    value=(config.get('logs_config') or {}).get('container_collect_all',False)
+    if type(value) is not bool:raise RepairError('Unsupported collect-all configuration value')
+    return value
+
+
+def missing_source_checkpoint(registry, path, cid):
+    entries=registry.get('Registry')
+    if not isinstance(entries,dict):raise RepairError('Unsupported registry entries')
+    return 'file:'+path not in entries and 'docker:'+cid not in entries
+
+
+INITIALIZATION_FILE = 'source-initialization.json'
+
+
+def initialization_state(docker, agent, volume):
+    code = """import json,os,stat
+# bridge-initialization-state: bounded tool-owned metadata only
+base='/agent-logs/bridge-log-state'
+if os.path.islink(base):raise ValueError('Unsafe state directory')
+try:fd=os.open(base+'/source-initialization.json',os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+except FileNotFoundError:print('null')
+else:
+ with os.fdopen(fd,'rb') as f:
+  info=os.fstat(f.fileno())
+  if not stat.S_ISREG(info.st_mode) or info.st_size>8192:raise ValueError('Unsafe initialization record')
+  raw=f.read(8193)
+  if len(raw)>8192:raise ValueError('Initialization record exceeds bounds')
+  print(json.dumps(json.loads(raw)))
+"""
+    value=json.loads(docker.helper(agent['image'],code,[(volume,'/agent-logs','volume')],user='0:0',read_search=True))
+    if value is None:return None
+    if (not isinstance(value,dict) or set(value)!={'Version','SourceId','Path','Cutoff','Acknowledged'} or
+            type(value['Version']) is not int or value['Version']!=1 or
+            not isinstance(value['SourceId'],str) or not re.fullmatch(r'[0-9a-f]{64}',value['SourceId']) or
+            not isinstance(value['Path'],str) or not value['Path'].startswith('/') or
+            not value['Path'].endswith('/'+value['SourceId']+'/'+value['SourceId']+'-json.log') or
+            type(value['Cutoff']) is not int or not 0<=value['Cutoff']<2**63 or
+            (value['Acknowledged'] is not None and (type(value['Acknowledged']) is not int or
+                not value['Cutoff']<value['Acknowledged']<2**63))):
+        raise RepairError('Unsupported source initialization record')
+    return value
+
+
+def require_initialization_ack(record, registry):
+    if record is None or record['Acknowledged'] is not None:return
+    entry=registry['Registry'].get('file:'+record['Path'])
+    offset=entry.get('Offset') if isinstance(entry,dict) else None
+    if not isinstance(offset,str) or not re.fullmatch(r'[0-9]{1,19}',offset) or not record['Cutoff']<int(offset)<2**63:
+        raise RepairError('Newly initialized Datadog source has no acknowledged progress; retain and resume the saved repair')
+
+
+def complete_initialization(docker, agent, volume, record, offset, work):
+    current=initialization_state(docker,agent,volume)
+    if current != record:raise RepairError('Source initialization record changed')
+    if record['Acknowledged'] is not None:return record
+    if type(offset) is not int or not record['Cutoff']<offset<2**63:
+        raise RepairError('Initialization requires acknowledged source progress')
+    result=dict(record,Acknowledged=offset)
+    path=work / INITIALIZATION_FILE;write_private(path,result)
+    docker.call(['cp',str(path),agent['id']+':'+PERSISTENT_PATH+'/'+INITIALIZATION_FILE])
+    if initialization_state(docker,agent,volume) != result:
+        raise RepairError('Acknowledged initialization record did not verify')
     return result
 
 
@@ -205,7 +276,7 @@ class Docker:
             if agent:
                 raw_env = result.get('env') or []
                 result['env_fingerprint'] = sha(json.dumps(raw_env).encode())
-                allowed = {'DD_LOGS_ENABLED', 'DD_LOGS_CONFIG_RUN_PATH', 'DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE', 'DD_LOGS_CONFIG_DOCKER_CONTAINER_FORCE_USE_FILE', 'DD_LOGS_CONFIG_K8S_CONTAINER_USE_KUBELET_API', 'DD_CONF_PATH', 'DD_CONFIG_FILE', 'DD_CONFD_PATH', 'DD_CONFIG_PROVIDERS', 'DD_EXTRA_CONFIG_PROVIDERS'}
+                allowed = {'DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL', 'DD_LOGS_ENABLED', 'DD_LOGS_CONFIG_RUN_PATH', 'DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE', 'DD_LOGS_CONFIG_DOCKER_CONTAINER_FORCE_USE_FILE', 'DD_LOGS_CONFIG_K8S_CONTAINER_USE_KUBELET_API', 'DD_CONF_PATH', 'DD_CONFIG_FILE', 'DD_CONFD_PATH', 'DD_CONFIG_PROVIDERS', 'DD_EXTRA_CONFIG_PROVIDERS'}
                 result['env'] = [entry for entry in raw_env if entry.split('=', 1)[0] in allowed]
                 result['api_key_present'] = any(entry.startswith('DD_API_KEY=') and entry != 'DD_API_KEY=' for entry in raw_env)
             else:
@@ -520,14 +591,15 @@ def prepare(docker, output):
     registry_raw = docker.copy_out(agent['id'], registry_path, output / 'original-registry.private.json')
     registry = json.loads(registry_raw)
     snapshot = file_snapshot(docker, agent, source)
-    preview_registry = recovery_registry(registry, mapped, source['id'], snapshot['offset'], utc())
+    initialized=missing_source_checkpoint(registry,mapped,source['id'])
+    preview_registry = recovery_registry(registry, mapped, source['id'], snapshot['offset'], utc(), allow_unregistered=configured_collect_all(cfg,env))
     ensure_file_collection(preview_registry, source['id'], patched_config, env)
     # Private state may contain API credentials in the original YAML/environment.
     write_private(output / 'context.private.json', {'agent': agent, 'source': source, 'config_path': effective_config, 'mapped_path': mapped, 'log_volume': volume,
-                  'old_registry_path': registry_path, 'config_sha256': sha(cfg_raw), 'registry_sha256': sha(registry_raw), 'config': patched_config, 'discovery_sha256': discovery['sha256']})
+                  'old_registry_path': registry_path, 'config_sha256': sha(cfg_raw), 'registry_sha256': sha(registry_raw), 'source_checkpoint_initialized':initialized, 'config': patched_config, 'discovery_sha256': discovery['sha256']})
     report = {'version': VERSION, 'prepared_utc': utc(), 'outcome': 'prepared_agent_still_stopped',
               'source_id': source['id'], 'agent_id': agent['id'], 'agent_image': agent['image'], 'agent_version': parsed['version'].strip(), 'registry_version': registry['Version'],
-              'registry_entries': len(registry['Registry']), 'source_log_bytes': snapshot['size'], 'preview_cutover': snapshot,
+              'registry_entries': len(registry['Registry']), 'source_checkpoint_initialized':initialized, 'source_log_bytes': snapshot['size'], 'preview_cutover': snapshot,
               'old_registry_path': registry_path, 'new_registry_path': PERSISTENT_PATH + '/registry.json',
               'cutover_note': 'Apply samples a fresh complete-record boundary; old monitoring logs remain local',
               'production_app_changed': False}
@@ -559,6 +631,9 @@ def check_started_progress(docker, output, ctx):
     discovery = check_discovery(docker, agent, source, ctx['config'], env, work / 'discovery.private.tar')
     if discovery['sha256'] != ctx['discovery_sha256']:
         raise RepairError('Post-start Agent integration configuration changed')
+    initialized=missing_source_checkpoint(read_json(output / 'original-registry.private.json'),mapped,source['id'])
+    if ctx.get('source_checkpoint_initialized',False) is not initialized:
+        raise RepairError('Prepared source initialization metadata changed')
     cutoff = post['cutover']; deadline = time.monotonic() + 60
     while True:
         ensure_same(post['agent'], ctx['source'], docker.inspect('datadog-agent', agent=True),
@@ -572,7 +647,7 @@ def check_started_progress(docker, output, ctx):
         observed = int(registry['Registry']['file:' + mapped]['Offset'])
         if observed < cutoff['offset']:
             raise RepairError('Post-start acknowledged checkpoint regressed')
-        if observed > cutoff['offset'] or snapshot['offset'] == cutoff['offset']:
+        if observed > cutoff['offset'] or (not initialized and snapshot['offset'] == cutoff['offset']):
             break
         if time.monotonic() >= deadline:
             pending = {'version': VERSION, 'outcome': 'agent_running_delivery_unverified', 'utc': utc(),
@@ -584,6 +659,12 @@ def check_started_progress(docker, output, ctx):
     ensure_same(post['agent'], ctx['source'], docker.inspect('datadog-agent', agent=True),
                 docker.inspect('bridge-sc_federation_1'), running_agent=True)
     advanced = observed > cutoff['offset']
+    if initialized and advanced:
+        record=initialization_state(docker,agent,volume)
+        if record is None or record['SourceId']!=source['id'] or record['Path']!=mapped or record['Cutoff']!=cutoff['offset']:
+            raise RepairError('Initialization record does not match the saved source cutoff')
+        complete_initialization(docker,agent,volume,record,observed,work)
+        ensure_same(post['agent'],ctx['source'],docker.inspect('datadog-agent',agent=True),docker.inspect('bridge-sc_federation_1'),running_agent=True)
     result = {'version': VERSION, 'outcome': 'agent_running_current_source_offset_advanced' if advanced else 'agent_running_source_idle',
               'cutover_utc': post['utc'], 'cutover_offset': cutoff['offset'], 'acknowledged_offset': observed,
               'last_skipped_docker_record_utc': cutoff['last_record_utc'], 'source_delivery': 'UNKNOWN',
@@ -672,10 +753,17 @@ def apply(docker, output):
                 raise RepairError('Journalled source log identity/bounds changed')
         else:
             cutoff, when = snapshot, utc()
-        patched_registry = recovery_registry(registry, mapped, source['id'], cutoff['offset'], when)
+        initialized=missing_source_checkpoint(registry,mapped,source['id'])
+        if ctx.get('source_checkpoint_initialized',False) is not initialized:
+            raise RepairError('Prepared source initialization metadata changed')
+        patched_registry = recovery_registry(registry, mapped, source['id'], cutoff['offset'], when, allow_unregistered=configured_collect_all(original_cfg,env))
         ensure_file_collection(patched_registry, source['id'], expected_config, env)
         stage = attempt / 'bridge-log-state'; stage.mkdir(mode=0o700)
         write_private(stage / 'registry.json', patched_registry)
+        pending_initialization=None
+        if initialized:
+            pending_initialization={'Version':1,'SourceId':source['id'],'Path':mapped,'Cutoff':cutoff['offset'],'Acknowledged':None}
+            write_private(stage / INITIALIZATION_FILE,pending_initialization)
         write_private(attempt / 'patched-config.private.json', expected_config)
         service = (agent.get('labels') or {}).get('com.docker.compose.service', 'datadog')
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', service):
@@ -704,6 +792,13 @@ print(json.dumps({'exists':os.path.lexists(p),'regular':regular}))
         if not existing.get('exists'):
             progress('copying_persistent_registry')
             docker.call(['cp', str(stage), agent['id'] + ':' + PERSISTENT_PATH])
+        if initialized:
+            existing_initialization=initialization_state(docker,agent,volume)
+            if existing_initialization is None and retry:
+                docker.call(['cp',str(stage / INITIALIZATION_FILE),agent['id']+':'+PERSISTENT_PATH+'/'+INITIALIZATION_FILE])
+                existing_initialization=initialization_state(docker,agent,volume)
+            if existing_initialization != pending_initialization:
+                raise RepairError('Installed source initialization record does not match this attempt')
         if config_path(docker, agent) != effective_config:
             raise RepairError('Agent config alias changed during staging')
         if not is_patched:
