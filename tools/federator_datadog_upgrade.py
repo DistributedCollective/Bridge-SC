@@ -9,7 +9,7 @@ import sys
 import time
 import dd_agent_recovery as r
 
-VERSION = '1.0.1'
+VERSION = '1.1.0'
 
 
 def stable(agent):
@@ -19,7 +19,18 @@ def stable(agent):
             'mounts': sorted(json.dumps(m, sort_keys=True) for m in agent['mounts'])}
 
 
-def read_state(docker, work, require_cursor=True, layout_source=None):
+def require_same_source(before, after):
+    for field in ('id','image','log_path','log_config','labels','mounts'):
+        left,right=before.get(field),after.get(field)
+        if field=='mounts':
+            left=sorted(json.dumps(x,sort_keys=True) for x in left or [])
+            right=sorted(json.dumps(x,sort_keys=True) for x in right or [])
+        if left != right:raise r.RepairError('ETH source identity/layout changed during Agent operation')
+    if any(before['state'].get(k)!=after['state'].get(k) for k in ('StartedAt','Running','Paused','Status')):
+        raise r.RepairError('ETH source process changed during Agent operation')
+
+
+def read_state(docker, work, require_cursor=True, layout_source=None, allow_stopped=False):
     work = r.safe_path(work)
     agent = docker.inspect('datadog-agent', agent=True)
     source = docker.inspect('bridge-sc_federation_1')
@@ -38,8 +49,8 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
     service = (agent.get('labels') or {}).get('com.docker.compose.service', 'datadog')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', service):
         raise r.RepairError('Unsupported Agent Compose service name; no service stopped')
-    if not agent['state'].get('Running') or agent['state'].get('Paused'):
-        raise r.RepairError('Datadog must be running before upgrade; recover any saved Agent attempt first')
+    if agent['state'].get('Paused') or (not agent['state'].get('Running') and not (allow_stopped and agent['state'].get('Status') == 'exited')):
+        raise r.RepairError('Datadog must be running or a supported stopped Agent; recover any saved Agent attempt first')
     r.ensure_output_outside_source(work, source)
     r.ensure_output_outside_source(work, reference)
     work.mkdir(mode=0o700)
@@ -47,15 +58,17 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
     raw = docker.copy_out(agent['id'], path, work / 'config.private.yaml')
     code = 'import json,yaml,subprocess;print(json.dumps({"config":yaml.safe_load(open("/input.yaml")),"version":subprocess.check_output(["agent","version"]).decode()}))'
     parsed = json.loads(docker.helper(agent['image'], code, [(str(work / 'config.private.yaml'), '/input.yaml')]))
-    version = re.search(r'Agent 7\.(\d+)\.', parsed.get('version', ''))
-    if not version or int(version[1]) < 33:
-        raise r.RepairError('Datadog Agent7.33+ is required; no service stopped. Arrange its separate update first')
+    version=r.validate_agent_version(parsed.get('version'), agent['image'])
     config = parsed['config']
     env = dict(x.split('=', 1) for x in agent.get('env', []) if '=' in x)
     run_path = env.get('DD_LOGS_CONFIG_RUN_PATH') or (config.get('logs_config') or {}).get('run_path') or '/opt/datadog-agent/run'
     if not isinstance(run_path, str) or not run_path.startswith('/') or '..' in Path(run_path).parts:
         raise r.RepairError('Unsupported Agent registry path; no service stopped')
     persistent = run_path.rstrip('/') == r.PERSISTENT_PATH
+    file_env=env.get('DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE')
+    file_enabled=file_env.lower()=='true' if file_env is not None else (config.get('logs_config') or {}).get('docker_container_use_file') is True
+    if persistent and version=='7.32.4' and not file_enabled:
+        raise r.RepairError('Persistent legacy Agent has not enabled file collection; no Agent started')
     validation_env = dict(env)
     if persistent:
         validation_env.pop('DD_LOGS_CONFIG_RUN_PATH', None)
@@ -80,11 +93,11 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
             time.sleep(.2)
     if type(registry.get('Version')) is not int or registry['Version'] != 2 or not isinstance(registry.get('Registry'), dict):
         raise r.RepairError('Unsupported Agent registry schema; no service stopped')
-    r.ensure_file_collection(registry, source['id'], config, env)
+    if persistent:r.ensure_file_collection(registry, source['id'], config, env)
     key = 'file:' + mapped
     entry = registry['Registry'].get(key)
     offset = entry.get('Offset') if isinstance(entry, dict) else None
-    if require_cursor and (not isinstance(offset, str) or not re.fullmatch(r'[0-9]{1,19}', offset)):
+    if persistent and require_cursor and (not isinstance(offset, str) or not re.fullmatch(r'[0-9]{1,19}', offset)):
         raise r.RepairError('Current source has no verified file checkpoint; no service stopped')
     if not persistent:
         existing = json.loads(docker.helper(agent['image'],
@@ -95,7 +108,8 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
         if not source['state'].get('Running') or source['state'].get('Paused'):
             raise r.RepairError('Start/recover the existing ETH node before its Datadog cutover; no service stopped')
         snapshot = r.file_snapshot(docker, agent, source)
-        r.cutover_registry(registry, mapped, snapshot['offset'], r.utc())
+        migrated = r.recovery_registry(registry, mapped, source['id'], snapshot['offset'], r.utc())
+        r.ensure_file_collection(migrated, source['id'], r.persistent_config(config, validation_env), env)
     if r.sha(docker.copy_out(agent['id'], path, work / 'config-rechecked.private.yaml')) != r.sha(raw):
         raise r.RepairError('Agent main configuration changed during preflight; no service stopped')
     again = r.check_discovery(docker, agent, reference, config, env, work / 'discovery-rechecked.private.tar')
@@ -103,6 +117,7 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
         raise r.RepairError('Agent integrations changed during preflight; no service stopped')
     if stable(docker.inspect('datadog-agent', agent=True)) != stable(agent):
         raise r.RepairError('Agent changed during preflight; no service stopped')
+    require_same_source(source,docker.inspect('bridge-sc_federation_1'))
     return {'agent': stable(agent), 'agent_version': parsed['version'].strip(), 'source_id': source['id'],
             'persistent': persistent, 'volume': volume, 'config_sha256': r.sha(raw),
             'service': service, 'discovery_sha256': discovery['sha256'], 'source_layout': reference,
@@ -112,8 +127,8 @@ def read_state(docker, work, require_cursor=True, layout_source=None):
 
 
 def inspect(docker, output):
-    state = read_state(docker, output)
-    result = {'utc': r.utc(), 'agent_repair_needed': not state['persistent'], 'agent_version': state['agent_version']}
+    state = read_state(docker, output, allow_stopped=True)
+    result = {'utc': r.utc(), 'agent_repair_needed': not state['persistent'], 'agent_version': state['agent_version'], 'agent_running': state['agent']['running']}
     r.write_private(Path(output) / 'report.json', result)
     print('Datadog preflight passed; repair needed:', result['agent_repair_needed'])
     return result
@@ -122,7 +137,7 @@ def inspect(docker, output):
 def capture(docker, output):
     output = r.safe_path(output)
     # read_state validates containment before creating this directory.
-    state = read_state(docker, output)
+    state = read_state(docker, output, allow_stopped=True)
     repaired = False
     if not state['persistent']:
         fresh = docker.inspect('datadog-agent', agent=True)
@@ -131,7 +146,7 @@ def capture(docker, output):
             raise r.RepairError('ETH source changed before cutover; no service stopped')
         if stable(fresh) != state['agent']:
             raise r.RepairError('Agent changed before cutover; no service stopped')
-        docker.call(['stop', fresh['id']], timeout=35)
+        if fresh['state'].get('Running'):docker.call(['stop', fresh['id']], timeout=35)
         repair = output / 'repair'
         print('Repairing Datadog before the federator is stopped.')
         try:
@@ -143,10 +158,35 @@ def capture(docker, output):
             raise
         state = read_state(docker, output / 'after-repair')
         repaired = True
+    if not state['agent']['running']:
+        # An already-persistent stopped Agent resumes its retained cursor unchanged.
+        original = docker.inspect('datadog-agent', agent=True)
+        if stable(original) != state['agent']:
+            raise r.RepairError('Agent changed before retained-checkpoint restart')
+        source = docker.inspect('bridge-sc_federation_1')
+        if source['id'] != state['source_id'] or source['state'].get('StartedAt') != state['source_started'] or not source['state'].get('Running') or source['state'].get('Paused'):
+            raise r.RepairError('ETH source changed before retained-checkpoint restart')
+        r.write_private(output / 'retained-start.private.json', {'agent':state['agent'], 'cursor_key':state['cursor_key'], 'cursor_offset':state['cursor_offset']})
+        try:
+            docker.call(['start', original['id']])
+            resumed = read_state(docker, output / 'after-retained-start')
+            expected = dict(state['agent'])
+            expected.update(started=resumed['agent']['started'], running=True)
+            if (resumed['agent'] != expected or resumed['config_sha256'] != state['config_sha256'] or
+                    resumed['discovery_sha256'] != state['discovery_sha256'] or
+                    resumed['cursor_offset'] < state['cursor_offset'] or resumed['volume'] != state['volume']):
+                raise r.RepairError('Retained Agent restart changed identity/configuration or regressed its cursor')
+            require_same_source(state['observed_source'],resumed['observed_source'])
+            if resumed['cursor_key'] != state['cursor_key']:
+                raise r.RepairError('Retained Agent source checkpoint changed during restart')
+            state = resumed
+        except Exception:
+            docker.call(['stop', original['id']], timeout=35, optional=True)
+            raise
     service = state['service']
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', service):
         raise r.RepairError('Unsupported Agent Compose service name')
-    override = {'services': {service: {'environment': {'DD_LOGS_CONFIG_RUN_PATH': r.PERSISTENT_PATH},
+    override = {'services': {service: {'environment': {'DD_LOGS_CONFIG_RUN_PATH': r.PERSISTENT_PATH, 'DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE': 'true'},
                 'volumes': [{'type': 'volume', 'source': 'bridge_dd_state', 'target': '/var/log/datadog'}]}},
                 'volumes': {'bridge_dd_state': {'external': True, 'name': state['volume']}}}
     state.pop('registry')

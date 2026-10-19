@@ -35,7 +35,11 @@ The tool prints an exact `--apply` command for that private packet.
 
 ## Supported scope
 
-- Agent 7.33+ with registry schema 2 and a verified numeric Docker JSON-file source.
+- Agent7.33+, or the verified official Linuxamd64 Agent7.32.4 image, with registry
+  schema2 and an existing checkpoint for this exact Docker source. A legacy socket
+  checkpoint can migrate to the current file boundary; only that source's socket entry
+  is retired. Other file/socket checkpoints remain unchanged. File reading is enabled
+  without enabling the global force-file switch.
   Normal saved tailing modes include the empty default, `beginning`, and `end`;
   forced/unknown modes are refused.
 - Stopped root-run Agent using its normal main configuration path, with a writable
@@ -44,7 +48,7 @@ The tool prints an exact `--apply` command for that private packet.
   is preserved and its unmounted regular target is backed up and patched.
 - Existing `bridge-sc_federation_1` with the standard ETH config/DB mounts.
 - No conflicting registry/integration-path override, forced replay configuration,
-  custom launcher, shadow mount or ambiguous legacy socket cursor. Unsupported collection modes stop before applying a patch.
+  custom launcher, shadow mount or malformed/unregistered source cursor. Unsupported collection modes stop before applying a patch.
 
 A changed process/container, rotated log or unrecognised packet/config is refused.
 An existing persistent registry is accepted only on a stopped pre-start retry
@@ -55,7 +59,7 @@ tail; the signing key is never read.
 
 The latest attempt directory contains `future-agent-override.private.json`,
 which explicitly reuses the existing log volume
-and registry path. The coordinator must integrate it with the actual deployment
+and registry path, plus explicit file-reader selection. The coordinator must integrate it with the actual deployment
 before any later Agent recreation. Ordinary restarts of the patched Agent retain
 its current registry. Removing containers/volumes through legacy reset scripts
 is outside this workflow.
@@ -76,6 +80,10 @@ python3 tools/tests/dd_agent_cutover_smoke.py \
 
 It uses dummy credentials, an internal Docker network, one dedicated test log
 and local receiver; no production telemetry or host Docker socket is mounted.
+Add `--socket-cursor-fixture --upgrade-integration` to test the consolidated
+stopped-Agent preflight/capture and retained-checkpoint restart with a legacy
+socket-only checkpoint.
+
 It checks cutoff, fresh delivery, normal restart, Agent recreation with explicit
 state-volume reuse, and preservation of the test application process/data/logs.
 Only its owned lab resources are removed. Images must already be local.
@@ -90,8 +98,10 @@ After upgrade confirmation/image backup, compatible unrepaired Agents use the
 existing prepare/apply flow; repaired running Agents keep their current cutoff.
 The private upgrade packet stores the explicit existing-volume/path override
 and verifies Agent identity/config/integrations/checkpoint retention after
-application upgrade and rollback. Unsupported or stopped Agent setups are
-prerequisites; the executable does not replace the Agent image.
+application upgrade and rollback. A supported stopped Agent is inspected without starting it, then recovered after
+confirmation and backup. A stopped Agent with an already-persistent valid file
+checkpoint resumes that checkpoint without a new cutoff. Paused Agents and
+unsupported layouts fail before application downtime. The Agent image is retained.
 
 ## Quiet sources and later delivery checks
 

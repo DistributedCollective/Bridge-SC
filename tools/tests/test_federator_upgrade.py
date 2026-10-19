@@ -64,7 +64,7 @@ old='sha256:'+'3'*64;new='sha256:'+'4'*64
 if name=='id':print('1000')
 elif name=='flock':pass
 elif name=='git':
- a=args[2:]
+ a=args[2:];note('GIT '+' '.join(a))
  if a[0]=='remote':print('https://github.com/DistributedCollective/Bridge-SC.git')
  elif a[0]=='show':print('{}')
  elif a[0]=='hash-object':print('2'*40)
@@ -76,7 +76,7 @@ elif name=='docker':
   if os.environ.get('UPGRADE_FAIL')=='backup':sys.exit(1)
   Path(a[a.index('--output')+1]).write_bytes(b'fake-image')
  elif a[:2]==['image','inspect']:
-  print('1'*40 if 'revision' in a[-1] else old if a[2]==old else new)
+  print(os.environ.get('UPGRADE_IMAGE_REV','1'*40) if 'revision' in a[-1] else old if a[2]==old else new)
  elif 'config' in a and '--format' in a:print('{}')
 elif name=='python3':
  if args and args[0].endswith('federator_compose_plan.py'):
@@ -112,7 +112,7 @@ elif name=='python3':
   elif "import getpass,os,stat" in code:note('KEY_SOURCE='+os.environ['KEY_SOURCE'])
   elif "s['compose_project']=project" in code:
    (root/'before.json').write_text(json.dumps({'id':'a'*64,'image_id':old,'compose_project':'bridge-sc'}))
-  elif "print(json.dumps({p:hashlib" in code:print('{}')
+  elif "print(json.dumps({p:hashlib" in code:exec(compile(code,'image-source-hashes','exec'),{})
   elif "root/'old-image-id.txt'" in code:(root/'rollback'/'old-image-id.txt').write_text(old+'\n')
   elif "path.rename(root/" in code:(root/'rollback'/'old-image.tar.partial').rename(root/'rollback'/'old-image.tar')
   elif "if s['running']:node.runner.run" in code:note('STOP_ORIGINAL')
@@ -122,7 +122,7 @@ elif name=='python3':
 
 @unittest.skipUnless(SCRIPT.exists(), 'executable not implemented')
 class UpgradeOrchestrationTests(unittest.TestCase):
-    def run_upgrade(self, fail=None, rollback=False, tamper=False):
+    def run_upgrade(self, fail=None, rollback=False, tamper=False, app_revision=None, image_revision=None):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);bin_path=root/'bin';bin_path.mkdir()
             for name in ('git','docker','id','python3','flock'):
@@ -133,11 +133,12 @@ class UpgradeOrchestrationTests(unittest.TestCase):
             trace=root/'trace';trace.touch()
             env=dict(os.environ,HOME=str(root),PATH=str(bin_path)+os.pathsep+os.environ['PATH'],UPGRADE_TRACE=str(trace))
             if fail:env['UPGRADE_FAIL']=fail
+            if image_revision:env['UPGRADE_IMAGE_REV']=image_revision
             master,slave=pty.openpty()
             try:
                 process=subprocess.Popen(['bash',str(SCRIPT),'--repo',str(repo),'--revision','1'*40,
                     '--image','sovryn/fed-tokenbridge:repair@sha256:'+'5'*64,'--override',str(override),
-                    '--operator','fed_1','--expected-signer','0x'+'6'*40,'--watch-seconds','1'],
+                    '--operator','fed_1','--expected-signer','0x'+'6'*40,'--watch-seconds','1']+(['--app-revision',app_revision] if app_revision else []),
                     stdin=slave,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
                 os.close(slave);slave=None
                 os.write(master,b'y\n')
@@ -161,6 +162,18 @@ class UpgradeOrchestrationTests(unittest.TestCase):
             finally:
                 os.close(master)
                 if slave is not None:os.close(slave)
+
+    def test_new_tools_accept_the_pinned_existing_application_revision(self):
+        result,trace,stdout,stderr=self.run_upgrade(app_revision='7'*40,image_revision='7'*40)
+        self.assertEqual(result,0,stdout+'\n'+stderr)
+        self.assertTrue(any('show '+'7'*40+':sovryn-token-bridge/federator/' in line for line in trace))
+        self.assertEqual(trace[-1],'WATCHER')
+
+    def test_wrong_application_revision_stops_before_backup_and_services(self):
+        result,trace,stdout,stderr=self.run_upgrade(app_revision='7'*40,image_revision='8'*40)
+        self.assertNotEqual(result,0)
+        self.assertNotIn('STOP_ORIGINAL',trace)
+        self.assertFalse(any('image save' in line for line in trace))
 
     def test_rollback_uses_saved_plan_without_original_override_and_honors_manual_key(self):
         result,trace,stdout,stderr=self.run_upgrade(rollback=True)

@@ -4,6 +4,8 @@ from pathlib import Path
 
 parser=argparse.ArgumentParser(description='Manual isolated Agent cutoff proof; uses only dummy data and an internal network.')
 parser.add_argument('--agent-image',required=True,help='already-local official Agent image ID or immutable digest')
+parser.add_argument('--upgrade-integration',action='store_true',help='exercise stopped-Agent upgrade preflight/capture/verify and retained restart')
+parser.add_argument('--socket-cursor-fixture',action='store_true',help='start recovery with only the selected legacy Docker socket checkpoint')
 parser.add_argument('--node-image',default='node:22-bookworm',help='already-local Node image for disposable fixtures')
 parser.add_argument('--evidence-dir',type=Path,required=True,help='private local evidence directory')
 args=parser.parse_args()
@@ -40,12 +42,12 @@ with tempfile.TemporaryDirectory(prefix='dd-agent-cutover-lab-') as td:
   call(['network','create','--internal','--label','bridge-dd-lab='+nonce,network])
   call(['run','-d','--name',sink,'--label','bridge-dd-lab='+nonce,'--network',network,'--network-alias','sink','--log-opt','max-size=1m','--entrypoint','node',NODE,'-e',sink_code]);owned.append(sink)
   call(['run','-d','--name',source,'--label','bridge-dd-lab='+nonce,'--network','none','--log-driver','json-file','--log-opt','max-size=2m','--log-opt','max-file=2','--mount','type=bind,source='+str(cfg)+',target=/app/federator/config','--mount','type=bind,source='+str(cfg/'db')+',target=/app/federator/db','--entrypoint','node',NODE,'-e',source_code]);owned.append(source)
-  source_meta=json.loads(call(['inspect',source]))[0];log_path=source_meta['LogPath'];log_dir=str(Path(log_path).parent)
+  source_meta=json.loads(call(['inspect',source]))[0];log_path=source_meta['LogPath'];log_dir=str(Path(log_path).parent.parent if args.upgrade_integration else Path(log_path).parent)
   original.write_text(json.dumps({'api_key':'0'*32,'hostname':nonce,'logs_enabled':True,'logs_config':{'run_path':'/opt/datadog-agent/run','logs_dd_url':'sink:8080','logs_no_ssl':True,'force_use_http':True,'container_collect_all':False},'enable_payloads':{'series':False,'events':False,'service_checks':False,'sketches':False}}));original.chmod(0o600)
   (logs_cfg/'conf.yaml.default').write_text(json.dumps({'logs':[{'type':'file','path':log_path,'service':'bridge-dd-lab','source':'docker'}]}))
   def create_agent(recreated=False):
    a=['create','--name',agent,'--label','bridge-dd-lab='+nonce,'--network',network,'-e','DD_API_KEY='+'0'*32,'-e','DD_HOSTNAME='+nonce,'-e','DD_APM_ENABLED=false','-e','DD_PROCESS_AGENT_ENABLED=false','-e','DD_LOG_LEVEL=error','-e','DD_ENABLE_PAYLOADS_SERIES=false','-e','DD_ENABLE_PAYLOADS_EVENTS=false','-e','DD_ENABLE_PAYLOADS_SERVICE_CHECKS=false','-e','DD_ENABLE_PAYLOADS_SKETCHES=false','--mount','type=bind,source='+log_dir+',target='+log_dir+',readonly','--log-opt','max-size=2m']
-   if recreated:a+=['-e','DD_LOGS_CONFIG_RUN_PATH='+m.PERSISTENT_PATH,'--mount','type=volume,source='+volume+',target=/var/log/datadog']
+   if recreated:a+=['-e','DD_LOGS_CONFIG_RUN_PATH='+m.PERSISTENT_PATH,'-e','DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE=true','--mount','type=volume,source='+volume+',target=/var/log/datadog']
    a+=[AGENT];call(a);owned.append(agent)
    for mount in json.loads(call(['inspect',agent]))[0]['Mounts']:
     if mount['Type']=='volume':owned_volumes.add(mount['Name'])
@@ -65,7 +67,10 @@ with tempfile.TemporaryDirectory(prefix='dd-agent-cutover-lab-') as td:
   assert registry['Registry'][key]['TailingMode']=='', 'Expected real Agent default empty mode'
   results['default_empty_tailing_mode']=True
   results['registry_schema']=registry['Version'];results['agent_version']=call(['run','--rm','--network','none','--log-driver','none','--entrypoint','agent',AGENT,'version'])
-  registry['Registry'][key]['Offset']='0';reg.write_text(json.dumps(registry));call(['cp',str(reg),agent+':/opt/datadog-agent/run/registry.json'])
+  registry['Registry'][key]['Offset']='0'
+  if args.socket_cursor_fixture:
+   registry['Registry'].pop(key);registry['Registry']['docker:'+source_meta['Id']]={'Offset':'2025-11-19T16:00:00Z','TailingMode':''};results['started_with_socket_only_checkpoint']=True
+  reg.write_text(json.dumps(registry));call(['cp',str(reg),agent+':/opt/datadog-agent/run/registry.json'])
   reset_sink();(cfg/'phase').write_text('BRIDGE_LAB_FRESH')
   wait(lambda:'BRIDGE_LAB_FRESH' in call(['logs','--tail','1',source]),'new source phase',15)
   class LabDocker(m.Docker):
@@ -87,35 +92,52 @@ with tempfile.TemporaryDirectory(prefix='dd-agent-cutover-lab-') as td:
     if self.checks%2:result['mounts'].reverse()
     return result
   docker=LabDocker();out=root/'repair'
-  forced = json.loads((logs_cfg/'conf.yaml.default').read_text());forced['logs'][0]['start_position']='forceBeginning'
-  (logs_cfg/'conf.yaml.default').write_text(json.dumps(forced));call(['cp',str(logs_cfg),agent+':/etc/datadog-agent/conf.d/bridge_lab.d'])
-  try:
-   m.prepare(docker,root/'forced-refused')
-   raise AssertionError('Forced beginning accepted')
-  except m.RepairError:
-   results['force_beginning_preparation_refused']=True
-   assert not any(op[0] in ('start','stop') for op in docker.operations)
-  forced['logs'][0].pop('start_position');(logs_cfg/'conf.yaml.default').write_text(json.dumps(forced));call(['cp',str(logs_cfg),agent+':/etc/datadog-agent/conf.d/bridge_lab.d'])
-  assert m.config_path(docker,docker.inspect('datadog-agent',agent=True))==m.DOCKER_CONFIG
-  m.prepare(docker,out)
-  for phase in ('before-registry','after-registry','after-config'):
-   docker.interruption=phase
+  if args.upgrade_integration:
+   spec=importlib.util.spec_from_file_location('dd_upgrade_smoke',SCRIPT.with_name('federator_datadog_upgrade.py'))
+   u=importlib.util.module_from_spec(spec)
+   import sys
+   sys.path.insert(0,str(SCRIPT.parent))
+   spec.loader.exec_module(u);u.r=m
+   before_ops=len(docker.operations)
+   preflight=u.inspect(docker,root/'preflight')
+   assert preflight['agent_running'] is False
+   assert not any(op[0] in ('start','stop') for op in docker.operations[before_ops:])
+   state=u.capture(docker,root/'upgrade-capture');u.verify(docker,root/'upgrade-capture')
+   assert state['agent_repaired_now']
+   results['stopped_upgrade_preflight_read_only']=True;results['upgrade_capture_and_verify_passed']=True
+  else:
+   forced = json.loads((logs_cfg/'conf.yaml.default').read_text());forced['logs'][0]['start_position']='forceBeginning'
+   (logs_cfg/'conf.yaml.default').write_text(json.dumps(forced));call(['cp',str(logs_cfg),agent+':/etc/datadog-agent/conf.d/bridge_lab.d'])
    try:
-    m.apply(docker,out);raise AssertionError('Expected interruption '+phase)
-   except m.RepairError as error:
-    assert str(error)=='Injected '+phase,str(error)
-   assert not docker.inspect('datadog-agent',agent=True)['state']['Running']
-   assert (out/'apply-started.json').is_file()
-  m.apply(docker,out)
-  results['prestart_interruptions_resumed']=['before-registry','after-registry','after-config']
-  results['per_attempt_evidence_preserved']=len(list(out.glob('attempt-*')))==4
-  results['mount_permutations_supported']=True
+    m.prepare(docker,root/'forced-refused')
+    raise AssertionError('Forced beginning accepted')
+   except m.RepairError:
+    results['force_beginning_preparation_refused']=True
+    assert not any(op[0] in ('start','stop') for op in docker.operations)
+   forced['logs'][0].pop('start_position');(logs_cfg/'conf.yaml.default').write_text(json.dumps(forced));call(['cp',str(logs_cfg),agent+':/etc/datadog-agent/conf.d/bridge_lab.d'])
+   assert m.config_path(docker,docker.inspect('datadog-agent',agent=True))==m.DOCKER_CONFIG
+   m.prepare(docker,out)
+   for phase in ('before-registry','after-registry','after-config'):
+    docker.interruption=phase
+    try:
+     m.apply(docker,out);raise AssertionError('Expected interruption '+phase)
+    except m.RepairError as error:
+     assert str(error)=='Injected '+phase,str(error)
+    assert not docker.inspect('datadog-agent',agent=True)['state']['Running']
+    assert (out/'apply-started.json').is_file()
+   m.apply(docker,out)
+   results['prestart_interruptions_resumed']=['before-registry','after-registry','after-config']
+   results['per_attempt_evidence_preserved']=len(list(out.glob('attempt-*')))==4
+   results['mount_permutations_supported']=True
   assert m.config_path(docker,docker.inspect('datadog-agent',agent=True))==m.DOCKER_CONFIG
   results['standard_configuration_symlink_preserved']=True
   wait(lambda:any('BRIDGE_LAB_FRESH' in x for x in got()),'fresh delivery')
   assert not any('BRIDGE_LAB_HISTORY' in x for x in got()),'Historical logs replayed after cutoff'
   results['fresh_after_cutover']=len(got());results['historical_after_cutover']=0
-  call(['stop',agent]);reset_sink();(cfg/'phase').write_text('BRIDGE_LAB_RESTART');call(['start',agent])
+  call(['stop',agent]);reset_sink();(cfg/'phase').write_text('BRIDGE_LAB_RESTART')
+  if args.upgrade_integration:
+   u.capture(docker,root/'retained-restart');u.verify(docker,root/'retained-restart');results['retained_upgrade_restart_passed']=True
+  else:call(['start',agent])
   wait(lambda:any('BRIDGE_LAB_RESTART' in x for x in got()),'same Agent restart')
   assert not any('BRIDGE_LAB_HISTORY' in x for x in got())
   results['ordinary_restart_preserved_offsets']=True

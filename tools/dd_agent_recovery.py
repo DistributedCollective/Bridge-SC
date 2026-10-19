@@ -21,7 +21,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-VERSION = '1.0.6'
+VERSION = '1.0.7'
 PERSISTENT_PATH = '/var/log/datadog/bridge-log-state'
 AGENT_CONFIG = '/etc/datadog-agent/datadog.yaml'
 DOCKER_CONFIG = '/etc/datadog-agent/datadog-docker.yaml'
@@ -61,6 +61,39 @@ def cutover_registry(registry, path, offset, when):
     return result
 
 
+LEGACY_AGENT_IMAGE = 'sha256:4b37339b169c666008e4717eebc7f529329656f9ed13619f1d54d40a85adeeb8'
+
+
+def validate_agent_version(value, image):
+    match = re.search(r'\bAgent (7\.(\d+)\.(\d+))\b', value if isinstance(value, str) else '')
+    if not match or not (int(match[2]) >= 33 or (match[1] == '7.32.4' and image == LEGACY_AGENT_IMAGE)):
+        raise RepairError('Expected verified Agent7.32.4 image or Agent7.33+ file collector; installed version needs review')
+    return match[1]
+
+
+def recovery_registry(registry, path, cid, offset, when):
+    # Keep all other source checkpoints, including legacy Docker socket readers.
+    if not re.fullmatch(r'[0-9a-f]{64}', cid) or not path.endswith('/'+cid+'/'+cid+'-json.log'):
+        raise RepairError('Recovery source identity does not match its Docker log path')
+    if (not isinstance(registry, dict) or type(registry.get('Version')) is not int or
+            registry['Version'] != 2 or not isinstance(registry.get('Registry'), dict)):
+        raise RepairError('Unsupported Agent registry schema; no patch prepared')
+    result = copy.deepcopy(registry)
+    entries = result['Registry'];socket_key = 'docker:'+cid;file_key = 'file:'+path
+    socket = entries.get(socket_key)
+    if socket is not None:
+        old = socket.get('Offset') if isinstance(socket, dict) else None
+        if not isinstance(old, str) or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,9})?Z', old):
+            raise RepairError('Selected legacy socket checkpoint is unsupported')
+    if file_key not in entries:
+        if socket is None:
+            raise RepairError('Selected source has no existing file or socket checkpoint; collection requires review')
+        entries[file_key] = {'Offset': '0', 'TailingMode': '', 'LastUpdated': when}
+    result = cutover_registry(result, path, offset, when)
+    result['Registry'].pop(socket_key, None)
+    return result
+
+
 def persistent_config(config, env):
     if not isinstance(config, dict):
         raise RepairError('Unsupported Agent configuration shape')
@@ -82,6 +115,7 @@ def persistent_config(config, env):
         raise RepairError('Unsupported collector environment value')
     if env.get('DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE', '').lower() == 'false' or logs.get('docker_container_use_file') is False:
         raise RepairError('Socket collection selected; file-offset repair refused')
+    logs['docker_container_use_file'] = True
     logs['run_path'] = PERSISTENT_PATH
     result['logs_config'] = logs
     return result
@@ -472,9 +506,7 @@ def prepare(docker, output):
     cfg_code = 'import json,yaml,subprocess;print(json.dumps({"config":yaml.safe_load(open("/input.yaml")),"version":subprocess.check_output(["agent","version"]).decode()}))'
     parsed = json.loads(docker.helper(agent['image'], cfg_code, [(str(output / 'original-config.private.yaml'), '/input.yaml')]))
     cfg = parsed['config']
-    match = re.search(r'Agent 7\.(\d+)\.', parsed.get('version', ''))
-    if not match or int(match[1]) < 33:
-        raise RepairError('Expected Agent7.33+ file collector; installed version needs review')
+    validate_agent_version(parsed.get('version'), agent['image'])
     if not isinstance(cfg, dict):
         raise RepairError('Unsupported Agent configuration')
     env = dict(x.split('=', 1) for x in agent.get('env', []) if '=' in x)
@@ -488,8 +520,8 @@ def prepare(docker, output):
     registry_raw = docker.copy_out(agent['id'], registry_path, output / 'original-registry.private.json')
     registry = json.loads(registry_raw)
     snapshot = file_snapshot(docker, agent, source)
-    cutover_registry(registry, mapped, snapshot['offset'], utc())
-    ensure_file_collection(registry, source['id'], cfg, env)
+    preview_registry = recovery_registry(registry, mapped, source['id'], snapshot['offset'], utc())
+    ensure_file_collection(preview_registry, source['id'], patched_config, env)
     # Private state may contain API credentials in the original YAML/environment.
     write_private(output / 'context.private.json', {'agent': agent, 'source': source, 'config_path': effective_config, 'mapped_path': mapped, 'log_volume': volume,
                   'old_registry_path': registry_path, 'config_sha256': sha(cfg_raw), 'registry_sha256': sha(registry_raw), 'config': patched_config, 'discovery_sha256': discovery['sha256']})
@@ -628,7 +660,6 @@ def apply(docker, output):
         if sha(current_reg) != ctx['registry_sha256']:
             raise RepairError('Original stopped-Agent registry changed; no repair writes made')
         registry = json.loads(current_reg)
-        ensure_file_collection(registry, source['id'], original_cfg, env)
         progress('validating_source_and_cutover')
         snapshot = file_snapshot(docker, agent, source)
         preview = read_json(output / 'report.json')['preview_cutover']
@@ -641,14 +672,15 @@ def apply(docker, output):
                 raise RepairError('Journalled source log identity/bounds changed')
         else:
             cutoff, when = snapshot, utc()
-        patched_registry = cutover_registry(registry, mapped, cutoff['offset'], when)
+        patched_registry = recovery_registry(registry, mapped, source['id'], cutoff['offset'], when)
+        ensure_file_collection(patched_registry, source['id'], expected_config, env)
         stage = attempt / 'bridge-log-state'; stage.mkdir(mode=0o700)
         write_private(stage / 'registry.json', patched_registry)
         write_private(attempt / 'patched-config.private.json', expected_config)
         service = (agent.get('labels') or {}).get('com.docker.compose.service', 'datadog')
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', service):
             raise RepairError('Unsupported Compose service label')
-        override = {'services': {service: {'environment': {'DD_LOGS_CONFIG_RUN_PATH': PERSISTENT_PATH},
+        override = {'services': {service: {'environment': {'DD_LOGS_CONFIG_RUN_PATH': PERSISTENT_PATH, 'DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE': 'true'},
                     'volumes': [{'type': 'volume', 'source': 'bridge_dd_state', 'target': '/var/log/datadog'}]}},
                     'volumes': {'bridge_dd_state': {'external': True, 'name': volume}}}
         write_private(attempt / 'future-agent-override.private.json', override)

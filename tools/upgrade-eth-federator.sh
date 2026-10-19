@@ -4,10 +4,11 @@ set +x
 set -Eeuo pipefail
 unset PYTHONOPTIMIZE PYTHONINSPECT
 umask 077
-VERSION=1.2.1
+VERSION=1.3.0
 FED_REPO="$HOME/Bridge-SC"
 REPO_OVERRIDE=''
 REPAIR_REVISION=''
+APP_REVISION=''
 FED_IMAGE=''
 RELEASE_OVERRIDE=''
 PUBLIC_OPERATOR=''
@@ -25,7 +26,8 @@ usage() {
 Usage: bash upgrade-eth-federator.sh [options]
 Missing release/public inputs are requested interactively. Never edit this file.
   --repo PATH                 Existing Bridge-SC checkout (default ~/Bridge-SC)
-  --revision FULL_COMMIT      Approved source revision
+  --revision FULL_COMMIT      Approved upgrade-tool revision
+  --app-revision FULL_COMMIT  Image source revision (defaults to --revision)
   --image TAG@sha256:DIGEST   Approved sovryn/fed-tokenbridge image
   --override PATH             Supplied private Compose override
   --operator fed_1..fed_5     Anonymous node label
@@ -42,11 +44,11 @@ while (($#)); do
     --help|-h) usage; exit 0 ;;
     --version) printf 'federator-upgrade %s\n' "$VERSION"; exit 0 ;;
     --no-aws-secrets) KEY_SOURCE=manual; KEY_SOURCE_OVERRIDE=true; shift ;;
-    --repo|--revision|--image|--override|--operator|--expected-signer|--watch-seconds|--rollback)
+    --repo|--revision|--app-revision|--image|--override|--operator|--expected-signer|--watch-seconds|--rollback)
       (($#>=2)) && [[ "$2" != --* && -n "$2" ]] || parameter_error "Missing value for $1"
       case "$1" in
         --repo) FED_REPO=$2; REPO_OVERRIDE=$2 ;; --revision) REPAIR_REVISION=$2 ;;
-        --image) FED_IMAGE=$2 ;; --override) RELEASE_OVERRIDE=$2 ;;
+        --app-revision) APP_REVISION=$2 ;; --image) FED_IMAGE=$2 ;; --override) RELEASE_OVERRIDE=$2 ;;
         --operator) PUBLIC_OPERATOR=$2 ;; --expected-signer) EXPECTED_SIGNER=$2 ;;
         --watch-seconds) WATCH_SECONDS=$2; WATCH_OVERRIDE=$2 ;; --rollback) ROLLBACK_RUN=$2 ;;
       esac
@@ -58,6 +60,7 @@ done
 ((10#$WATCH_SECONDS>=1 && 10#$WATCH_SECONDS<=86400)) || parameter_error 'Watcher duration must be 1..86400'
 [[ -z "$PUBLIC_OPERATOR" || "$PUBLIC_OPERATOR" =~ ^fed_[1-5]$ ]] || parameter_error 'Invalid fed_n label'
 [[ -z "$REPAIR_REVISION" || "$REPAIR_REVISION" =~ ^[0-9a-f]{40}$ ]] || parameter_error 'Revision must be a full lowercase commit ID'
+[[ -z "$APP_REVISION" || "$APP_REVISION" =~ ^[0-9a-f]{40}$ ]] || parameter_error 'Application revision must be a full lowercase commit ID'
 [[ -z "$EXPECTED_SIGNER" || "$EXPECTED_SIGNER" =~ ^0x[0-9a-fA-F]{40}$ ]] || parameter_error 'Expected signer must be a public address'
 [[ -z "$FED_IMAGE" || "$FED_IMAGE" =~ ^sovryn/fed-tokenbridge:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || parameter_error 'Image must be the approved tag@sha256:digest'
 [[ -t 0 ]] || parameter_error 'Run in an interactive Bash terminal; no yes/force mode exists'
@@ -91,12 +94,14 @@ require_inputs() {
   [[ -n "$PUBLIC_OPERATOR" ]] || read -r -p 'Node label (fed_1..fed_5): ' PUBLIC_OPERATOR
   [[ -n "$EXPECTED_SIGNER" ]] || read -r -p 'Your approved FEDERATOR public address: ' EXPECTED_SIGNER
   [[ "$REPAIR_REVISION" =~ ^[0-9a-f]{40}$ ]] || parameter_error 'Invalid release commit'
+  APP_REVISION=${APP_REVISION:-$REPAIR_REVISION}
+  [[ "$APP_REVISION" =~ ^[0-9a-f]{40}$ ]] || parameter_error 'Invalid application commit'
   [[ "$FED_IMAGE" =~ ^sovryn/fed-tokenbridge:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || parameter_error 'Invalid image tag@digest'
   [[ "$PUBLIC_OPERATOR" =~ ^fed_[1-5]$ ]] || parameter_error 'Invalid fed_n label'
   [[ "$EXPECTED_SIGNER" =~ ^0x[0-9a-fA-F]{40}$ ]] || parameter_error 'Invalid public signer'
   [[ "$RELEASE_OVERRIDE" == /* && -f "$RELEASE_OVERRIDE" && ! -L "$RELEASE_OVERRIDE" ]] || parameter_error 'Supplied override must be a regular absolute-path file'
   OPERATOR=$PUBLIC_OPERATOR
-  export FED_REPO REPAIR_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE OPERATOR
+  export FED_REPO REPAIR_REVISION APP_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE OPERATOR
 }
 verify_bundle() {
   for file in federator_recovery.py federator_dependencies.py federator_watcher.py etherscan_prerequisite.py dd_agent_recovery.py federator_datadog_upgrade.py federator_upgrade_safety.py federator_compose_plan.py; do
@@ -108,7 +113,7 @@ write_context() {
 python3 - <<'PY'
 import json,os
 from pathlib import Path
-fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256')
+fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION')
 with (Path(os.environ['OPS_DIR'])/'upgrade-context.json').open('x') as out:
  json.dump({name:os.environ[name] for name in fields},out,indent=2)
 PY
@@ -187,12 +192,12 @@ export FED_IMAGE RELEASE_OVERRIDE
 timeout 300s docker --host unix:///var/run/docker.sock pull "$FED_IMAGE"
 EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
 export EXPECTED_IMAGE_ID
-test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$REPAIR_REVISION"
+test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$APP_REVISION"
 python3 - <<'PY' > "$OPS_DIR/repair-source-hashes.json"
 import hashlib,json,os,subprocess
 prefix='sovryn-token-bridge/federator/'
 files=['src/lib/GasPriceAvg.js','src/lib/GasPriceFetcher.js','src/lib/GasServices.js','src/lib/TransactionSender.js','src/vendors/RSKKeyedAuth.js']
-print(json.dumps({p:hashlib.sha256(subprocess.check_output(['git','-C',os.environ['FED_REPO'],'show',os.environ['REPAIR_REVISION']+':'+prefix+p])).hexdigest() for p in files}))
+print(json.dumps({p:hashlib.sha256(subprocess.check_output(['git','-C',os.environ['FED_REPO'],'show',os.environ['APP_REVISION']+':'+prefix+p])).hexdigest() for p in files}))
 PY
 PUBLIC_HASHES=$(cat "$OPS_DIR/repair-source-hashes.json")
 docker --host unix:///var/run/docker.sock run --rm --network none --read-only --log-driver none --cap-drop ALL \
@@ -467,25 +472,25 @@ root=Path(sys.argv[1]);path=root/'upgrade-context.json'
 if path.is_symlink() or path.stat().st_uid!=os.getuid() or stat.S_IMODE(path.stat().st_mode)!=0o600:
  raise SystemExit('Unsafe rollback context')
 value=json.loads(path.read_text())
-fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256')
+fields=('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER','KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256','APP_REVISION')
 for name in fields:
- item=value.get(name)
+ item=value.get(name,value.get('REPAIR_REVISION') if name=='APP_REVISION' else None)
  if not isinstance(item,str) or '\0' in item:raise SystemExit('Invalid rollback context')
  sys.stdout.buffer.write(item.encode()+b'\0')
 PY
   SAVED=()
   while IFS= read -r -d '' value; do SAVED+=("$value"); done < "$CONTEXT_FIELDS"
   rm -- "$CONTEXT_FIELDS"
-  ((${#SAVED[@]}==11)) || parameter_error 'Incomplete rollback context'
+  ((${#SAVED[@]}==12)) || parameter_error 'Incomplete rollback context'
   [[ -z "$REPO_OVERRIDE" || "$REPO_OVERRIDE" == "${SAVED[0]}" ]] || parameter_error 'Repo differs from saved upgrade; use the original run'
   FED_REPO=${SAVED[0]}; REPAIR_REVISION=${SAVED[1]}; FED_IMAGE=${SAVED[2]}; RELEASE_OVERRIDE=${SAVED[3]}
   PUBLIC_OPERATOR=${SAVED[4]}; EXPECTED_SIGNER=${SAVED[5]}; KEY_SOURCE=${SAVED[6]}; COMPOSE_PROJECT=${SAVED[7]}
-  CONFIG_DIR=${SAVED[8]}; WATCH_SECONDS=${SAVED[9]}; COMPOSE_PLAN_SHA256=${SAVED[10]}
+  CONFIG_DIR=${SAVED[8]}; WATCH_SECONDS=${SAVED[9]}; COMPOSE_PLAN_SHA256=${SAVED[10]}; APP_REVISION=${SAVED[11]}
   if [[ "$KEY_SOURCE_OVERRIDE" == true ]]; then KEY_SOURCE=manual; fi
   if [[ -n "$WATCH_OVERRIDE" ]]; then WATCH_SECONDS=$WATCH_OVERRIDE; fi
   test "$CONFIG_DIR" = "$FED_REPO/federator-env/mainnet-ETH-RSK"
   export FED_ENV=mainnet-ETH-RSK
-  export FED_REPO REPAIR_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE COMPOSE_PROJECT CONFIG_DIR WATCH_SECONDS
+  export FED_REPO REPAIR_REVISION APP_REVISION FED_IMAGE RELEASE_OVERRIDE PUBLIC_OPERATOR EXPECTED_SIGNER KEY_SOURCE COMPOSE_PROJECT CONFIG_DIR WATCH_SECONDS
   [[ "$REPAIR_REVISION" =~ ^[0-9a-f]{40}$ && "$PUBLIC_OPERATOR" =~ ^fed_[1-5]$ && "$EXPECTED_SIGNER" =~ ^0x[0-9a-fA-F]{40}$ ]] || parameter_error 'Invalid rollback release/signer context'
   [[ "$KEY_SOURCE" == aws || "$KEY_SOURCE" == manual ]] || parameter_error 'Invalid saved key source'
   [[ "$WATCH_SECONDS" =~ ^[0-9]{1,5}$ ]] && ((10#$WATCH_SECONDS>=1 && 10#$WATCH_SECONDS<=86400)) || parameter_error 'Invalid saved watcher duration'

@@ -46,6 +46,8 @@ def validate_context(c, revision, signer, home):
               'KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256')
     if any(not isinstance(c.get(k),str) or '\0' in c[k] for k in fields):
         raise ContinueError('Invalid saved context')
+    if 'APP_REVISION' in c and not re.fullmatch(r'[0-9a-f]{40}',c['APP_REVISION'] if isinstance(c['APP_REVISION'],str) else ''):
+        raise ContinueError('Saved application revision invalid')
     repo = home/'Bridge-SC'
     if c['FED_REPO'] != str(repo) or c['CONFIG_DIR'] != str(repo/'federator-env/mainnet-ETH-RSK'):
         raise ContinueError('Unexpected saved repo/config mounts')
@@ -129,7 +131,7 @@ COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "
 "${COMPOSE[@]}" config --quiet
 EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
 export EXPECTED_IMAGE_ID
-test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$REPAIR_REVISION"
+test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "${APP_REVISION:-$REPAIR_REVISION}"
 python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
 python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
 confirm 'Continue this saved ETH upgrade from original key recovery now?' || exit 0
@@ -170,6 +172,24 @@ def run_attached(command, env):
         termios.tcflush(tty.fileno(),termios.TCIFLUSH)
         return subprocess.run(command,env=env,stdin=tty).returncode
 
+def continuation_environment(context, run, attempt):
+    return {**os.environ, **context,
+            'APP_REVISION':context.get('APP_REVISION',context['REPAIR_REVISION']),
+            'RESUME_RUN':str(run), 'RESUME_TOOL':str(Path(__file__).resolve()),
+            'RESUME_ATTEMPT':str(attempt), 'AWS_PAGER':'',
+            'COMPOSE_REMOVE_ORPHANS':'false','COMPOSE_IGNORE_ORPHANS':'true'}
+
+
+def continuation_command(script, context, revision, signer):
+    command=['bash',str(script),'--repo',context['FED_REPO'],'--revision',revision,
+             '--image',context['FED_IMAGE'],'--override',context['RELEASE_OVERRIDE'],
+             '--operator',context['PUBLIC_OPERATOR'],'--expected-signer',signer,
+             '--watch-seconds',context['WATCH_SECONDS']]
+    if 'APP_REVISION' in context:command += ['--app-revision',context['APP_REVISION']]
+    if context['KEY_SOURCE']=='manual':command.append('--no-aws-secrets')
+    return command
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--run',type=Path,required=True);p.add_argument('--revision',required=True)
@@ -192,12 +212,8 @@ def main():
     attempt=run/('continue-'+secrets.token_hex(6));attempt.mkdir(mode=0o700)
     script=attempt/'continue.sh';script.write_text(resume_script(original));script.chmod(0o600)
     subprocess.run(['bash','-n',str(script)],check=True)
-    env={**os.environ,**c,'RESUME_RUN':str(run),'RESUME_TOOL':str(Path(__file__).resolve()),
-         'RESUME_ATTEMPT':str(attempt),'AWS_PAGER':'','COMPOSE_REMOVE_ORPHANS':'false','COMPOSE_IGNORE_ORPHANS':'true'}
-    command=['bash',str(script),'--repo',c['FED_REPO'],'--revision',args.revision,'--image',c['FED_IMAGE'],
-             '--override',c['RELEASE_OVERRIDE'],'--operator',c['PUBLIC_OPERATOR'],
-             '--expected-signer',args.expected_signer,'--watch-seconds',c['WATCH_SECONDS']]
-    if c['KEY_SOURCE']=='manual':command.append('--no-aws-secrets')
+    env=continuation_environment(c,run,attempt)
+    command=continuation_command(script,c,args.revision,args.expected_signer)
     print('Continuation evidence:',attempt,flush=True)
     return run_attached(command, env)
 

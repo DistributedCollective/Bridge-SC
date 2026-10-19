@@ -43,6 +43,23 @@ class ContinueTests(unittest.TestCase):
         current_suffix = m.resume_script((TOOLS/'upgrade-eth-federator.sh').read_text()).split(m.SUFFIX_MARKER, 1)[1]
         self.assertEqual(current_suffix.count('--allow-source-handoff'), 2)
 
+    def test_continuation_binds_application_revision_from_saved_context(self):
+        from unittest.mock import patch
+        m=self.module()
+        base={'FED_REPO':'/home/ubuntu/Bridge-SC','REPAIR_REVISION':'1'*40,'FED_IMAGE':'immutable-image',
+              'RELEASE_OVERRIDE':'/private/override.json','PUBLIC_OPERATOR':'fed_2','EXPECTED_SIGNER':'0x'+'2'*40,
+              'WATCH_SECONDS':'900','KEY_SOURCE':'aws'}
+        for app in (None,'7'*40):
+            context=dict(base)
+            if app is not None:context['APP_REVISION']=app
+            with patch.dict(os.environ,{'APP_REVISION':'f'*40}):
+                env=m.continuation_environment(context,Path('/private/run'),Path('/private/attempt'))
+            self.assertEqual(env['APP_REVISION'],app or context['REPAIR_REVISION'])
+            command=m.continuation_command(Path('/private/continue.sh'),context,context['REPAIR_REVISION'],context['EXPECTED_SIGNER'])
+            self.assertEqual(command[command.index('--revision')+1],'1'*40)
+            if app is None:self.assertNotIn('--app-revision',command)
+            else:self.assertEqual(command[command.index('--app-revision')+1],app)
+
     def test_unknown_script_layout_refused(self):
         m=self.module()
         with self.assertRaises(m.ContinueError):m.resume_script('echo do not execute\n')
