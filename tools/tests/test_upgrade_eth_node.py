@@ -88,6 +88,20 @@ class LauncherTests(unittest.TestCase):
             self.assertTrue(any(x['status']=='BLOCKER' and 'Datadog Agent is not running' in x['summary'] for x in result['checks']))
             self.assertTrue(any(x['status']=='UNKNOWN' and 'checkpoint' in x['summary'] for x in result['checks']))
 
+    def test_only_exited_unpaused_agent_is_eligible_for_validated_backend_recovery(self):
+        import types
+        m=self.module();c,i=fixture()
+        for state,eligible in [({'Status':'exited','Running':False,'Paused':False},True),
+                               ({'Status':'running','Running':True,'Paused':True},False),
+                               ({'Status':'created','Running':False,'Paused':False},False)]:
+            report={'agent':{'status':'OBSERVED','deployment':{'State':state}},'configuration':{'config_status':'OBSERVED'}}
+            component=types.SimpleNamespace(collect=lambda *a,**kw:copy.deepcopy(report))
+            with patch.object(m,'environment_component',return_value=component):
+                result=m.capture_snapshot(Path('/home/ubuntu/Bridge-SC'),None,'fed_2',c,i)
+            blockers=[v for v in result['checks'] if v['status']=='BLOCKER']
+            self.assertTrue(blockers)
+            self.assertEqual(any(v.get('recovery')=='stopped_agent' for v in blockers),eligible)
+
     def test_running_agent_does_not_gain_stopped_agent_blocker(self):
         import types
         m=self.module();c,i=fixture()
@@ -180,12 +194,13 @@ class LauncherTests(unittest.TestCase):
         other['Mounts'][0]['RW']=False
         with self.assertRaises(m.LaunchError):m.same_process(c,other)
 
-    def test_plan_uses_original_approved_bundle_and_manual_key_mode(self):
+    def test_plan_uses_pinned_tools_application_and_manual_key_mode(self):
         m = self.module()
         args = m.upgrade_command(Path('/private/run'), Path('/home/ubuntu/Bridge-SC'), 'fed_1', '0x'+'11'*20, True)
         self.assertEqual(args[0], '/bin/bash')
         self.assertIn('--no-aws-secrets', args)
-        self.assertEqual(args[args.index('--revision')+1], 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900')
+        self.assertEqual(args[args.index('--revision')+1], m.TOOL_REVISION)
+        self.assertEqual(args[args.index('--app-revision')+1], 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900')
         self.assertEqual(args[args.index('--override')+1], '/private/run/override.json')
         self.assertEqual(args[args.index('--image')+1], m.APP_IMAGE)
         self.assertNotIn('--no-aws-secrets', m.upgrade_command(Path('/x'),Path('/y'),'fed_2','0x'+'22'*20,False))
@@ -348,10 +363,53 @@ class LauncherFlowTests(unittest.TestCase):
         m=self.module()
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();runner=FakeRunner(root/'repo',compose=False);runner.error=m.LaunchError
-            with self.assertRaises(m.LaunchError) as error:self.invoke(m,root,runner,upgrade=True)
+            with self.assertRaises(m.LaunchError) as error:self.invoke(m,root,runner,upgrade=False)
             self.assertIn('--install-compose',str(error.exception))
             self.assertIn('Neither service was changed',str(error.exception))
             self.assertFalse(any('fetch' in a for a in runner.calls))
+
+    def test_interactive_missing_compose_installs_and_continues_in_same_run(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo',compose=False);runner.error=m.LaunchError
+            def install():runner.compose=True
+            with patch.object(m,'install_compose',side_effect=install) as installer,patch('builtins.input',return_value='y'):
+                _,execute,output=self.invoke(m,root,runner,upgrade=True)
+            installer.assert_called_once();execute.assert_called_once()
+            self.assertEqual(sum('fetch' in x for x in runner.calls),1)
+            self.assertIn('verified Compose',output)
+
+    def test_declining_missing_compose_install_changes_no_service_and_does_not_fetch(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo',compose=False);runner.error=m.LaunchError
+            with patch.object(m,'install_compose') as installer,patch('builtins.input',return_value='n'):
+                result,execute,output=self.invoke(m,root,runner,upgrade=True)
+            self.assertEqual(result,0);execute.assert_not_called();installer.assert_not_called()
+            self.assertFalse(any('fetch' in x for x in runner.calls))
+
+    def test_supported_stopped_agent_hands_off_to_validated_confirmed_backend(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+            report={'schema':1,'checks':[{'status':'BLOCKER','recovery':'stopped_agent','summary':'Agent stopped'}]}
+            with patch.object(m,'capture_snapshot',return_value=report):
+                result,execute,output=self.invoke(m,root,runner,upgrade=True)
+            self.assertEqual(result,0);execute.assert_called_once()
+            command=execute.call_args[0][1]
+            self.assertEqual(command[command.index('--revision')+1],m.TOOL_REVISION)
+            self.assertEqual(command[command.index('--app-revision')+1],m.APP_REVISION)
+            self.assertFalse(any(x[0]=='docker' and x[3] in ('start','stop','rm','run') for x in runner.calls))
+
+    def test_approved_app_with_stopped_agent_does_not_claim_completed_recovery(self):
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();runner=FakeRunner(root/'repo')
+            runner.container['Image']=m.APP_IMAGE_ID;runner.image['Id']=m.APP_IMAGE_ID
+            report={'schema':1,'checks':[{'status':'BLOCKER','recovery':'stopped_agent','summary':'Agent stopped'}]}
+            with patch.object(m,'capture_snapshot',return_value=report),self.assertRaises(m.LaunchError):
+                self.invoke(m,root,runner,upgrade=True)
+            self.assertFalse(any('fetch' in x for x in runner.calls))
 
     def test_already_approved_image_is_not_replaced(self):
         m=self.module()

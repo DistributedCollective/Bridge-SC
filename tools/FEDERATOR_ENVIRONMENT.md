@@ -28,7 +28,9 @@ Docker inspect output, configuration, key files, logs, databases or backup archi
   signing. URL credentials, paths, queries and hostnames are not exported.
 - Agent version, topology/coverage, credential presence, log flags and the current source's
   registry schema/mode/offset when the Agent is running. A stopped or paused Agent is
-  an explicit blocker; unavailable collection/credential/checkpoint evidence remains
+  an explicit diagnostic blocker; only an exited, unpaused Agent can proceed to the
+  confirmed upgrade backend for its separately validated recovery. Collection mode
+  never starts it. Unavailable collection/credential/checkpoint evidence remains
   unknown. No intake credential value or other sources' data is exported.
 - A matching retained original ETH upgrade, if available. Current Docker image metadata is
   used first; if pruned, only its digest-verified config JSON is read from the retained image

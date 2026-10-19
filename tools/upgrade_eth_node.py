@@ -18,12 +18,13 @@ import types
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.2.1'
+VERSION = '1.3.0'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
 BASE_IMAGE_ID = 'sha256:eb153b412d54517818953f45990a8a5c8cf552d64e881410134a6c406a0c785c'
 APP_IMAGE_ID = 'sha256:359c86c374970d1f8d6f803eb597e6713fa11695e6b3a3b7bf1ebd4503354bf4'
+TOOL_REVISION = '7d3fed2c8cb8c30bc07c71a8efdff6741b04bb83'
 BRANCH = 'federator-diagnostics-recovery-upgrade'
 ENVIRONMENT_SHA256 = '1dec671b46f00db14dfa4aaf1073bebbbbf9784d0a45418ede6c2f891469e9c9'
 DOCKER = ['docker', '--host', 'unix:///var/run/docker.sock']
@@ -229,12 +230,17 @@ def capture_snapshot(repo,runner,operator,container,image,previous_run=None):
     agent=report.get('agent',{})
     state=agent.get('deployment',{}).get('State',{})
     if agent.get('status')=='OBSERVED' and (state.get('Running') is not True or state.get('Paused')):
-        report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent is not running or is paused; preserve its saved checkpoint before a matched recovery'})
+        finding={'status':'BLOCKER','summary':'Datadog Agent is not running or is paused; preserve its saved checkpoint before a matched recovery'}
+        if state.get('Status')=='exited' and state.get('Running') is False and not state.get('Paused'):
+            finding['recovery']='stopped_agent'
+        report['checks'].append(finding)
     collection=agent.get('collection') or {}
     if agent.get('status')=='OBSERVED' and not collection:
         report['checks'].append({'status':'UNKNOWN','summary':'Datadog credential validity and logging checkpoint were not captured; metadata inspection is not delivery proof'})
     version=collection.get('version')
-    if isinstance(version,str) and re.fullmatch(r'7\.\d+\.\d+',version) and int(version.split('.')[1])<33:
+    legacy_image='sha256:4b37339b169c666008e4717eebc7f529329656f9ed13619f1d54d40a85adeeb8'
+    legacy_supported=version=='7.32.4' and agent.get('deployment',{}).get('Image')==legacy_image
+    if isinstance(version,str) and re.fullmatch(r'7\.\d+\.\d+',version) and int(version.split('.')[1])<33 and not legacy_supported:
         report['checks'].append({'status':'BLOCKER','summary':'Datadog Agent '+version+' is older than the verified7.33+ repair; prepare its matched update from this packet'})
     for field,title in [('api_key_present','Datadog API credential is absent'),('logs_enabled','Datadog log collection is disabled')]:
         if collection.get(field) is False:report['checks'].append({'status':'BLOCKER','summary':title})
@@ -388,7 +394,7 @@ def install_compose():
 
 
 def upgrade_command(packet, repo, operator, signer, manual):
-    args = ['/bin/bash', str(packet/'upgrade.sh'), '--repo', str(repo), '--revision', APP_REVISION,
+    args = ['/bin/bash', str(packet/'upgrade.sh'), '--repo', str(repo), '--revision', TOOL_REVISION, '--app-revision', APP_REVISION,
             '--image', APP_IMAGE, '--override', str(packet/'override.json'),
             '--operator', operator, '--expected-signer', signer]
     if manual:args.append('--no-aws-secrets')
@@ -518,24 +524,34 @@ def main(argv=None, runner=None):
         if args.collect_only:
             step(4,'Environment captured; no upgrade started. Send only the ZIP packet to your coordinator')
             return 0
-        if any(check.get('status')=='BLOCKER' for check in report['checks']):
+        if any(check.get('status')=='BLOCKER' and check.get('recovery')!='stopped_agent' for check in report['checks']):
             raise LaunchError('All detected deployment blockers are listed above. Services unchanged. Send only '+str(bundle)+'; do not rerun the upgrade or send raw configuration.')
         if c['Image'] == APP_IMAGE_ID and image.get('Id') == APP_IMAGE_ID:
+            if any(check.get('status')=='BLOCKER' for check in report['checks']):
+                raise LaunchError('Application image is already approved but Datadog still requires recovery; no application replacement or restart performed. Send the saved environment packet.')
             step(4,'Approved application image is already installed; no upgrade or restart performed');return 0
         override = make_override(c,image,repo)
         try:runner.run(DOCKER+['compose','version'])
         except LaunchError:
-            command = 'python3 '+shlex.quote(str(Path(__file__).resolve()))+' --install-compose'
-            raise LaunchError('Docker Compose v2 is missing/unusable. Run: '+command+
-                              '\nThen repeat the same upgrade command. Neither service was changed.') from None
+            if args.prepare_only or not interactive:
+                command = 'python3 '+shlex.quote(str(Path(__file__).resolve()))+' --install-compose'
+                raise LaunchError('Docker Compose v2 is missing/unusable. Run: '+command+
+                                  '\nThen repeat the same upgrade command. Neither service was changed.') from None
+            answer=prompted_value('Install the verified Compose plugin in your account now? [y/N] ',None,
+                lambda value:value.lower() in ('','y','yes','n','no'), 'Enter y or n.',True)
+            if answer.lower() not in ('y','yes'):
+                print('No plugin installed and no upgrade started; services unchanged.',flush=True);return 0
+            print('Installing the verified Compose plugin; services remain unchanged.',flush=True)
+            install_compose()
+            runner.run(DOCKER+['compose','version'])
         print('Fetching and verifying the pinned upgrade tools; no service is stopped.',flush=True)
         runner.run(['git','-C',str(repo),'fetch','--no-tags','origin',BRANCH],timeout=180)
-        runner.run(['git','-C',str(repo),'merge-base','--is-ancestor',APP_REVISION,'FETCH_HEAD'])
-        script = runner.run(['git','-C',str(repo),'show',APP_REVISION+':tools/upgrade-eth-federator.sh']).encode()
+        runner.run(['git','-C',str(repo),'merge-base','--is-ancestor',TOOL_REVISION,'FETCH_HEAD'])
+        script = runner.run(['git','-C',str(repo),'show',TOOL_REVISION+':tools/upgrade-eth-federator.sh']).encode()
         packet = Path(tempfile.mkdtemp(prefix='auto-eth-upgrade.',dir=base));packet.chmod(0o700)
         write_private(packet/'upgrade.sh',script)
         blob = runner.run(['git','-C',str(repo),'hash-object',str(packet/'upgrade.sh')]).strip()
-        expected = runner.run(['git','-C',str(repo),'rev-parse',APP_REVISION+':tools/upgrade-eth-federator.sh']).strip()
+        expected = runner.run(['git','-C',str(repo),'rev-parse',TOOL_REVISION+':tools/upgrade-eth-federator.sh']).strip()
         if not re.fullmatch(r'[0-9a-f]{40}',expected) or blob != expected:raise LaunchError('Approved upgrade script verification failed; services unchanged.')
         same_process(c,inspect_one(runner,['inspect','bridge-sc_federation_1']))
         write_private(packet/'override.json',(json.dumps(override,indent=2)+'\n').encode())

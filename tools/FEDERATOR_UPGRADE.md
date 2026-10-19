@@ -1,108 +1,64 @@
 # Upgrade an existing ETH federator
 
-The [upgrade wizard](upgrade_eth_node.py) checks your existing deployment,
-prepares its Compose override automatically and runs the approved upgrade. It backs up
-the old image and retained logs, preserves bridge configuration/checkpoints, checks
-Datadog and runs the watcher. It uses a separately pinned, already-published application
-release; updating this launcher does not require rebuilding the application image.
+The wizard backs up the current image and logs, preserves bridge configuration and
+checkpoints, recovers supported Datadog collection, upgrades the ETH application and
+runs a fifteen-minute watcher. The tool revision and application image are pinned
+separately. The BSC application is not restarted.
 
-## 1. Have these ready
+## 1. Prepare
 
-- Access to the ETH server as `ubuntu`, UID1000, using interactive Bash.
-- The verified download block supplied by your release coordinator.
-- Your assigned `fed_n` label and existing public **federator** signer address.
-- Access to your original federator key and your own Etherscan API key.
+Log in as the deployment user `ubuntu` (UID1000) and open interactive Bash. Have your
+assigned `fed_n` label, existing public federator signer address, original signing-key
+custody and your own Etherscan API key ready. Use the verified download block supplied
+by the coordinator; it downloads and launches the approved wizard automatically.
+No Compose override or manual file upload is needed.
 
-The supplied download block places the launcher and its hash-verified environment component
-in one private directory. Your coordinator provides the anonymous node label/address and
-signing-key custody method. You do not need
-to prepare, download or enter a Compose override file. The launcher checks startup,
-environment, mounts, networking and resource settings directly on this server.
+If asked to collect first, the supplied command uses `--collect-only`. Return its
+`federator-environment.zip`; this mode changes no services and asks for no keys.
 
-## Collect the environment before an upgrade
+## 2. Run the supplied upgrade block
 
-Run the coordinator's verified download block in collection mode. It invokes
-`upgrade_eth_node.py --collect-only`; only the anonymous node label is needed.
-No signing key, AWS secret access, Etherscan key entry or service restart is requested.
-The wizard prints progress and saves one `federator-environment.zip` containing a
-sanitized deployment fixture and summary. Send that ZIP to the coordinator. Keep
-existing services running. Wait for the matched upgrade command after local replay.
+The wizard requests any missing node identity and AWS/manual key-custody choice.
+It checks the deployment and prepares the override automatically. If Compose v2 is
+missing, answer `y` to install the checksum-verified plugin in your account and
+continue in the same run. Docker services are not restarted for this installation.
 
-The same read-only capture runs automatically before ordinary upgrade preparation.
-All supported deployment checks are reported together; any blocker prevents handoff.
-An available original run is discovered only under the private ETH operations directory
-and must match this ETH checkout. Only sanitized launch/config metadata is exported;
-image layers, raw environment, logs, credentials and databases are not copied.
+The approved upgrader validates your existing Etherscan key or requests it through
+hidden input. Do not send API keys or signing keys to the coordinator.
 
-## 2. Run your supplied command
+A supported stopped Datadog Agent is inspected first. Its checkpoint recovery occurs
+within the confirmed upgrade, before the ETH application is stopped. Unsupported
+settings are reported together; send only the error and printed report path.
 
-Run:
+## 3. Confirm the upgrade
 
-```bash
-python3 upgrade_eth_node.py --upgrade
-```
-
-Missing node label, public federator address and AWS/manual custody are requested
-with validation; invalid answers are re-prompted without echoing them in errors.
-Use the public federator address from your supplied node table, not a private key.
-Four numbered stages identify the node, check the account/repository/lock, audit
-and prepare the approved package, then open the approved upgrader.
-
-For a natural interactive wizard, omit `--upgrade`. After preparation it asks
-`Open the approved upgrade now? [y/N]`; answering y continues with the same prepared
-packet. The approved upgrader still asks its separate maintenance confirmation
-before stopping services. Explicit `--prepare-only` finishes after checks/files,
-without an upgrade decision or handoff. Fully specified noninteractive use also
-prepares only; noninteractive `--upgrade` is refused.
-
-`--operator`, `--expected-signer`, `--aws-secrets` and `--no-aws-secrets` can supply
-known values directly. The signing key itself is requested only through the
-approved upgrader's hidden prompt. The launcher checks image identity itself;
-no preliminary manual `docker inspect` command is needed.
-
-If an earlier run is still at `Absolute path to supplied Compose override:`, press
-Ctrl+C there first. At that input prompt, no service changes have started. If an
-older run already reached stopping/replacement, keep that run and send its last
-phase to the coordinator; do not launch a second upgrade.
-
-Unsupported/custom settings stop preparation before service changes. Send the
-printed error to the coordinator in the same channel where you received the
-command; no separate manual check or raw environment dump is requested.
-If Compose v2 is missing, the launcher prints an exact `--install-compose` command.
-Run it, then repeat your original upgrade command. The installer verifies pinned
-Compose2.40.3, respects `DOCKER_CONFIG`, and does not restart Docker.
-
-## 3. Answer the upgrade prompts
-
-The executable reuses your Etherscan key, or requests it through hidden input.
-After prerequisite checks, it asks:
+At this prompt, type `y` when ready:
 
 ```text
 Upgrade this ETH node and repair Datadog if needed in the agreed window now? [y/N]
 ```
 
-Type `y` when ready for the maintenance window. The executable backs up the old
-image/logs, stops only the ETH federator, restores/verifies your original key,
-starts the repaired image and removes the temporary key after90 seconds and
-fresh configuration-load proof. Approve original AWS secret restoration if
-using AWS custody; otherwise enter your original key at the hidden prompt.
-Datadog credentials and its retained checkpoint volume are handled by the tool.
+The tool verifies the image backup, recovers Datadog if needed, preserves the existing
+Agent state volume, stops only the ETH federator, archives its retained logs, restores
+and verifies the original signing key, and starts the pinned repair image.
 
-## 4. Send the final result
+Approve restoration of your own original AWS secret when prompted. For manual custody,
+enter your original signing key through hidden input. The temporary startup key is
+removed after90 seconds and fresh proof that this process loaded its configuration.
 
-Keep the terminal open through the fifteen-minute watcher. Send `summary.md` and
-any error to the coordinator through the same channel that supplied this command.
-If `report.json` is too large to attach, send its printed path with the summary.
-Keep the private run directory and image/log backups. On a failure, send the exact
-error and last phase; do not repeat the full upgrade after a service-stop phase.
+## 4. Send the result
 
-Use `--help` for wizard, preparation and advanced parameters; `--version` prints
-the launcher version without accessing Docker. The lower-level `upgrade-eth-federator.sh --override`
-interface remains available for separately reviewed custom deployments.
+Keep the terminal open through the fifteen-minute watcher. Send its `summary.md` and
+any exact error through the same channel that supplied the command. If `report.json`
+is too large to attach, send its printed path with the summary. Keep the private run
+directory and image/log backups until recovery is accepted.
 
-## If startup key cleanup is pending
+If the flow fails after stopping services, send the last phase and error. Do not
+repeat the full upgrade. The saved run supports guarded continuation or rollback.
 
-Leave the node running. Use the saved run directory printed by the upgrade:
+## Startup key cleanup, if requested
+
+Leave the node running and use its printed private run directory:
 
 ```bash
 read -r -p 'Upgrade run directory: ' RUN_DIR
@@ -111,10 +67,8 @@ python3 "$RUN_DIR/federator_upgrade_safety.py" \
   --output "$RUN_DIR/startup-key-cleanup.json"
 ```
 
-This finishes only the unchanged startup key for the same running process after
-its configuration-load message is verified. Send the result. If refused, send the
-error and cleanup report to the coordinator. Do not rerun the full upgrade.
-Older reports lacking cleanup metadata require coordinator review.
+This accepts only the unchanged startup file and running process. Send any refusal;
+do not delete a different key or rerun the upgrade.
 
 ## Rollback, when requested
 
@@ -123,5 +77,11 @@ read -r -p 'Upgrade run directory: ' RUN_DIR
 bash "$RUN_DIR/upgrade.sh" --rollback "$RUN_DIR"
 ```
 
-Add `--no-aws-secrets` for manual signing-key recovery. Return the report paths
-printed by the executable. Use `--help` to see optional runtime arguments.
+Add `--no-aws-secrets` for manual original-key recovery. Rollback verifies the saved
+image and launch plan and preserves current bridge checkpoints. It does not clear
+state or replay old monitoring logs.
+
+`--help` describes optional wizard inputs. `--prepare-only` creates checked files
+without installing Compose or opening the upgrade. Noninteractive upgrades are refused.
+The lower-level executable accepts `--revision` for the tools and `--app-revision` for
+the existing approved image source; the supplied wizard fills both automatically.
