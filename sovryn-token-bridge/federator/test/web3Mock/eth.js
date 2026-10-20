@@ -5,6 +5,12 @@ var Web3PromiEvent = require('web3-core-promievent');
 let eth = {};
 
 eth.getBlockNumber = () => defaults.data.blockNumber;
+eth.getBlock = () => ({
+    number: defaults.data.blockNumber,
+    timestamp: Math.floor(Date.now() / 1000),
+    baseFeePerGas: '1000000000',
+    minimumGasPrice: defaults.data.gasPrice,
+});
 eth.getAccounts = () => defaults.data.accounts;
 eth.getTransactionCount = () => defaults.data.ethTransactionCount;
 eth.getGasPrice = () => defaults.data.gasPrice;

@@ -1,0 +1,19 @@
+# Deny by default. A nested federator .dockerignore does not govern a root context.
+**
+!sovryn-token-bridge/
+sovryn-token-bridge/**
+!sovryn-token-bridge/Dockerfile.repair-overlay
+!sovryn-token-bridge/Dockerfile.repair-overlay.dockerignore
+!sovryn-token-bridge/federator/
+sovryn-token-bridge/federator/**
+!sovryn-token-bridge/federator/src/
+sovryn-token-bridge/federator/src/**
+!sovryn-token-bridge/federator/src/lib/
+sovryn-token-bridge/federator/src/lib/**
+!sovryn-token-bridge/federator/src/lib/GasPriceAvg.js
+!sovryn-token-bridge/federator/src/lib/GasPriceFetcher.js
+!sovryn-token-bridge/federator/src/lib/GasServices.js
+!sovryn-token-bridge/federator/src/lib/TransactionSender.js
+!sovryn-token-bridge/federator/src/vendors/
+sovryn-token-bridge/federator/src/vendors/**
+!sovryn-token-bridge/federator/src/vendors/RSKKeyedAuth.js

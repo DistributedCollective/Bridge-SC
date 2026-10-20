@@ -1,0 +1,46 @@
+# Build only from the sanitized context produced by tools/prepare_federator_overlay.py.
+# No package installation or runtime/native migration.
+# All arguments are required; both hash maps are public source evidence, not secrets.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+ARG BASE_IMAGE
+ARG REPAIR_REVISION
+ARG EXPECTED_BASE_SOURCE_SHA256
+ARG EXPECTED_REPAIR_SOURCE_SHA256
+USER 1000:1000
+WORKDIR /app/federator
+
+# Refuse an unknown/unreviewed source layout or incompatible transport API before replacement.
+RUN node -e 'const fs=require("fs"),crypto=require("crypto"),assert=require("assert"); \
+ const targets=["src/lib/GasPriceAvg.js","src/lib/GasPriceFetcher.js","src/lib/GasServices.js","src/lib/TransactionSender.js","src/vendors/RSKKeyedAuth.js"]; \
+ assert(/^[^@\s]+:[^@\s]+@sha256:[0-9a-f]{64}$/.test(process.env.BASE_IMAGE||""),"BASE_IMAGE must be a reviewed tag@sha256 digest"); \
+ assert(/^[0-9a-f]{40}$/.test(process.env.REPAIR_REVISION||""),"A full reviewed repair revision is required"); \
+ const expected=JSON.parse(process.env.EXPECTED_BASE_SOURCE_SHA256||"{}"); \
+ for(const file of targets){assert.strictEqual(fs.realpathSync(file),"/app/federator/"+file,"Source path must not be a symlink");assert(fs.lstatSync(file).isFile(),"Source must be a regular file");assert(/^[0-9a-f]{64}$/.test(expected[file]||""),"Missing reviewed base source hash");assert.strictEqual(crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),expected[file],"Reviewed base source mismatch: "+file);} \
+ assert.strictEqual(process.getuid(),1000); \
+ const transport=require("ataraxia-transport"),streams=require("ataraxia-transport-streams"),tcp=require("ataraxia-tcp"); \
+ assert.strictEqual(transport.DisconnectReason.Error,1); \
+ for(const method of ["abort","sendInitialAuth","receiveAuth"])assert.strictEqual(typeof transport.AbstractPeer.prototype[method],"function"); \
+ assert.strictEqual(typeof streams.StreamingPeer.prototype.requestDisconnect,"function"); \
+ assert.strictEqual(typeof tcp.TCPTransport.prototype.addPeer,"function"); \
+ const ethers=require("ethers").ethers;assert.strictEqual(typeof ethers.utils.Interface,"function"); \
+ assert.strictEqual(typeof require("@ethereumjs/tx").FeeMarketEIP1559Transaction.fromTxData,"function"); \
+ assert.strictEqual(typeof require("@ethereumjs/common").default,"function");'
+
+COPY --chown=1000:1000 sovryn-token-bridge/federator/src/lib/GasPriceAvg.js /app/federator/src/lib/GasPriceAvg.js
+COPY --chown=1000:1000 sovryn-token-bridge/federator/src/lib/GasPriceFetcher.js /app/federator/src/lib/GasPriceFetcher.js
+COPY --chown=1000:1000 sovryn-token-bridge/federator/src/lib/GasServices.js /app/federator/src/lib/GasServices.js
+COPY --chown=1000:1000 sovryn-token-bridge/federator/src/lib/TransactionSender.js /app/federator/src/lib/TransactionSender.js
+COPY --chown=1000:1000 sovryn-token-bridge/federator/src/vendors/RSKKeyedAuth.js /app/federator/src/vendors/RSKKeyedAuth.js
+
+RUN node -e 'const fs=require("fs"),crypto=require("crypto"),assert=require("assert"); \
+ const expected=JSON.parse(process.env.EXPECTED_REPAIR_SOURCE_SHA256||"{}"); \
+ for(const file of ["src/lib/GasPriceAvg.js","src/lib/GasPriceFetcher.js","src/lib/GasServices.js","src/lib/TransactionSender.js","src/vendors/RSKKeyedAuth.js"]){ \
+ assert.strictEqual(fs.realpathSync(file),"/app/federator/"+file,"Source path must not be a symlink");assert(fs.lstatSync(file).isFile(),"Source must be a regular file"); \
+ assert(/^[0-9a-f]{64}$/.test(expected[file]||""),"Missing reviewed repair source hash"); \
+ assert.strictEqual(crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"),expected[file],"Reviewed repair source mismatch: "+file);}'
+
+LABEL org.opencontainers.image.revision="${REPAIR_REVISION}" \
+      org.opencontainers.image.base.name="${BASE_IMAGE}" \
+      org.sovryn.federator.repair.mode="source-overlay-no-dependency-install"
+# CMD/ENTRYPOINT remain inherited from the reviewed application base.
