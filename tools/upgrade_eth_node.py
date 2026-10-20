@@ -18,7 +18,7 @@ import types
 import urllib.request
 from urllib.parse import urlsplit
 
-VERSION = '1.4.1'
+VERSION = '1.4.2'
 APP_REVISION = 'ba94a39855c97c81345c6dc5c3b835a9ffa7f900'
 APP_IMAGE = ('sovryn/fed-tokenbridge:eth-repair-' + APP_REVISION +
              '@sha256:c479986db984be7cefd865e2f71dd0cec43128c83e61ae65ec5f2e2ddcc0fc44')
@@ -30,7 +30,7 @@ APP_RELEASES = {
         '510b1b3419593f4b1193c6249a17a7a8813712c2',
         'sovryn/fed-tokenbridge:eth-repair-510b1b3419593f4b1193c6249a17a7a8813712c2@sha256:c3a4a03f61ea82612c449f2e4e795fa5219dabfe67d2ac8bbcaf967c0f594b25'),
 }
-TOOL_REVISION = '3809ffd72eed592b4c2814428243e23aaf0d4753'
+TOOL_REVISION = '17b5260e2f7eb02b8249f934b80bfc37336b1f3b'
 BRANCH = 'federator-diagnostics-recovery-upgrade'
 ENVIRONMENT_SHA256 = '1dec671b46f00db14dfa4aaf1073bebbbbf9784d0a45418ede6c2f891469e9c9'
 DOCKER = ['docker', '--host', 'unix:///var/run/docker.sock']
