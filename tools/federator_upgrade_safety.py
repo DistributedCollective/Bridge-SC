@@ -16,7 +16,7 @@ import time
 
 import federator_recovery as r
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 RESERVE = 2 * 1024**3
 
 
@@ -44,50 +44,125 @@ def stopped(node):
     return snap
 
 
-def stream_logs(command, target, timeout=600):
-    """Bounded-memory compression; stderr includes the application's stderr stream."""
+def safe_failure(error):
+    reasons = {
+        'History backup timed out; original container retained': 'LOG_EXPORT_TIMEOUT',
+        'Docker history read failed; original container retained': 'LOG_READ_FAILED',
+        'Insufficient disk reserve for history backup; original container retained': 'DISK_RESERVE_LOW',
+        'Disk reserve reached; original container retained': 'DISK_RESERVE_REACHED',
+        'History archive verification failed; original container retained': 'LOG_ARCHIVE_MISMATCH',
+        'Database directory depth exceeds backup bound': 'DATABASE_DEPTH_LIMIT',
+        'Database exceeds private backup bound': 'DATABASE_SIZE_LIMIT',
+        'Database changed during stopped backup': 'DATABASE_CHANGED',
+        'Database contains a link or unsupported file; nothing replaced': 'DATABASE_UNSUPPORTED_ENTRY',
+        'Saved configuration verification failed; original container retained': 'CONFIG_BACKUP_MISMATCH',
+        'Database source or private backup changed; original container retained': 'DATABASE_BACKUP_MISMATCH',
+        'Container changed during history backup; nothing replaced': 'SOURCE_CHANGED',
+        'History destination already exists; inspect before retrying': 'HISTORY_ALREADY_EXISTS',
+    }
+    result = {'type': type(error).__name__, 'reason': reasons.get(str(error), 'CHECK_FAILED')}
+    number = getattr(error, 'errno', None)
+    if type(number) is int: result['errno'] = number
+    if isinstance(error, subprocess.TimeoutExpired): result['reason'] = 'CHILD_TIMEOUT'
+    return result
+
+
+def update_private_json(path, value):
+    directory = r.open_directory(path.parent)
+    temporary = None
+    try:
+        try: info = os.stat(path.name, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError: info = None
+        if info is not None and (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600):
+            raise SafetyError('Unsafe history progress file')
+        fd, temporary = r.private_temp_at(directory, '.history-progress.')
+        with os.fdopen(fd, 'w') as out:
+            json.dump(value, out, indent=2); out.write('\n'); out.flush(); os.fsync(out.fileno())
+        r.verify_directory(path.parent, directory)
+        os.replace(temporary, path.name, src_dir_fd=directory, dst_dir_fd=directory)
+        temporary = None
+        os.fsync(directory)
+        r.verify_directory(path.parent, directory)
+    finally:
+        if temporary is not None: os.unlink(temporary, dir_fd=directory)
+        os.close(directory)
+
+
+class HistoryProgress:
+    def __init__(self, destination):
+        self.destination = destination
+        self.started = time.monotonic()
+        self.value = {'version': VERSION, 'status': 'RUNNING', 'stage': 'CONFIG_BACKUP',
+                      'uncompressed_bytes': 0, 'compressed_bytes': 0}
+
+    def emit(self, stage=None, **fields):
+        if stage: self.value['stage'] = stage
+        self.value.update(fields, utc=r.utc_now(), elapsed_seconds=round(time.monotonic()-self.started, 1))
+        self.value['free_bytes'] = shutil.disk_usage(self.destination).free
+        update_private_json(self.destination/'progress.json', self.value)
+        message = ('History backup: '+self.value['stage']+'; '+self.value['status']+
+                   '; '+str(round(self.value['uncompressed_bytes']/1024**2, 1))+' MiB read; '+
+                   str(round(self.value['compressed_bytes']/1024**2, 1))+' MiB saved; '+
+                   str(self.value['elapsed_seconds'])+' seconds')
+        if 'failure' in self.value: message += '; '+json.dumps(self.value['failure'], sort_keys=True)
+        print(message, flush=True)
+
+
+def stream_logs(command, target, timeout=1800, progress=None, progress_interval=30):
+    """Complete retained history, fast gzip, bounded memory and visible progress."""
     if shutil.disk_usage(target.parent).free < RESERVE:
         raise SafetyError('Insufficient disk reserve for history backup; original container retained')
     digest = hashlib.sha256()
     size = 0
     deadline = time.monotonic() + timeout
+    next_progress = 0
+    progress = progress or (lambda *args, **kwargs: None)
     fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, 'wb') as raw:
-        with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
-            try:
-                with selectors.DefaultSelector() as selector, gzip.GzipFile(fileobj=raw, mode='wb', filename='', mtime=0) as writer:
-                    selector.register(proc.stdout, selectors.EVENT_READ)
-                    while True:
-                        if time.monotonic() >= deadline:
-                            raise SafetyError('History backup timed out; original container retained')
-                        if not selector.select(timeout=min(1, max(0, deadline-time.monotonic()))):
-                            continue
-                        chunk = os.read(proc.stdout.fileno(), 1024*1024)
-                        if not chunk:
-                            break
-                        if shutil.disk_usage(target.parent).free < RESERVE + 2*1024**2:
-                            raise SafetyError('Disk reserve reached; original container retained')
-                        writer.write(chunk)
-                        digest.update(chunk)
-                        size += len(chunk)
-                    if proc.wait(timeout=max(.1, deadline-time.monotonic())):
-                        raise SafetyError('Docker history read failed; original container retained')
-            finally:
-                if proc.poll() is None:
-                    proc.kill()
-                    proc.wait()
-        raw.flush()
-        os.fsync(raw.fileno())
-    # Read back every byte through gzip/CRC before declaring the archive complete.
-    check = hashlib.sha256()
-    check_size = 0
+    try:
+        with os.fdopen(fd, 'wb') as raw:
+            with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
+                try:
+                    with selectors.DefaultSelector() as selector, gzip.GzipFile(fileobj=raw, mode='wb', filename='', mtime=0, compresslevel=1) as writer:
+                        selector.register(proc.stdout, selectors.EVENT_READ)
+                        while True:
+                            now = time.monotonic()
+                            if now >= deadline:
+                                raise SafetyError('History backup timed out; original container retained')
+                            if now >= next_progress:
+                                progress('LOG_EXPORT', uncompressed_bytes=size, compressed_bytes=raw.tell())
+                                next_progress = now + progress_interval
+                            if not selector.select(timeout=min(1, max(0, deadline-now))):
+                                continue
+                            chunk = os.read(proc.stdout.fileno(), 1024*1024)
+                            if not chunk:
+                                break
+                            if shutil.disk_usage(target.parent).free < RESERVE + 2*1024**2:
+                                raise SafetyError('Disk reserve reached; original container retained')
+                            writer.write(chunk)
+                            digest.update(chunk)
+                            size += len(chunk)
+                        if proc.wait(timeout=max(.1, deadline-time.monotonic())):
+                            raise SafetyError('Docker history read failed; original container retained')
+                finally:
+                    if proc.poll() is None:
+                        proc.kill(); proc.wait()
+            raw.flush(); os.fsync(raw.fileno())
+    except BaseException:
+        try: progress('LOG_EXPORT', uncompressed_bytes=size, compressed_bytes=target.stat().st_size)
+        except Exception: pass
+        raise
+    progress('LOG_VERIFY', uncompressed_bytes=size, compressed_bytes=target.stat().st_size)
+    check = hashlib.sha256(); check_size = 0; next_progress = time.monotonic()+progress_interval
     with gzip.open(target, 'rb') as saved:
         for chunk in iter(lambda: saved.read(1024*1024), b''):
-            check.update(chunk)
-            check_size += len(chunk)
+            check.update(chunk); check_size += len(chunk)
+            if time.monotonic() >= next_progress:
+                progress('LOG_VERIFY', verified_bytes=check_size)
+                next_progress = time.monotonic()+progress_interval
     if (check_size, check.hexdigest()) != (size, digest.hexdigest()):
         raise SafetyError('History archive verification failed; original container retained')
-    return {'uncompressed_bytes': size, 'uncompressed_sha256': digest.hexdigest()}
+    return {'uncompressed_bytes': size, 'uncompressed_sha256': digest.hexdigest(),
+            'compression_level': 1, 'export_timeout_seconds': timeout}
 
 
 def database_records(root, copy_to=None):
@@ -131,47 +206,57 @@ def database_records(root, copy_to=None):
     return records
 
 
-def archive_history(node, destination, command=None):
+def archive_history(node, destination, command=None, timeout=1800, progress_interval=30):
     before = stopped(node)
     destination = Path(destination)
     if destination.exists() or destination.is_symlink():
         raise SafetyError('History destination already exists; inspect before retrying')
     destination.mkdir(mode=0o700)
-    configs = {}
-    for name in ('config.js', 'mainnet.json', 'rskmainnet.json', 'peers.config.js'):
-        path = r.safe_path(node.cfg/name, node.cfg)
-        directory = r.open_directory(node.cfg)
-        try:
-            body, _ = r.read_regular_at(directory, name, 1024*1024)
-            r.verify_directory(node.cfg, directory)
-        finally:
-            os.close(directory)
-        fd = os.open(destination/name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-        with os.fdopen(fd, 'wb') as out:
-            out.write(body)
-            out.flush()
-            os.fsync(out.fileno())
-        configs[name] = hashlib.sha256(body).hexdigest()
-    database = database_records(node.cfg/'db', destination/'database')
-    command = command or ['docker', '--host', 'unix:///var/run/docker.sock', 'logs', '--timestamps', before['id']]
-    partial = destination/'docker.log.gz.partial'
-    result = stream_logs(command, partial)
-    after = stopped(node)
-    if (after['id'], after['image_id'], after['started']) != (before['id'], before['image_id'], before['started']):
-        raise SafetyError('Container changed during history backup; nothing replaced')
-    for name, expected in configs.items():
-        saved=r.safe_path(destination/name,destination)
-        if not saved.is_file() or hashlib.sha256(saved.read_bytes()).hexdigest()!=expected:
-            raise SafetyError('Saved configuration verification failed; original container retained')
-    if database_records(node.cfg/'db') != database or (database is not None and database_records(destination/'database') != database):
-        raise SafetyError('Database source or private backup changed; original container retained')
-    partial.rename(destination/'docker.log.gz')
-    result.update(version=VERSION, utc=r.utc_now(), source_id=before['id'],
-                  image_id=before['image_id'], config_sha256=configs,
-                  scope='All retained Docker stdout/stderr with timestamps; original rotated-away logs are unavailable',
-                  database_copied=database is not None, database_sha256=database, signing_key_copied=False)
-    write_json(destination/'manifest.json', result)
-    return result
+    progress = HistoryProgress(destination)
+    try:
+        progress.emit('CONFIG_BACKUP')
+        configs = {}
+        for name in ('config.js', 'mainnet.json', 'rskmainnet.json', 'peers.config.js'):
+            progress.emit('CONFIG_BACKUP', file_role=name)
+            path = r.safe_path(node.cfg/name, node.cfg)
+            directory = r.open_directory(node.cfg)
+            try:
+                body, _ = r.read_regular_at(directory, name, 1024*1024)
+                r.verify_directory(node.cfg, directory)
+            finally:
+                os.close(directory)
+            fd = os.open(destination/name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(fd, 'wb') as out:
+                out.write(body); out.flush(); os.fsync(out.fileno())
+            configs[name] = hashlib.sha256(body).hexdigest()
+        progress.emit('DATABASE_BACKUP')
+        database = database_records(node.cfg/'db', destination/'database')
+        progress.emit('LOG_EXPORT')
+        command = command or ['docker', '--host', 'unix:///var/run/docker.sock', 'logs', '--timestamps', before['id']]
+        partial = destination/'docker.log.gz.partial'
+        result = stream_logs(command, partial, timeout=timeout, progress=progress.emit, progress_interval=progress_interval)
+        progress.emit('SOURCE_AND_BACKUP_VERIFY')
+        after = stopped(node)
+        if (after['id'], after['image_id'], after['started']) != (before['id'], before['image_id'], before['started']):
+            raise SafetyError('Container changed during history backup; nothing replaced')
+        for name, expected in configs.items():
+            saved=r.safe_path(destination/name,destination)
+            if not saved.is_file() or hashlib.sha256(saved.read_bytes()).hexdigest()!=expected:
+                raise SafetyError('Saved configuration verification failed; original container retained')
+        if database_records(node.cfg/'db') != database or (database is not None and database_records(destination/'database') != database):
+            raise SafetyError('Database source or private backup changed; original container retained')
+        partial.rename(destination/'docker.log.gz')
+        result.update(version=VERSION, utc=r.utc_now(), source_id=before['id'],
+                      image_id=before['image_id'], config_sha256=configs,
+                      scope='All retained Docker stdout/stderr with timestamps; original rotated-away logs are unavailable',
+                      database_copied=database is not None, database_sha256=database, signing_key_copied=False)
+        write_json(destination/'manifest.json', result)
+        progress.emit('COMPLETE', status='COMPLETE')
+        return result
+    except BaseException as error:
+        try: progress.emit(status='FAILED', failure=safe_failure(error))
+        except Exception: pass
+        raise
 
 
 def loaded_in_current_run(raw, started):
@@ -343,6 +428,7 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (SafetyError, r.RecoveryError, OSError, subprocess.SubprocessError, KeyboardInterrupt, ValueError, TypeError, KeyError):
-        print('Upgrade backup/startup check incomplete. Keep the private run directory; inspect the printed phase before retrying. If a start was attempted, temporary key cleanup may be pending.', file=sys.stderr)
+    except (SafetyError, r.RecoveryError, OSError, subprocess.SubprocessError, KeyboardInterrupt, ValueError, TypeError, KeyError) as error:
+        operation='History backup incomplete; no replacement/start was attempted by this command' if '--archive-history' in sys.argv else 'Startup/key-cleanup check incomplete; temporary cleanup may be pending'
+        print(operation+': '+json.dumps(safe_failure(error),sort_keys=True)+'. Keep the private run directory and the printed phase.',file=sys.stderr)
         sys.exit(1)

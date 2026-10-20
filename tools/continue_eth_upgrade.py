@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Continue a verified ETH upgrade stopped before key restoration/container staging."""
 import argparse
+import fcntl
 import hashlib
 import gzip
 import json
@@ -12,6 +13,7 @@ import stat
 import subprocess
 import sys
 import termios
+import types
 
 
 class ContinueError(Exception):
@@ -19,7 +21,8 @@ class ContinueError(Exception):
 
 
 BOUNDARY = '\nif [[ -n "$ROLLBACK_RUN" ]]; then\n'
-SUFFIX_MARKER = '# Verified continuation: no prepare/stop/archive steps are rerun.'
+SUFFIX_MARKER = '# Verified continuation: original image backup and stop are not repeated.'
+HISTORY_HELPER_SHA256 = '65e5aac6f30905cf42e571cb54d274d37c53274f38c1560ec72f0843a0b9d682'
 TOOLS = ('federator_recovery.py','federator_dependencies.py','federator_watcher.py',
          'etherscan_prerequisite.py','dd_agent_recovery.py','federator_datadog_upgrade.py',
          'federator_upgrade_safety.py')
@@ -72,6 +75,92 @@ def verify_original_state(old, current, staged):
         raise ContinueError('Original container is not the same stopped, unstaged node')
 
 
+def require_inherited_lock(base):
+    try:
+        held=os.fstat(9);expected=(base/'eth-upgrade.lock').lstat()
+        if (not stat.S_ISREG(held.st_mode) or held.st_uid!=os.getuid() or
+                stat.S_IMODE(held.st_mode)!=0o600 or
+                (held.st_dev,held.st_ino)!=(expected.st_dev,expected.st_ino)):
+            raise ContinueError('History completion requires the original upgrade lock')
+        fcntl.flock(9,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except OSError:
+        raise ContinueError('History completion requires the inherited upgrade lock; use the normal continuation command') from None
+
+
+def stopped_snapshot(node):
+    import federator_recovery as r
+    if node.inspect()['running']:
+        raise ContinueError('Original ETH source must remain stopped')
+    cfg = node.cfg
+    value = {}
+    for name in ('db/lastBlock.txt','db/side-fed/lastBlock.txt'):
+        path = r.safe_path(cfg/name,cfg/'db')
+        value[name] = r.read_checkpoint(path,cfg/'db') if path.parent.exists() else None
+    directory = r.open_directory(cfg)
+    try:
+        for name in ('config.js','mainnet.json','rskmainnet.json','peers.config.js'):
+            value[name] = hashlib.sha256(r.read_regular_at(directory,name,1024*1024)[0]).hexdigest()
+        r.verify_directory(cfg,directory)
+    finally: os.close(directory)
+    value['directories'] = {str(path):[path.stat().st_dev,path.stat().st_ino] for path in (cfg,cfg/'db')}
+    return value
+
+
+def load_history_helper(run):
+    path = Path(__file__).resolve().with_name('federator_upgrade_safety.py')
+    fd = os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+    with os.fdopen(fd,'rb') as source:
+        info=os.fstat(source.fileno());body=source.read(2*1024*1024+1)
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid not in (0,os.getuid()) or info.st_mode&0o022 or
+            hashlib.sha256(body).hexdigest()!=HISTORY_HELPER_SHA256):
+        raise ContinueError('Verified history helper missing or changed; use the complete continuation download')
+    sys.path.insert(0,str(run))
+    module=types.ModuleType('verified_history_helper');module.__file__=str(path)
+    exec(compile(body,str(path),'exec'),module.__dict__)
+    return module
+
+
+def finish_history(run, context, node=None, helper=None):
+    """Run under the existing upgrade lock; retain failed evidence and finish only history."""
+    sys.path.insert(0,str(run))
+    import federator_recovery as r
+    node=node or r.Node(Path(context['FED_REPO']),'eth-rsk','bridge-sc_federation_1')
+    old=json.loads(private_bytes(run/'before.json'))
+    original_snapshot=json.loads(private_bytes(run/'stopped-state.json'))
+    def verify():
+        verify_original_state(old,node.inspect(),(run/'replacement.json').exists() or (run/'replacement.json').is_symlink())
+        if stopped_snapshot(node)!=original_snapshot:
+            raise ContinueError('Config or checkpoints changed since the original stop; history retry refused')
+    verify()
+    history=run/'history'
+    if history.is_symlink():raise ContinueError('Unsafe history directory; nothing moved')
+    if history.exists():
+        info=history.stat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
+            raise ContinueError('History directory is not an owned private directory')
+    manifest=history/'manifest.json'
+    if manifest.is_symlink():raise ContinueError('Unsafe history manifest')
+    if manifest.exists():
+        print('Existing history manifest found; full verification follows.',flush=True)
+        return False
+    helper=helper or load_history_helper(run)
+    verify()
+    if history.exists():
+        retained=run/('history.incomplete-'+secrets.token_hex(6))
+        history.rename(retained)
+        print('Incomplete history evidence retained privately: '+str(retained),flush=True)
+    print('Completing retained history backup. Progress prints every30seconds; large logs can take minutes.',flush=True)
+    try:
+        helper.archive_history(node,history)
+    except BaseException as error:
+        detail=helper.safe_failure(error)
+        raise ContinueError('History completion failed: '+json.dumps(detail,sort_keys=True)+
+                            '; keep history/progress.json and the original run') from None
+    verify()
+    print('History backup completed; original stopped state and cursors verified.',flush=True)
+    return True
+
+
 def pre_resume_guard(run, context):
     sys.path.insert(0,str(run))
     import federator_recovery as r
@@ -95,6 +184,11 @@ def pre_resume_guard(run, context):
     for name in names:
         if hashlib.sha256(private_bytes(run/'history'/name)).hexdigest()!=history['config_sha256'][name]:
             raise ContinueError('Archived configuration changed')
+    if 'database_sha256' in history:
+        safety=load_history_helper(run)
+        expected_db=history['database_sha256']
+        if safety.database_records(node.cfg/'db')!=expected_db or (expected_db is not None and safety.database_records(run/'history/database')!=expected_db):
+            raise ContinueError('Database source or backup differs from completed history proof')
     expected=history.get('uncompressed_bytes')
     if type(expected) is not int or expected<0:
         raise ContinueError('Invalid log archive byte count')
@@ -119,6 +213,7 @@ MONITORING_POLICY=${RESUME_MONITORING_POLICY:-legacy}
 export OPS_DIR MONITORING_POLICY
 step 'Verify this saved stopped-node attempt before continuing'
 verify_bundle
+python3 "$RESUME_TOOL" --finish-history --run "$OPS_DIR" --revision "$REPAIR_REVISION" --expected-signer "$EXPECTED_SIGNER"
 python3 "$RESUME_TOOL" --guard --run "$OPS_DIR" --revision "$REPAIR_REVISION" --expected-signer "$EXPECTED_SIGNER"
 test "$(sha256sum "$OPS_DIR/deployment.private.json" | cut -d ' ' -f 1)" = "$COMPOSE_PLAN_SHA256"
 capture_current_state > "$RESUME_ATTEMPT/current-state.private.json"
@@ -205,6 +300,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--run',type=Path,required=True);p.add_argument('--revision',required=True)
     p.add_argument('--expected-signer',required=True);p.add_argument('--guard',action='store_true',help=argparse.SUPPRESS)
+    p.add_argument('--finish-history',action='store_true',help=argparse.SUPPRESS)
     args=p.parse_args();os.umask(0o077)
     if os.getuid()!=1000 or not sys.platform.startswith('linux'):
         raise ContinueError('Run as Linux deployment user UID1000')
@@ -218,6 +314,10 @@ def main():
     if info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
         raise ContinueError('Unsafe run directory')
     c,original=verified_inputs(run,args.revision,args.expected_signer)
+    if args.finish_history:
+        if args.guard:raise ContinueError('Cannot combine internal continuation actions')
+        require_inherited_lock(base)
+        finish_history(run,c);return 0
     if args.guard:
         pre_resume_guard(run,c);print('Original stopped container, completed archives and pinned inputs verified');return 0
     attempt=run/('continue-'+secrets.token_hex(6));attempt.mkdir(mode=0o700)

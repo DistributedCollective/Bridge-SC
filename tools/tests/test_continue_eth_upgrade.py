@@ -161,4 +161,127 @@ class ContinueTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaises(m.ContinueError):
                 m.validate_context({**c,key:value},rev,signer,Path('/home/ubuntu'))
 
+    def test_history_completion_is_after_lock_before_guard_and_key_recovery(self):
+        m=self.module();script=m.resume_script((TOOLS/'upgrade-eth-federator.sh').read_text())
+        self.assertIn('--finish-history',script)
+        boundary=script.split(m.SUFFIX_MARKER,1)[1]
+        self.assertLess(boundary.index('--finish-history'),boundary.index('--guard --run'))
+        self.assertLess(boundary.index('--guard --run'),boundary.index('\nrestore_key\n'))
+        self.assertLess(script.index('flock -n 9'),script.index('--finish-history'))
+
+    def test_verified_incomplete_history_is_retained_then_completed_without_node_actions(self):
+        m=self.module()
+        from test_upgrade_safety import FakeNode
+        import federator_upgrade_safety as safety
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            run=Path(tmp).resolve();node=FakeNode(run);(node.cfg/'db/side-fed').mkdir(parents=True)
+            (node.cfg/'db/lastBlock.txt').write_text('9330278')
+            (node.cfg/'db/side-fed/lastBlock.txt').write_text('26206212')
+            old=node.inspect()
+            for name,value in [('before.json',old),('stopped-state.json',m.stopped_snapshot(node))]:
+                (run/name).write_text(json.dumps(value));(run/name).chmod(0o600)
+            history=run/'history';history.mkdir(mode=0o700)
+            (history/'docker.log.gz.partial').write_bytes(b'partial-original');(history/'docker.log.gz.partial').chmod(0o600)
+            original=safety.archive_history
+            def complete(n,out):return original(n,out,command=[sys.executable,'-c','print("retained-history")'])
+            with patch.object(safety,'archive_history',side_effect=complete):
+                result=m.finish_history(run,{'FED_REPO':str(run)},node=node,helper=safety)
+            self.assertTrue((history/'manifest.json').exists())
+            retained=list(run.glob('history.incomplete-*'));self.assertEqual(len(retained),1)
+            self.assertEqual((retained[0]/'docker.log.gz.partial').read_bytes(),b'partial-original')
+            self.assertEqual(node.commands,[])
+            self.assertFalse(node.state['running'])
+            self.assertEqual((node.cfg/'db/lastBlock.txt').read_text(),'9330278')
+            with patch.object(safety,'archive_history',side_effect=AssertionError('completed archive must not be repeated')):
+                self.assertFalse(m.finish_history(run,{'FED_REPO':str(run)},node=node,helper=safety))
+
+    def test_changed_checkpoint_refuses_before_retaining_or_rebuilding_history(self):
+        m=self.module()
+        from test_upgrade_safety import FakeNode
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            run=Path(tmp).resolve();node=FakeNode(run);(node.cfg/'db/side-fed').mkdir(parents=True)
+            (node.cfg/'db/lastBlock.txt').write_text('100')
+            for name,value in [('before.json',node.inspect()),('stopped-state.json',m.stopped_snapshot(node))]:
+                (run/name).write_text(json.dumps(value));(run/name).chmod(0o600)
+            (run/'history').mkdir(mode=0o700)
+            (node.cfg/'db/lastBlock.txt').write_text('101')
+            with self.assertRaises(m.ContinueError):m.finish_history(run,{'FED_REPO':str(run)},node=node)
+            self.assertFalse(list(run.glob('history.incomplete-*')))
+            self.assertEqual(node.commands,[])
+
+
+    def test_internal_history_completion_requires_the_same_real_lock_descriptor(self):
+        import fcntl
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();lock=root/'eth-upgrade.lock';lock.write_text('');lock.chmod(0o600)
+            script=('import os,sys,fcntl;from pathlib import Path;sys.path.insert(0,'+repr(str(TOOLS))+');'
+                    'import continue_eth_upgrade as m;fd=os.open('+repr(str(lock))+',os.O_WRONLY);'
+                    'os.dup2(fd,9);fcntl.flock(9,fcntl.LOCK_EX|fcntl.LOCK_NB);'
+                    'm.require_inherited_lock(Path('+repr(str(root))+'));print("LOCK_OK")')
+            value=subprocess.run([sys.executable,'-c',script],capture_output=True,text=True)
+            self.assertEqual(value.returncode,0,value.stderr);self.assertIn('LOCK_OK',value.stdout)
+            missing=script.replace('os.dup2(fd,9);fcntl.flock(9,fcntl.LOCK_EX|fcntl.LOCK_NB);','')
+            value=subprocess.run([sys.executable,'-c',missing],capture_output=True,text=True)
+            self.assertNotEqual(value.returncode,0)
+            self.assertIn('History completion requires',value.stderr)
+
+    def test_repaired_helper_is_verified_by_digest_before_loading(self):
+        m=self.module()
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            run=Path(tmp).resolve()
+            with patch.object(m,'HISTORY_HELPER_SHA256','0'*64):
+                with self.assertRaises(m.ContinueError):m.load_history_helper(run)
+            helper=m.load_history_helper(run)
+            self.assertTrue(callable(helper.database_records))
+            self.assertEqual(helper.VERSION,'1.2.0')
+
+    def test_guard_uses_repaired_helper_when_old_saved_helper_has_no_database_support(self):
+        import types,gzip,hashlib
+        import federator_recovery as recovery
+        import federator_upgrade_safety as safety
+        from test_upgrade_safety import FakeNode
+        from unittest.mock import patch
+        m=self.module()
+        with tempfile.TemporaryDirectory() as tmp:
+            run=Path(tmp).resolve();node=FakeNode(run);(node.cfg/'db').mkdir();(node.cfg/'db/lastBlock.txt').write_text('100')
+            history=run/'history';safety.archive_history(node,history,command=[sys.executable,'-c','print("history")'])
+            (run/'rollback').mkdir()
+            for name,data in [('before.json',json.dumps(node.inspect()).encode()),('rollback/old-image-id.txt',(node.state['image_id']+'\n').encode()),('rollback/old-image.tar',b'archived-image-placeholder')]:
+                p=run/name;p.write_bytes(data);p.chmod(0o600)
+            with patch.object(recovery,'Node',return_value=node),patch.dict(sys.modules,{'federator_upgrade_safety':types.SimpleNamespace(VERSION='1.0.0')}):
+                m.pre_resume_guard(run,{'FED_REPO':str(run)})
+
+
+    def test_failed_history_retry_keeps_original_partial_and_never_starts_node(self):
+        m=self.module()
+        import federator_upgrade_safety as safety
+        from test_upgrade_safety import FakeNode
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            run=Path(tmp).resolve();node=FakeNode(run);(node.cfg/'db').mkdir()
+            for name,value in [('before.json',node.inspect()),('stopped-state.json',m.stopped_snapshot(node))]:
+                p=run/name;p.write_text(json.dumps(value));p.chmod(0o600)
+            (run/'history').mkdir(mode=0o700);(run/'history/docker.log.gz.partial').write_bytes(b'old evidence')
+            original=safety.archive_history
+            def fail(n,p):return original(n,p,command=[sys.executable,'-c','import sys;sys.exit(1)'])
+            with patch.object(safety,'archive_history',side_effect=fail),self.assertRaises(m.ContinueError):
+                m.finish_history(run,{'FED_REPO':str(run)},node=node,helper=safety)
+            kept=list(run.glob('history.incomplete-*'));self.assertEqual(len(kept),1)
+            self.assertEqual((kept[0]/'docker.log.gz.partial').read_bytes(),b'old evidence')
+            self.assertFalse((run/'history/manifest.json').exists())
+            self.assertEqual(json.loads((run/'history/progress.json').read_text())['failure']['reason'],'LOG_READ_FAILED')
+            self.assertEqual(node.commands,[])
+            self.assertFalse(node.state['running'])
+
+    def test_real_bash_passes_the_upgrade_lock_to_history_helper(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();lock=root/'eth-upgrade.lock';lock.write_text('');lock.chmod(0o600)
+            code='import sys;from pathlib import Path;sys.path.insert(0,'+repr(str(TOOLS))+');import continue_eth_upgrade as m;m.require_inherited_lock(Path('+repr(str(root))+'));print("BASH_LOCK_OK")'
+            result=subprocess.run(['bash','-c','exec 9> "$1/eth-upgrade.lock"\nexec "$2" -c "$3"','bash',str(root),sys.executable,code],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr);self.assertIn('BASH_LOCK_OK',result.stdout)
+
+
 if __name__=='__main__':unittest.main()

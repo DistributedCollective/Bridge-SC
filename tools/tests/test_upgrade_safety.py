@@ -236,4 +236,44 @@ class UpgradeSafetyTests(unittest.TestCase):
         (self.root/'history').mkdir()
         with self.assertRaises(m.SafetyError): m.archive_history(self.node, self.root/'history')
 
+    def test_history_failure_reports_safe_phase_and_reason(self):
+        dest=self.root/'failed-history'
+        with self.assertRaises(m.SafetyError):
+            m.archive_history(self.node,dest,command=[sys.executable,'-c','import sys;print("private-provider-secret");sys.exit(1)'])
+        report=json.loads((dest/'progress.json').read_text())
+        self.assertEqual(report['status'],'FAILED')
+        self.assertEqual(report['stage'],'LOG_EXPORT')
+        self.assertEqual(report['failure']['reason'],'LOG_READ_FAILED')
+        self.assertNotIn('private-provider-secret',json.dumps(report))
+        self.assertEqual((dest/'progress.json').stat().st_mode&0o777,0o600)
+        self.assertFalse((dest/'manifest.json').exists())
+
+    def test_timeout_is_distinguishable_and_keeps_partial_evidence(self):
+        dest=self.root/'timed-history'
+        with self.assertRaises(m.SafetyError):
+            m.archive_history(self.node,dest,command=[sys.executable,'-c','import time;print("first",flush=True);time.sleep(2)'],timeout=.2,progress_interval=0)
+        report=json.loads((dest/'progress.json').read_text())
+        self.assertEqual(report['failure']['reason'],'LOG_EXPORT_TIMEOUT')
+        self.assertGreater(report['uncompressed_bytes'],0)
+        self.assertTrue((dest/'docker.log.gz.partial').is_file())
+        self.assertFalse(self.node.state['running'])
+
+    def test_real_stream_has_private_progress_and_complete_readback(self):
+        dest=self.root/'progress-history'
+        command=[sys.executable,'-c','import sys;sys.stdout.buffer.write(b"retained-log-line\\n"*200000)']
+        result=m.archive_history(self.node,dest,command=command,progress_interval=0)
+        report=json.loads((dest/'progress.json').read_text())
+        self.assertEqual(report['status'],'COMPLETE')
+        self.assertEqual(report['uncompressed_bytes'],result['uncompressed_bytes'])
+        self.assertEqual(len(gzip.decompress((dest/'docker.log.gz').read_bytes())),result['uncompressed_bytes'])
+        self.assertFalse(self.node.state['running'])
+
+    def test_unknown_error_text_is_never_exposed_by_safe_failure(self):
+        for error in (m.SafetyError('private-provider-secret'),OSError(13,'private-provider-secret','private-path')):
+            value=m.safe_failure(error)
+            self.assertNotIn('private-provider-secret',json.dumps(value))
+            self.assertNotIn('private-path',json.dumps(value))
+        self.assertEqual(m.safe_failure(PermissionError(13,'hidden'))['errno'],13)
+
+
 if __name__ == '__main__': unittest.main()

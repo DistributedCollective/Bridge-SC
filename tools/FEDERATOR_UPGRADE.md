@@ -43,6 +43,18 @@ their own evidence; a running container alone does not establish either.
 If the flow stops after changing services, send its last phase and error instead of
 repeating the full upgrade. Do not send credentials or private configuration backups.
 
+## If retained-history backup stops
+
+During log export and verification, the wizard prints progress every 30 seconds.
+A failure prints a safe reason and saves `history/progress.json` in the private run
+directory. Send that reason and the run directory to the coordinator.
+
+Use the coordinator's verified continuation for that saved run. It preserves any
+incomplete archive, checks the original stopped container and checkpoints, and
+completes the backup before continuing with key recovery, startup and the watcher.
+It reuses the verified image backup and deployment plan. Do not rerun the full
+upgrade or remove partial backups.
+
 ## Startup key cleanup, only when requested
 
 Leave the node running and use its printed private run directory:
