@@ -1,5 +1,5 @@
-const EtherscanGasPriceFetcher = require("../src/lib/GasPriceFetcher");
-const CustomError = require("../src/lib/CustomError");
+const EtherscanGasPriceFetcher = require('../src/lib/GasPriceFetcher');
+const CustomError = require('../src/lib/CustomError');
 const EventEmitter = require('events');
 const https = require('https');
 
@@ -7,8 +7,8 @@ const fauxLogger = {
     debug: () => {},
     info: () => {},
     log: () => {},
-    warn: (...args) => console.log(...args ),
-    error: (...args) => console.error(...args ),
+    warn: (...args) => console.log(...args),
+    error: (...args) => console.error(...args),
 };
 
 describe('GasPriceFetcher', () => {
@@ -30,15 +30,11 @@ describe('GasPriceFetcher', () => {
                 getGasPrice: () => mockedGasPrice,
                 getBlock: () => ({
                     minimumGasPrice: mockedBlockMinimumGasPrice,
-                })
-            }
-        }
+                }),
+            },
+        };
 
-        estimator = new EtherscanGasPriceFetcher(
-            fauxLogger,
-            'f00',
-            'https://example.invalid/api'
-        );
+        estimator = new EtherscanGasPriceFetcher(fauxLogger, 'f00', 'https://example.invalid/api');
 
         estimatorWithoutApiKey = new EtherscanGasPriceFetcher(
             fauxLogger,
@@ -64,22 +60,17 @@ describe('GasPriceFetcher', () => {
     afterEach(() => {
         https.get = _savedHttpsGet;
         Date.now = _savedDateNow;
-    })
+    });
 
     const mockWeb3GasPrice = (gasPriceGwei) => {
         mockedGasPrice = gasPriceGwei * 1000000000;
-    }
+    };
 
     const mockWeb3BlockMinimumGasPrice = (gasPriceGwei) => {
         mockedBlockMinimumGasPrice = gasPriceGwei * 1000000000;
-    }
+    };
 
-    const mockHttpsGet = ({
-        statusCode,
-        responseJson,
-        expectedUrl,
-    }) => {
-
+    const mockHttpsGet = ({ statusCode, responseJson, expectedUrl }) => {
         https.get = jest.fn().mockImplementation((url, callback) => {
             if (expectedUrl) {
                 expect(url).toEqual(expectedUrl);
@@ -98,45 +89,49 @@ describe('GasPriceFetcher', () => {
             return {
                 on: () => {},
                 destroy: () => {},
-            }
+            };
         });
         return https.get;
-    }
+    };
 
     const mockDateNow = (value) => {
         Date.now = jest.fn().mockReturnValue(value);
-    }
+    };
 
     describe('#getGasPrice', function () {
         it('rejects missing V2 API key', async () => {
             mockWeb3GasPrice(22);
             mockHttpsGet({
-                expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
+                expectedUrl:
+                    'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
                 statusCode: 200,
                 responseJson: {
-                    "status": "1",
-                    "message": "OK-Missing/Invalid API Key, rate limit of 1/5sec applied",
-                    "result": {
-                        "SafeGasPrice": "12",
-                    }
-                }
-            })
-            await expect(estimatorWithoutApiKey.getEtherscanBaseGasPrice(1)).rejects.toThrow(CustomError);
+                    status: '1',
+                    message: 'OK-Missing/Invalid API Key, rate limit of 1/5sec applied',
+                    result: {
+                        SafeGasPrice: '12',
+                    },
+                },
+            });
+            await expect(estimatorWithoutApiKey.getEtherscanBaseGasPrice(1)).rejects.toThrow(
+                CustomError
+            );
         });
 
         it('gets gas price with api key', async () => {
             mockWeb3GasPrice(22);
             mockHttpsGet({
-                expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
+                expectedUrl:
+                    'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
                 statusCode: 200,
                 responseJson: {
-                    "status": "1",
-                    "message": "OK-Missing/Invalid API Key, rate limit of 1/5sec applied",
-                    "result": {
-                        "SafeGasPrice": "12",
-                    }
-                }
-            })
+                    status: '1',
+                    message: 'OK-Missing/Invalid API Key, rate limit of 1/5sec applied',
+                    result: {
+                        SafeGasPrice: '12',
+                    },
+                },
+            });
             const gasPrice = await estimator.getEtherscanBaseGasPrice(1);
             expect(parseInt(gasPrice)).toEqual(12);
         });
@@ -203,10 +198,10 @@ describe('GasPriceFetcher', () => {
         //     expect(gasPrice).toEqual((20 + 30) / 2 * 1000000000);
         // });
 
-        // it('gets gas price without api key', async () => {
+        // it('rejects missing V2 API key', async () => {
         //     mockWeb3GasPrice(22);
         //     mockHttpsGet({
-        //         expectedUrl: 'https://example.invalid/api?module=gastracker&action=gasoracle',
+        //         expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
         //         statusCode: 200,
         //         responseJson: {
         //             "status": "1",
@@ -226,7 +221,7 @@ describe('GasPriceFetcher', () => {
         // it('uses rsk gas price for rsk chains', async () => {
         //     mockWeb3BlockMinimumGasPrice(11);
         //     mockHttpsGet({
-        //         expectedUrl: 'https://example.invalid/api?module=gastracker&action=gasoracle',
+        //         expectedUrl: 'https://example.invalid/api?chainid=1&module=gastracker&action=gasoracle&apikey=f00',
         //         statusCode: 200,
         //         responseJson: {
         //             "status": "1",
@@ -325,10 +320,10 @@ describe('GasPriceFetcher', () => {
             mockHttpsGet({
                 statusCode: 200,
                 responseJson: {
-                    "status": "0",
-                    "message": "NOTOK",
-                }
-            })
+                    status: '0',
+                    message: 'NOTOK',
+                },
+            });
             await expect(estimator.getEtherscanBaseGasPrice(1)).rejects.toThrow(CustomError);
         });
 
@@ -336,9 +331,9 @@ describe('GasPriceFetcher', () => {
             mockHttpsGet({
                 statusCode: 400,
                 responseJson: {
-                    "what": "ever",
-                }
-            })
+                    what: 'ever',
+                },
+            });
             await expect(estimator.getEtherscanBaseGasPrice()).rejects.toThrow(CustomError);
         });
     });
@@ -352,5 +347,4 @@ describe('GasPriceFetcher', () => {
     //         expect(estimatorWithoutApiKey.cacheTimeMs).toEqual(5000);
     //     });
     // })
-
 });

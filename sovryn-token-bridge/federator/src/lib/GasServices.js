@@ -11,9 +11,12 @@ const GasPriceAvg = require('../lib/GasPriceAvg.js');
 
 const configuredGasPollingInterval = Number(config.gasApiRunEvery) * 1000;
 // Keep dedicated-key traffic at <=17,280 reads/day; avoid Node timer overflow.
-let gasApiPollingInterval = Number.isFinite(configuredGasPollingInterval) &&
-    configuredGasPollingInterval >= 5000 && configuredGasPollingInterval <= 2147483647
-    ? configuredGasPollingInterval : 5000;
+let gasApiPollingInterval =
+    Number.isFinite(configuredGasPollingInterval) &&
+    configuredGasPollingInterval >= 5000 &&
+    configuredGasPollingInterval <= 2147483647
+        ? configuredGasPollingInterval
+        : 5000;
 let avgGasPollingInterval = config.avgGasRunEvery * 1000; // Seconds
 let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60; // Minutes
 let avgGasCount;
@@ -21,10 +24,10 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
-// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/v2/api';
 // console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
 //For Mainnet:
-// const etherScanApiBaseUrl = 'https://api.etherscan.io/api';
+// const etherScanApiBaseUrl = 'https://api.etherscan.io/v2/api';
 //For RinkebyTestnet:
 //const etherScanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
 
