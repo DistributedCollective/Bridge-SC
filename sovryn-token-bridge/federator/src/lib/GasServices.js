@@ -9,7 +9,14 @@ const log4js = require('log4js');
 const GasPriceFetcher = require('../lib/GasPriceFetcher.js');
 const GasPriceAvg = require('../lib/GasPriceAvg.js');
 
-let gasApiPollingInterval = config.gasApiRunEvery * 1000; // Seconds
+const configuredGasPollingInterval = Number(config.gasApiRunEvery) * 1000;
+// Keep dedicated-key traffic at <=17,280 reads/day; avoid Node timer overflow.
+let gasApiPollingInterval =
+    Number.isFinite(configuredGasPollingInterval) &&
+    configuredGasPollingInterval >= 5000 &&
+    configuredGasPollingInterval <= 2147483647
+        ? configuredGasPollingInterval
+        : 5000;
 let avgGasPollingInterval = config.avgGasRunEvery * 1000; // Seconds
 let avgGasPeriodInterval = config.periodAvgGas * 1000 * 60; // Minutes
 let avgGasCount;
@@ -17,10 +24,10 @@ let avgGasCount;
 // let currentEthGasBasePrice = globals.currentEthGasBasePrice;
 // let currentEthGasPriceAvg = globals.currentEthGasPriceAvg;
 
-// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/api';
+// let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby') ? 'https://api-rinkeby.etherscan.io/api' : 'https://api.etherscan.io/v2/api';
 // console.log("etherscanApiBaseUrl: " + etherscanApiBaseUrl);
 //For Mainnet:
-// const etherScanApiBaseUrl = 'https://api.etherscan.io/api';
+// const etherScanApiBaseUrl = 'https://api.etherscan.io/v2/api';
 //For RinkebyTestnet:
 //const etherScanApiBaseUrl = 'https://api-rinkeby.etherscan.io/api';
 
@@ -31,7 +38,7 @@ module.exports = class GasServices {
 
         let etherscanApiBaseUrl = config.sidechain.host.includes('rinkeby')
             ? 'https://api-rinkeby.etherscan.io/api'
-            : 'https://api.etherscan.io/api';
+            : 'https://api.etherscan.io/v2/api';
         console.log('etherscanApiBaseUrl: ' + etherscanApiBaseUrl);
 
         // this.gasPriceEstimator = new GasPriceEstimator({
@@ -102,7 +109,7 @@ module.exports = class GasServices {
             );
             this.logger.debug('currentEthGasPriceAvg: ', globals.currentEthGasPriceAvg);
         } catch (err) {
-            logger.error('Unhandled Error on runGasWatcher()', err);
+            this.logger.error('Unhandled Error on runGasWatcher()', err);
             // process.exit();
         }
     }

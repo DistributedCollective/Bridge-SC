@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""Continue a verified ETH upgrade stopped before key restoration/container staging."""
+import argparse
+import fcntl
+import hashlib
+import gzip
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import stat
+import subprocess
+import sys
+import termios
+import types
+
+
+class ContinueError(Exception):
+    pass
+
+
+BOUNDARY = '\nif [[ -n "$ROLLBACK_RUN" ]]; then\n'
+SUFFIX_MARKER = '# Verified continuation: original image backup and stop are not repeated.'
+HISTORY_HELPER_SHA256 = '65e5aac6f30905cf42e571cb54d274d37c53274f38c1560ec72f0843a0b9d682'
+TOOLS = ('federator_recovery.py','federator_dependencies.py','federator_watcher.py',
+         'etherscan_prerequisite.py','dd_agent_recovery.py','federator_datadog_upgrade.py',
+         'federator_upgrade_safety.py')
+
+
+def private_bytes(path):
+    path = Path(path)
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        raise ContinueError('Private evidence file is unavailable or symlinked') from None
+    with os.fdopen(fd, 'rb') as source:
+        info = os.fstat(source.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600:
+            raise ContinueError('Expected owned private regular evidence file')
+        body = source.read(2*1024*1024+1)
+        if len(body) > 2*1024*1024:
+            raise ContinueError('Evidence exceeds bound')
+        return body
+
+
+def validate_context(c, revision, signer, home):
+    fields = ('FED_REPO','REPAIR_REVISION','FED_IMAGE','RELEASE_OVERRIDE','PUBLIC_OPERATOR','EXPECTED_SIGNER',
+              'KEY_SOURCE','COMPOSE_PROJECT','CONFIG_DIR','WATCH_SECONDS','COMPOSE_PLAN_SHA256')
+    if any(not isinstance(c.get(k),str) or '\0' in c[k] for k in fields):
+        raise ContinueError('Invalid saved context')
+    if 'APP_REVISION' in c and not re.fullmatch(r'[0-9a-f]{40}',c['APP_REVISION'] if isinstance(c['APP_REVISION'],str) else ''):
+        raise ContinueError('Saved application revision invalid')
+    if c.get('MONITORING_POLICY','legacy') not in ('legacy','independent'):
+        raise ContinueError('Invalid saved monitoring policy')
+    repo = home/'Bridge-SC'
+    if c['FED_REPO'] != str(repo) or c['CONFIG_DIR'] != str(repo/'federator-env/mainnet-ETH-RSK'):
+        raise ContinueError('Unexpected saved repo/config mounts')
+    if c['REPAIR_REVISION'] != revision or c['EXPECTED_SIGNER'].lower() != signer.lower():
+        raise ContinueError('Saved revision/signer differs from supplied original release')
+    if not re.fullmatch(r'sovryn/fed-tokenbridge:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}',c['FED_IMAGE']):
+        raise ContinueError('Saved immutable image invalid')
+    if not re.fullmatch(r'fed_[1-5]',c['PUBLIC_OPERATOR']) or c['KEY_SOURCE'] not in ('auto','aws','manual'):
+        raise ContinueError('Saved operator/key source invalid')
+    if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*',c['COMPOSE_PROJECT']):
+        raise ContinueError('Saved project invalid')
+    if not re.fullmatch(r'[0-9a-f]{64}',c['COMPOSE_PLAN_SHA256']):
+        raise ContinueError('Saved plan checksum invalid')
+    if not c['WATCH_SECONDS'].isdigit() or not 1 <= int(c['WATCH_SECONDS']) <= 86400:
+        raise ContinueError('Saved watcher duration invalid')
+
+
+def verify_original_state(old, current, staged):
+    if staged or current.get('running') is not False or any(current.get(k)!=old.get(k) for k in ('id','image_id','started')):
+        raise ContinueError('Original container is not the same stopped, unstaged node')
+
+
+def require_inherited_lock(base):
+    try:
+        held=os.fstat(9);expected=(base/'eth-upgrade.lock').lstat()
+        if (not stat.S_ISREG(held.st_mode) or held.st_uid!=os.getuid() or
+                stat.S_IMODE(held.st_mode)!=0o600 or
+                (held.st_dev,held.st_ino)!=(expected.st_dev,expected.st_ino)):
+            raise ContinueError('History completion requires the original upgrade lock')
+        fcntl.flock(9,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except OSError:
+        raise ContinueError('History completion requires the inherited upgrade lock; use the normal continuation command') from None
+
+
+def stopped_snapshot(node):
+    import federator_recovery as r
+    if node.inspect()['running']:
+        raise ContinueError('Original ETH source must remain stopped')
+    cfg = node.cfg
+    value = {}
+    for name in ('db/lastBlock.txt','db/side-fed/lastBlock.txt'):
+        path = r.safe_path(cfg/name,cfg/'db')
+        value[name] = r.read_checkpoint(path,cfg/'db') if path.parent.exists() else None
+    directory = r.open_directory(cfg)
+    try:
+        for name in ('config.js','mainnet.json','rskmainnet.json','peers.config.js'):
+            value[name] = hashlib.sha256(r.read_regular_at(directory,name,1024*1024)[0]).hexdigest()
+        r.verify_directory(cfg,directory)
+    finally: os.close(directory)
+    value['directories'] = {str(path):[path.stat().st_dev,path.stat().st_ino] for path in (cfg,cfg/'db')}
+    return value
+
+
+def load_history_helper(run):
+    path = Path(__file__).resolve().with_name('federator_upgrade_safety.py')
+    fd = os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+    with os.fdopen(fd,'rb') as source:
+        info=os.fstat(source.fileno());body=source.read(2*1024*1024+1)
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid not in (0,os.getuid()) or info.st_mode&0o022 or
+            hashlib.sha256(body).hexdigest()!=HISTORY_HELPER_SHA256):
+        raise ContinueError('Verified history helper missing or changed; use the complete continuation download')
+    sys.path.insert(0,str(run))
+    module=types.ModuleType('verified_history_helper');module.__file__=str(path)
+    exec(compile(body,str(path),'exec'),module.__dict__)
+    return module
+
+
+def finish_history(run, context, node=None, helper=None):
+    """Run under the existing upgrade lock; retain failed evidence and finish only history."""
+    sys.path.insert(0,str(run))
+    import federator_recovery as r
+    node=node or r.Node(Path(context['FED_REPO']),'eth-rsk','bridge-sc_federation_1')
+    old=json.loads(private_bytes(run/'before.json'))
+    original_snapshot=json.loads(private_bytes(run/'stopped-state.json'))
+    def verify():
+        verify_original_state(old,node.inspect(),(run/'replacement.json').exists() or (run/'replacement.json').is_symlink())
+        if stopped_snapshot(node)!=original_snapshot:
+            raise ContinueError('Config or checkpoints changed since the original stop; history retry refused')
+    verify()
+    history=run/'history'
+    if history.is_symlink():raise ContinueError('Unsafe history directory; nothing moved')
+    if history.exists():
+        info=history.stat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
+            raise ContinueError('History directory is not an owned private directory')
+    manifest=history/'manifest.json'
+    if manifest.is_symlink():raise ContinueError('Unsafe history manifest')
+    if manifest.exists():
+        print('Existing history manifest found; full verification follows.',flush=True)
+        return False
+    helper=helper or load_history_helper(run)
+    verify()
+    if history.exists():
+        retained=run/('history.incomplete-'+secrets.token_hex(6))
+        history.rename(retained)
+        print('Incomplete history evidence retained privately: '+str(retained),flush=True)
+    print('Completing retained history backup. Progress prints every30seconds; large logs can take minutes.',flush=True)
+    try:
+        helper.archive_history(node,history)
+    except BaseException as error:
+        detail=helper.safe_failure(error)
+        raise ContinueError('History completion failed: '+json.dumps(detail,sort_keys=True)+
+                            '; keep history/progress.json and the original run') from None
+    verify()
+    print('History backup completed; original stopped state and cursors verified.',flush=True)
+    return True
+
+
+def pre_resume_guard(run, context):
+    sys.path.insert(0,str(run))
+    import federator_recovery as r
+    node = r.Node(Path(context['FED_REPO']),'eth-rsk','bridge-sc_federation_1')
+    old = json.loads(private_bytes(run/'before.json'))
+    verify_original_state(old,node.inspect(),(run/'replacement.json').exists())
+    history = json.loads(private_bytes(run/'history/manifest.json'))
+    if history['source_id']!=old['id'] or history['image_id']!=old['image_id']:
+        raise ContinueError('History archive belongs to another source')
+    for path in (run/'history/docker.log.gz',run/'rollback/old-image.tar'):
+        info=path.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or info.st_size<=0:
+            raise ContinueError('Verified archive missing or changed type/owner')
+    if (run/'history/docker.log.gz.partial').exists():
+        raise ContinueError('History archive is incomplete')
+    if private_bytes(run/'rollback/old-image-id.txt').decode().strip()!=old['image_id']:
+        raise ContinueError('Original image archive identity differs')
+    names={'config.js','mainnet.json','rskmainnet.json','peers.config.js'}
+    if set(history.get('config_sha256',{}))!=names:
+        raise ContinueError('Configuration archive manifest incomplete')
+    for name in names:
+        if hashlib.sha256(private_bytes(run/'history'/name)).hexdigest()!=history['config_sha256'][name]:
+            raise ContinueError('Archived configuration changed')
+    if 'database_sha256' in history:
+        safety=load_history_helper(run)
+        expected_db=history['database_sha256']
+        if safety.database_records(node.cfg/'db')!=expected_db or (expected_db is not None and safety.database_records(run/'history/database')!=expected_db):
+            raise ContinueError('Database source or backup differs from completed history proof')
+    expected=history.get('uncompressed_bytes')
+    if type(expected) is not int or expected<0:
+        raise ContinueError('Invalid log archive byte count')
+    digest=hashlib.sha256();total=0
+    fd=os.open(run/'history/docker.log.gz',os.O_RDONLY|os.O_NOFOLLOW)
+    with os.fdopen(fd,'rb') as raw, gzip.GzipFile(fileobj=raw,mode='rb') as archive:
+        for chunk in iter(lambda:archive.read(1024*1024),b''):
+            total+=len(chunk)
+            if total>expected:raise ContinueError('Log archive exceeds its verified size')
+            digest.update(chunk)
+    if total!=expected or digest.hexdigest()!=history.get('uncompressed_sha256'):
+        raise ContinueError('Log archive no longer matches its verified manifest')
+
+
+def resume_script(original):
+    if original.count(BOUNDARY)!=1:
+        raise ContinueError('Unsupported original upgrader entrypoint layout')
+    prefix=original.split(BOUNDARY,1)[0]
+    suffix=r'''
+OPS_DIR=$RESUME_RUN
+MONITORING_POLICY=${RESUME_MONITORING_POLICY:-legacy}
+export OPS_DIR MONITORING_POLICY
+step 'Verify this saved stopped-node attempt before continuing'
+verify_bundle
+python3 "$RESUME_TOOL" --finish-history --run "$OPS_DIR" --revision "$REPAIR_REVISION" --expected-signer "$EXPECTED_SIGNER"
+python3 "$RESUME_TOOL" --guard --run "$OPS_DIR" --revision "$REPAIR_REVISION" --expected-signer "$EXPECTED_SIGNER"
+test "$(sha256sum "$OPS_DIR/deployment.private.json" | cut -d ' ' -f 1)" = "$COMPOSE_PLAN_SHA256"
+capture_current_state > "$RESUME_ATTEMPT/current-state.private.json"
+python3 - <<'CHECK'
+import json,os
+from pathlib import Path
+run=Path(os.environ['OPS_DIR']);attempt=Path(os.environ['RESUME_ATTEMPT'])
+if json.loads((run/'stopped-state.json').read_text())!=json.loads((attempt/'current-state.private.json').read_text()):
+ raise SystemExit('Config/checkpoints changed since stop; continuation refused')
+CHECK
+(cd "$OPS_DIR/rollback"; sha256sum -c old-image.sha256)
+COMPOSE=(docker --host unix:///var/run/docker.sock compose --project-directory "$FED_REPO" --project-name "$COMPOSE_PROJECT" -f "$OPS_DIR/deployment.private.json")
+"${COMPOSE[@]}" config --quiet
+EXPECTED_IMAGE_ID=$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{.Id}}')
+export EXPECTED_IMAGE_ID
+test "$(docker --host unix:///var/run/docker.sock image inspect "$FED_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "${APP_REVISION:-$REPAIR_REVISION}"
+if [[ "${MONITORING_POLICY:-legacy}" == legacy ]]; then
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+fi
+python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
+confirm 'Continue this saved ETH upgrade from original key recovery now?' || exit 0
+step '6/7 Restore/check the ORIGINAL federator key and signer'
+python3 -c 'import sys,termios;termios.tcflush(sys.stdin.fileno(),termios.TCIFLUSH)'
+restore_key
+step '7/7 Stage, verify and start the already-downloaded image'
+activate
+if [[ "${MONITORING_POLICY:-legacy}" == independent ]]; then monitoring_recovery; fi
+if [[ "${MONITORING_POLICY:-legacy}" == legacy ]]; then
+  python3 "$OPS_DIR/federator_datadog_upgrade.py" --verify "$OPS_DIR/datadog-state"__HANDOFF_FLAG__
+fi
+run_watcher
+'''
+
+    flag = ' --allow-source-handoff' if '--allow-source-handoff' in original else ''
+    return prefix+'\n'+SUFFIX_MARKER+suffix.replace('__HANDOFF_FLAG__', flag)
+
+
+def verified_inputs(run, revision, signer):
+    c=json.loads(private_bytes(run/'upgrade-context.json'))
+    validate_context(c,revision,signer,Path.home().resolve())
+    repo=c['FED_REPO']
+    def blob(name):
+        p=subprocess.run(['git','-C',repo,'show',revision+':tools/'+name],capture_output=True,timeout=15)
+        if p.returncode:raise ContinueError('Pinned Git object unavailable; no network fetch attempted')
+        return p.stdout
+    original=private_bytes(run/'upgrade.sh')
+    if original!=blob('upgrade-eth-federator.sh'):
+        raise ContinueError('Original upgrader does not match pinned source')
+    names=TOOLS + (('federator_upgrade_monitoring.py','federator_agent_replacement.py','federator_signing_key.py') if c.get('MONITORING_POLICY')=='independent' else ())
+    for name in names:
+        if private_bytes(run/name)!=blob(name):
+            raise ContinueError('Saved tool bundle differs from pinned source')
+    if hashlib.sha256(private_bytes(run/'deployment.private.json')).hexdigest()!=c['COMPOSE_PLAN_SHA256']:
+        raise ContinueError('Saved deployment checksum differs')
+    return c,original.decode('utf8')
+
+
+def run_attached(command, env):
+    with open('/dev/tty','r') as tty:
+        termios.tcflush(tty.fileno(),termios.TCIFLUSH)
+        return subprocess.run(command,env=env,stdin=tty).returncode
+
+def continuation_environment(context, run, attempt):
+    return {**os.environ, **context,
+            'APP_REVISION':context.get('APP_REVISION',context['REPAIR_REVISION']),
+            'MONITORING_POLICY':context.get('MONITORING_POLICY','legacy'),
+            'RESUME_MONITORING_POLICY':context.get('MONITORING_POLICY','legacy'),
+            'RESUME_RUN':str(run), 'RESUME_TOOL':str(Path(__file__).resolve()),
+            'RESUME_ATTEMPT':str(attempt), 'AWS_PAGER':'',
+            'COMPOSE_REMOVE_ORPHANS':'false','COMPOSE_IGNORE_ORPHANS':'true'}
+
+
+def continuation_command(script, context, revision, signer):
+    command=['bash',str(script),'--repo',context['FED_REPO'],'--revision',revision,
+             '--image',context['FED_IMAGE'],'--override',context['RELEASE_OVERRIDE'],
+             '--operator',context['PUBLIC_OPERATOR'],'--expected-signer',signer,
+             '--watch-seconds',context['WATCH_SECONDS']]
+    if 'APP_REVISION' in context:command += ['--app-revision',context['APP_REVISION']]
+    if context['KEY_SOURCE']=='manual':command.append('--no-aws-secrets')
+    return command
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--run',type=Path,required=True);p.add_argument('--revision',required=True)
+    p.add_argument('--expected-signer',required=True);p.add_argument('--guard',action='store_true',help=argparse.SUPPRESS)
+    p.add_argument('--finish-history',action='store_true',help=argparse.SUPPRESS)
+    args=p.parse_args();os.umask(0o077)
+    if os.getuid()!=1000 or not sys.platform.startswith('linux'):
+        raise ContinueError('Run as Linux deployment user UID1000')
+    if not re.fullmatch(r'[0-9a-f]{40}',args.revision) or not re.fullmatch(r'0x[0-9a-fA-F]{40}',args.expected_signer):
+        raise ContinueError('Original release revision and public signer required')
+    run=args.run.expanduser().absolute()
+    base=Path.home().resolve()/'.local/share/bridge-ops'
+    if run.parent!=base or run.is_symlink() or not run.name.startswith('eth-upgrade.'):
+        raise ContinueError('Use this original private ETH upgrade run')
+    info=run.stat()
+    if info.st_uid!=os.getuid() or stat.S_IMODE(info.st_mode)!=0o700:
+        raise ContinueError('Unsafe run directory')
+    c,original=verified_inputs(run,args.revision,args.expected_signer)
+    if args.finish_history:
+        if args.guard:raise ContinueError('Cannot combine internal continuation actions')
+        require_inherited_lock(base)
+        finish_history(run,c);return 0
+    if args.guard:
+        pre_resume_guard(run,c);print('Original stopped container, completed archives and pinned inputs verified');return 0
+    attempt=run/('continue-'+secrets.token_hex(6));attempt.mkdir(mode=0o700)
+    script=attempt/'continue.sh';script.write_text(resume_script(original));script.chmod(0o600)
+    subprocess.run(['bash','-n',str(script)],check=True)
+    env=continuation_environment(c,run,attempt)
+    command=continuation_command(script,c,args.revision,args.expected_signer)
+    print('Continuation evidence:',attempt,flush=True)
+    return run_attached(command, env)
+
+
+if __name__=='__main__':
+    try:sys.exit(main())
+    except (ContinueError,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError,EOFError,KeyboardInterrupt,termios.error) as error:
+        detail=str(error) if isinstance(error,ContinueError) else type(error).__name__
+        number=getattr(error,'errno',None)
+        if type(number) is int:detail+=' (errno '+str(number)+')'
+        print('Continuation stopped: '+detail+'. Original evidence retained; do not rerun the full upgrade.',file=sys.stderr)
+        sys.exit(1)

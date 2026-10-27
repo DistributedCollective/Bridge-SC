@@ -26,6 +26,12 @@ describe('TransactionSender module tests', () => {
     beforeEach(async function () {
         jest.clearAllMocks();
         web3Mock.eth = jest.fn();
+        web3Mock.eth.getBlock = jest
+            .fn()
+            .mockResolvedValue({
+                baseFeePerGas: '95000000000',
+                timestamp: Math.floor(Date.now() / 1000),
+            });
     });
 
     it('should getNonce', async () => {
@@ -53,6 +59,12 @@ describe('TransactionSender module tests', () => {
     it('should throw custom error for too low currentGasPrice', async () => {
         globals.currentEthGasBasePrice = 100;
         globals.currentEthGasPriceAvg = 98;
+        web3Mock.eth.getBlock = jest
+            .fn()
+            .mockResolvedValue({
+                baseFeePerGas: '100000000000',
+                timestamp: Math.floor(Date.now() / 1000),
+            });
         web3Mock.eth.getTransactionCount = jest.fn().mockReturnValue(Promise.resolve('213'));
         web3Mock.eth.estimateGas = jest.fn().mockReturnValue(Promise.resolve('70000'));
 

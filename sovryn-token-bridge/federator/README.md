@@ -80,3 +80,99 @@ docker run --rm \
 ```
 
 to start the image.
+
+
+## ETH gas quote and fee behavior
+
+The gas oracle uses Etherscan V2 with Ethereum chain ID 1 and the configured
+read API key. A key matching a 64-hex signing-scalar shape (optional `0x`) is
+refused before a request; a signing key must never be used as a read API key.
+Quotes must be finite positive decimal Gwei. Requests have an
+absolute five-second deadline and a 128 KiB body limit; HTTP failures and
+malformed responses expose no provider body, URL or credential in errors.
+
+ETH transaction construction uses the latest RPC block's positive base fee,
+with exact integer Wei arithmetic and the existing 2 Gwei priority fee and 30%
+buffer. Fractional Gwei is preserved. Missing, invalid or stale block evidence
+fails before a transaction can be constructed. Cached or zero oracle globals
+are never a fee fallback. High-fee waits reread the latest block and are bounded
+by the configured retry count.
+
+The five-second block-read deadline bounds the builder's wait. It does not
+cancel a pending request within the Web3 provider, so this is not a general
+transport cancellation or timeout change for the application. An oracle read
+failure is distinct from an authentication-stream process crash.
+
+An isolated fee/oracle regression runner uses controlled transport and module
+boundaries without network calls, signing or broadcasting:
+
+```sh
+node ../../tools/tests/gas_fee_regression.cjs
+```
+
+
+## Transport authentication bindings
+
+Authentication requires both transport public keys to be 32-byte Buffers.
+An unavailable or invalid binding rejects authentication and force-closes that
+connection. The client initial-auth boundary catches only the typed binding
+failure; the server uses its existing asynchronous error boundary. Other
+provider errors keep their existing behavior. Signature validation, public
+binding order and trusted-address checks remain required; empty keys and an
+authentication bypass are never used.
+
+The isolated binding regression runner exercises the published ataraxia peer
+methods with controlled transport dependencies. It verifies both failure
+boundaries, immediate connection destruction and valid client/server tags:
+
+```sh
+node ../../tools/tests/auth_binding_regression.cjs
+```
+
+This test requires the ataraxia packages to be installed. A separately provided
+published-source fixture directory can instead be selected with
+`ATARAXIA_REVIEW_SOURCE_DIR`. Native encrypted-stream and full application
+integration still need the target runtime; passing the isolated test alone does
+not establish successful peer admission on a deployed node.
+
+## Source repair overlay image
+
+`../Dockerfile.repair-overlay` inherits a reviewed, existing compatible
+application image identified by **tag and immutable digest**. It replaces only
+four gas files and the authentication-binding vendor file, with UID/GID 1000.
+It does not install packages or change Node, native libraries, application
+configuration, database mounts or the inherited startup command.
+
+Before use, inspect the base with the dependency diagnostic's versions report
+and validate its source hashes and dependency APIs against the intended repair.
+An arbitrary or unknown application base is unsafe. The overlay build requires
+`BASE_IMAGE`, a full `REPAIR_REVISION`, and two JSON source-hash maps:
+`EXPECTED_BASE_SOURCE_SHA256` and `EXPECTED_REPAIR_SOURCE_SHA256`. Both maps must
+contain all five fixed source paths listed in the Dockerfile. Missing/mismatched
+hashes, unsupported transport APIs or native import failure abort the build.
+The base digest and reviewed repair revision are recorded as image labels.
+
+Prepare a sanitized build context from the full reviewed commit first:
+
+```sh
+python3 tools/prepare_federator_overlay.py --repo "$HOME/Bridge-SC" \
+  --revision "$REVIEWED_REVISION" --output "$HOME/federator-repair-context"
+```
+
+The output directory must be new. This tool reads only the five fixed public
+source blobs, the overlay Dockerfile and its ignore file from that immutable
+Git commit. It emits the repair hash map and a private directory containing
+exactly those seven files. Working configuration, key files, API environment
+files, `.git` and database contents are never scanned or copied.
+
+Use the returned directory as the Docker context and select its overlay
+Dockerfile explicitly. Do not send an operator checkout as a build context.
+A nested module `.dockerignore` does not govern the root context; the
+Dockerfile-specific deny-default allowlist requires builder support. The
+sanitized context is the portable default and remains safe when that support
+is unavailable. See [Docker build-context documentation](https://docs.docker.com/build/concepts/context/#dockerignore-files).
+
+Use an already available reviewed base and disable pulls and build-step network
+access. Building, verifying the target Node/native runtime, publishing and
+activating the repaired image are separate operator steps; this repository
+change performs none of them.

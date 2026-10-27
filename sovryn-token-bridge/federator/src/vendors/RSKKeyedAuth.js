@@ -58,14 +58,63 @@ function createMessage(challenge, security) {
  * Monkey-patch the peer so that the public key pairs are supplied into the
  * challenge.
  */
+class TransportBindingUnavailableError extends Error {
+    constructor() {
+        super('Transport public binding unavailable or invalid');
+        this.name = 'TransportBindingUnavailableError';
+    }
+}
+function publicTransportBinding(peer, remoteFirst) {
+    var stream = peer.stream;
+    var local = stream && stream.publicKey;
+    var remote = stream && stream.remotePublicKey;
+    if (
+        !Buffer.isBuffer(local) ||
+        local.length !== 32 ||
+        !Buffer.isBuffer(remote) ||
+        remote.length !== 32
+    ) {
+        throw new TransportBindingUnavailableError();
+    }
+    return Buffer.concat(remoteFirst ? [remote, local] : [local, remote]);
+}
+var wrappedPeers = new WeakSet();
 var originalAddPeer = ataraxia_tcp_1.TCPTransport.prototype.addPeer;
 ataraxia_tcp_1.TCPTransport.prototype.addPeer = function (peer) {
-    peer.localPublicSecurity = function () {
-        return Buffer.concat([this.stream.publicKey, this.stream.remotePublicKey]);
-    };
-    peer.remotePublicSecurity = function () {
-        return Buffer.concat([this.stream.remotePublicKey, this.stream.publicKey]);
-    };
+    if (!wrappedPeers.has(peer)) {
+        wrappedPeers.add(peer);
+        var originalAbort = peer.abort;
+        var originalSendInitialAuth = peer.sendInitialAuth;
+        peer.abort = function (message, error, reason) {
+            // Invalid transport bindings must destroy this stream, rather than wait for graceful end.
+            return originalAbort.call(
+                this,
+                message,
+                error,
+                error instanceof TransportBindingUnavailableError
+                    ? ataraxia_transport_1.DisconnectReason.Error
+                    : reason
+            );
+        };
+        peer.sendInitialAuth = function () {
+            try {
+                return originalSendInitialAuth.apply(this, arguments);
+            } catch (error) {
+                if (!(error instanceof TransportBindingUnavailableError)) throw error;
+                this.abort(
+                    'Transport binding unavailable; authentication rejected',
+                    error,
+                    ataraxia_transport_1.DisconnectReason.Error
+                );
+            }
+        };
+        peer.localPublicSecurity = function () {
+            return publicTransportBinding(this, false);
+        };
+        peer.remotePublicSecurity = function () {
+            return publicTransportBinding(this, true);
+        };
+    }
     return originalAddPeer.apply(this, [peer]);
 };
 /**

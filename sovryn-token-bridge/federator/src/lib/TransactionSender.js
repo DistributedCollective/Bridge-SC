@@ -76,7 +76,7 @@ module.exports = class TransactionSender {
             case RINKEBY_ID:
                 return 'rinkeby';
             case ROPSTEN_ID:
-                    return 'ropsten';
+                return 'ropsten';
             default:
                 throw new Error('Unknown chain id');
         }
@@ -116,25 +116,35 @@ module.exports = class TransactionSender {
 
     async createETHRawTransaction(from, to, data, value, chainId) {
         const nonce = await this.getNonce(from);
-        const gwei = 1000000000;
-        const priorityFee = 2;
-        const sleepOnGas = this.config.sleepOnGas * 1000; //10 * 1000 ; // 10 Seconds
-        const maxSleepOnGas = this.config.maxSleepOnGas; //12
+        const priorityFeeWei = 2000000000n;
+        const sleepOnGas =
+            Number.isFinite(this.config.sleepOnGas) && this.config.sleepOnGas >= 0
+                ? this.config.sleepOnGas * 1000
+                : 10000;
+        const maxSleepOnGas =
+            Number.isInteger(this.config.maxSleepOnGas) && this.config.maxSleepOnGas >= 0
+                ? Math.min(this.config.maxSleepOnGas, 60)
+                : 9;
         let sleepOnGasCounter = 0;
-        while (globals.currentEthGasBasePrice > globals.currentEthGasPriceAvg &&
-          globals.currentEthGasBasePrice > this.ethGasPriceThresholdGwei) {
-            await utils.sleep(sleepOnGas, { logger: this.logger });
-            sleepOnGasCounter++;
-            if (sleepOnGasCounter > maxSleepOnGas) {
-                throw new CustomError(`High Base Gas: Transaction wasn't sent`);
+        let baseFee = await this.getLatestEthBaseFee();
+        while (
+            Number(baseFee) / 1e9 > this.ethGasPriceThresholdGwei &&
+            (!Number.isFinite(Number(globals.currentEthGasPriceAvg)) ||
+                Number(globals.currentEthGasPriceAvg) <= 0 ||
+                Number(baseFee) / 1e9 > Number(globals.currentEthGasPriceAvg))
+        ) {
+            if (sleepOnGasCounter++ >= maxSleepOnGas) {
+                throw new CustomError('High live ETH base fee: transaction was not constructed');
             }
+            await utils.sleep(sleepOnGas, { logger: this.logger });
+            baseFee = await this.getLatestEthBaseFee();
         }
+        // Exact integer Wei arithmetic preserves fractional Gwei and rounds the buffer upward.
+        const maxFee = ((baseFee + priorityFeeWei) * 13n + 9n) / 10n;
 
         const rawTx = {
-            maxFeePerGas: this.numberToHexString(
-                (parseInt(globals.currentEthGasBasePrice) + priorityFee) * 1.3 * gwei
-            ),
-            maxPriorityFeePerGas: this.numberToHexString(priorityFee * gwei),
+            maxFeePerGas: '0x' + maxFee.toString(16),
+            maxPriorityFeePerGas: '0x' + priorityFeeWei.toString(16),
             value: this.numberToHexString(value),
             to: to,
             data: data,
@@ -150,6 +160,37 @@ module.exports = class TransactionSender {
         this.logger.info('raw tx is:', { rawTx });
 
         return rawTx;
+    }
+
+    async getLatestEthBaseFee() {
+        let timer;
+        try {
+            const block = await Promise.race([
+                this.client.eth.getBlock('latest'),
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => reject(new Error('timeout')), 5000);
+                }),
+            ]);
+            const value = block && block.baseFeePerGas;
+            if (
+                (typeof value !== 'string' && !Number.isSafeInteger(value)) ||
+                !/^(?:0x[0-9a-f]+|[0-9]+)$/i.test(String(value))
+            ) {
+                throw new Error('invalid base fee');
+            }
+            const fee = BigInt(value);
+            const age = Date.now() / 1000 - Number(block.timestamp);
+            if (fee <= 0n || fee >= 1n << 256n || !Number.isFinite(age) || age < -30 || age > 120) {
+                throw new Error('invalid or stale block');
+            }
+            return fee;
+        } catch (err) {
+            throw new CustomError(
+                'Fresh ETH block base fee unavailable; transaction not constructed'
+            );
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     signRawTransaction(rawTx, privateKey) {
@@ -196,7 +237,11 @@ module.exports = class TransactionSender {
             let signedTx;
 
             if (privateKey && privateKey.length) {
-                if (parseInt(chainId) === parseInt(MAINNET_ID) || parseInt(chainId) === parseInt(RINKEBY_ID) || parseInt(chainId) === parseInt(ROPSTEN_ID)) {
+                if (
+                    parseInt(chainId) === parseInt(MAINNET_ID) ||
+                    parseInt(chainId) === parseInt(RINKEBY_ID) ||
+                    parseInt(chainId) === parseInt(ROPSTEN_ID)
+                ) {
                     signedTx = this.signETHRawTransaction(rawTx, privateKey);
                 } else {
                     signedTx = this.signRawTransaction(rawTx, privateKey);

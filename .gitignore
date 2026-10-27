@@ -8,3 +8,8 @@ aws-deployment/environments/federator/terraform.tfstate.backup
 aws-deployment/environments/federator/.terraform.tfstate.lock.info
 federator-env/testnet-BSC-RSK/federator.key
 .vscode
+
+# Federator host state stays outside source releases.
+federator-env/*/db/
+federator-env/*/*.key
+/federator.log

@@ -1,0 +1,103 @@
+name: ETH repair image
+
+on:
+  push:
+    branches: [federator-diagnostics-recovery-upgrade]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eth-repair-image
+  cancel-in-progress: false
+
+env:
+  BASE_IMAGE: sovryn/fed-tokenbridge:10.28@sha256:152aeea5f1240240adb00e8fe90ef60f3b05f750e9fc8409f05cc66d59bfad75
+  IMAGE: sovryn/fed-tokenbridge:eth-repair-${{ github.sha }}
+  BASE_SOURCE_HASHES: >-
+    {"src/lib/GasPriceAvg.js":"e02992dae10b3a89ab4496395d2982b50053922e899582cdd90f4daf326fed30","src/lib/GasPriceFetcher.js":"1b1fa972487881d03f877ae068365d75f1ce2d683693dc9b05817be5ac06d51b","src/lib/GasServices.js":"d35250c8195f7a3c152cd3e2922572b15d8cbaca519ba770f979ad7762c5fa2e","src/lib/TransactionSender.js":"40857893208598910ed041c7e652173d946d6ec89e0494762b95521d3d219fd7","src/vendors/RSKKeyedAuth.js":"68ab11da72a1304def81123e58453d437f33b977c4827dfb5690d824cad6e7d7"}
+
+jobs:
+  publish:
+    if: github.repository == 'DistributedCollective/Bridge-SC'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the release source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Check build-context privacy guards
+        run: python3 -m unittest discover -s tools/tests -p test_prepare_federator_overlay.py
+
+      - name: Prepare the immutable source-only context
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/prepare_federator_overlay.py \
+            --repo "$GITHUB_WORKSPACE" --revision "$GITHUB_SHA" \
+            --output "$RUNNER_TEMP/eth-repair-context" > "$RUNNER_TEMP/eth-repair-context.json"
+
+      - name: Build on the verified compatible runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull --platform linux/amd64 "$BASE_IMAGE"
+          test "$(docker image inspect "$BASE_IMAGE" --format '{{.Id}}')" = \
+            sha256:eb153b412d54517818953f45990a8a5c8cf552d64e881410134a6c406a0c785c
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          metadata = json.loads((Path(os.environ['RUNNER_TEMP']) / 'eth-repair-context.json').read_text())
+          subprocess.run([
+              'docker', 'build', '--platform', 'linux/amd64', '--network', 'none', '--pull=false',
+              '--build-arg', 'BASE_IMAGE=' + os.environ['BASE_IMAGE'],
+              '--build-arg', 'REPAIR_REVISION=' + os.environ['GITHUB_SHA'],
+              '--build-arg', 'EXPECTED_BASE_SOURCE_SHA256=' + os.environ['BASE_SOURCE_HASHES'],
+              '--build-arg', 'EXPECTED_REPAIR_SOURCE_SHA256=' + json.dumps(metadata['repair_source_sha256']),
+              '--label', 'org.opencontainers.image.source=https://github.com/DistributedCollective/Bridge-SC',
+              '-f', str(Path(metadata['context']) / metadata['dockerfile']),
+              '-t', os.environ['IMAGE'], metadata['context'],
+          ], check=True)
+          PY
+          test "$(docker image inspect "$IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+
+      - name: Run fee and peer-authentication checks in the actual runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in gas_fee_regression auth_binding_regression; do
+            docker run --rm --network none --read-only --log-driver none --cap-drop ALL \
+              --security-opt no-new-privileges --user 1000:1000 --entrypoint node \
+              --env NODE_PATH=/app/federator/node_modules --workdir /review \
+              --mount "type=bind,source=$GITHUB_WORKSPACE,target=/review,readonly" \
+              "$IMAGE" "/review/tools/tests/$test.cjs"
+          done
+
+      - name: Authenticate using the existing repository publisher
+        shell: bash
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$DOCKER_USERNAME" && test -n "$DOCKER_PASSWORD"
+          printf '%s' "$DOCKER_PASSWORD" | docker login docker.io --username "$DOCKER_USERNAME" --password-stdin
+
+      - name: Publish the immutable release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push "$IMAGE"
+          DIGEST=$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')
+          [[ "$DIGEST" =~ ^sovryn/fed-tokenbridge@sha256:[0-9a-f]{64}$ ]]
+          {
+            printf '## ETH repair image\n\n'
+            printf 'Source: `%s`\n\n' "$GITHUB_SHA"
+            printf 'Image: `%s@%s`\n' "$IMAGE" "${DIGEST##*@}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the temporary registry login
+        if: always()
+        run: docker logout docker.io
